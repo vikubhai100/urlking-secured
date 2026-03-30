@@ -1,0 +1,149 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* --- THEME VARIABLES --- */
+:root {
+  /* Default Dark Theme */
+  --primary: #6366f1;       
+  --primary-dark: #4f46e5;  
+  --primary-glow: rgba(99, 102, 241, 0.3);
+  --accent: #ec4899;        
+  --accent-glow: rgba(236, 72, 153, 0.3);
+
+  --bg-body: #000;
+  --bg-gradient-start: #020617;
+  --bg-gradient-end: #0f172a;
+  --text-primary: #f8fafc;
+  --text-secondary: #64748b;
+  
+  --glass-panel: rgba(15, 23, 42, 0.7);
+  --glass-card: rgba(30, 41, 59, 0.4);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --nav-hover: rgba(255, 255, 255, 0.05);
+  
+  --input-bg: rgba(2, 6, 23, 0.6);
+  --input-border: rgba(255, 255, 255, 0.1);
+  --input-text: #ffffff;
+  
+  --btn-bg: rgba(255,255,255,0.05);
+  --btn-hover: rgba(255,255,255,0.1);
+  
+  --fab-bg: rgba(15, 23, 42, 0.9);
+  --fab-border: #6366f1;
+  --sidebar-bg: rgba(15, 23, 42, 0.95);
+  --table-header-bg: rgba(255, 255, 255, 0.05);
+}
+
+/* Light Theme Overrides */
+html.light-mode, body.light-mode {
+  --bg-body: #f8fafc;
+  --bg-gradient-start: #f1f5f9;
+  --bg-gradient-end: #e2e8f0;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  
+  --glass-panel: #ffffff;
+  --glass-card: #ffffff;
+  --glass-border: #cbd5e1;
+  --nav-hover: #f1f5f9;
+  
+  --input-bg: #ffffff;
+  --input-border: #cbd5e1;
+  --input-text: #0f172a;
+  
+  --btn-bg: rgba(0,0,0,0.05);
+  --btn-hover: rgba(0,0,0,0.1);
+  
+  --fab-bg: #ffffff;
+  --fab-border: #6366f1;
+  --sidebar-bg: #ffffff;
+  --table-header-bg: #f1f5f9;
+}
+
+body {
+  background-color: var(--bg-body);
+  color: var(--text-primary);
+  overflow-x: hidden;
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Base Classes */
+.glass-panel { 
+  background: var(--glass-panel); 
+  backdrop-filter: blur(16px); 
+  border: 1px solid var(--glass-border); 
+}
+
+.input-premium { 
+  background: var(--input-bg); 
+  border: 1px solid var(--input-border); 
+  color: var(--input-text); 
+  transition: all 0.3s; 
+}
+
+.input-premium:focus {
+  border-color: #818cf8; 
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); 
+  outline: none; 
+}
+
+.btn-action, .btn-premium { 
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); 
+  color: white !important; 
+  transition: all 0.3s; 
+}
+.btn-action:hover, .btn-premium:hover { 
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.5); 
+  transform: translateY(-1px); 
+}
+
+/* Animated Borders */
+.border-animated { 
+  position: relative; 
+  background: var(--glass-panel); 
+  border-radius: 1.25rem; 
+  z-index: 1; 
+  overflow: hidden; 
+  border: 1px solid var(--glass-border); 
+}
+.border-animated::before { 
+  content: ''; 
+  position: absolute; 
+  top: -50%; left: -50%; 
+  width: 200%; height: 200%; 
+  background: conic-gradient(transparent, rgba(99, 102, 241, 0.8), transparent 30%); 
+  animation: rotate-border 4s linear infinite; 
+  z-index: -2; 
+}
+.border-animated::after { 
+  content: ''; 
+  position: absolute; 
+  inset: 1px; 
+  background: var(--glass-panel); 
+  border-radius: 1.2rem; 
+  z-index: -1; 
+}
+@keyframes rotate-border { 100% { transform: rotate(360deg); } }
+
+/* Floating Theme Button */
+.floating-theme-btn {
+  position: fixed; bottom: 20px; right: 20px;
+  border-radius: 50%; width: 45px; height: 45px;
+  background: var(--fab-bg); border: 2px solid var(--fab-border);
+  color: var(--text-primary);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.3s; z-index: 10000;
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+}
+.floating-theme-btn:hover {
+  transform: scale(1.1) rotate(15deg);
+  background: #6366f1; color: white;
+}
+@media (min-width: 768px) {
+  .floating-theme-btn { bottom: 40px; right: 40px; width: 60px; height: 60px; font-size: 1.4rem; }
+}
