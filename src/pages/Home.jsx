@@ -3,107 +3,78 @@ import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
-// Helper component to display simulated animated numbers
 const AnimatedNumber = ({ value }) => {
   const [displayValue, setDisplayValue] = useState(value);
-  
-  useEffect(() => {
-    // Initial animation to target value
-    let start = value > 1000 ? value - 1000 : 0;
-    const duration = 1500; // 1.5 seconds animation
-    const startTime = performance.now();
-    
-    const animate = (currentTime) => {
-      const elapsedTime = currentTime - startTime;
-      const progress = Math.min(elapsedTime / duration, 1);
-      
-      // Easing function (easeOutExpo)
-      const easedProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-      
-      const currentVal = Math.floor(start + (value - start) * easedProgress);
-      setDisplayValue(currentVal);
-      
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      }
-    };
-    
-    requestAnimationFrame(animate);
-  }, []); // Only animate on mount
-  
-  // Update local display if parent prop changes later (though not used in setInterval below)
   useEffect(() => {
     setDisplayValue(value);
   }, [value]);
-  
   return displayValue.toLocaleString('en-US');
 };
 
 const Home = () => {
   const heroRef = useRef(null);
   const cardRef = useRef(null);
-  const statContainerRef = useRef(null); // Ref for the whole scene
+  
+  const [stats, setStats] = useState({ clicks: 128409, botLinks: 847, files: 15203 });
+  const [activeCardIndex, setActiveCardIndex] = useState(0);
 
-  // State for simulated dynamic numbers
-  const [stats, setStats] = useState({
-    clicks: 128409,
-    botLinks: 842,
-    files: 15201
-  });
+  // Cards data for Auto-Fading
+  const fadingCards = [
+    { title: "TOTAL CLICKS", value: stats.clicks, sub: "Tracking Live", icon: "fa-eye", iconColor: "text-emerald-400", bgGlow: "shadow-[0_0_15px_rgba(16,185,129,0.3)]" },
+    { title: "LINKS VIA BOT", value: stats.botLinks, sub: "@urlkings_bot", icon: "fa-telegram-plane", iconColor: "text-indigo-400", bgGlow: "shadow-[0_0_15px_rgba(99,102,241,0.3)]" },
+    { title: "FILES UPLOADED", value: stats.files, sub: "Safe Hosting", icon: "fa-file-upload", iconColor: "text-pink-400", bgGlow: "shadow-[0_0_15px_rgba(236,72,153,0.3)]" }
+  ];
 
   useEffect(() => {
-    // 1. Scroll Reveal Animation Logic
+    // Scroll Reveal
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) entry.target.classList.add('active');
       });
     }, { threshold: 0.1 });
-
     document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
 
-    // 2. 3D Tilt Animation Logic (Applying to statContainerRef for better scene control)
+    // 3D Tilt for Desktop
     const container = heroRef.current;
-    const statScene = statContainerRef.current; // The perspective container
-
-    if (window.innerWidth > 1024 && container && statScene) {
+    const card = cardRef.current;
+    if (window.innerWidth > 1024 && container && card) {
       const handleMouseMove = (e) => {
-        // Smoothing the movement (higher divisor = less tilt)
-        const xAxis = (window.innerWidth / 2 - e.pageX) / 70; 
-        const yAxis = (window.innerHeight / 2 - e.pageY) / 70;
-        
-        // Tilt the main main scene lightly
-        statScene.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
+        const xAxis = (window.innerWidth / 2 - e.pageX) / 60; 
+        const yAxis = (window.innerHeight / 2 - e.pageY) / 60;
+        card.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
       };
-      
       const handleMouseLeave = () => {
-        // Snap back to slight initial tilt for better appearance
-        statScene.style.transform = `rotateY(-8deg) rotateX(8deg)`; 
+        card.style.transform = `rotateY(-5deg) rotateX(5deg)`; 
       };
-
       container.addEventListener('mousemove', handleMouseMove);
       container.addEventListener('mouseleave', handleMouseLeave);
-
       return () => {
         container.removeEventListener('mousemove', handleMouseMove);
         container.removeEventListener('mouseleave', handleMouseLeave);
         observer.disconnect();
       };
-    } else if(statScene) {
-        // Default tilt for mobile/tablet where mouse move is not present
-        statScene.style.transform = `rotateY(-5deg) rotateX(5deg)`;
+    } else if (card) {
+      card.style.transform = `rotateY(0deg) rotateX(0deg)`; // Flat for mobile
     }
 
-    // 3. Simulated Number Updates (Exactly like original JS script)
+    // Auto-Fade Card Index (Changes every 3.5 seconds)
+    const fadeInterval = setInterval(() => {
+      setActiveCardIndex((prev) => (prev + 1) % 3);
+    }, 3500);
+
+    // Dynamic Numbers Update
     const statsInterval = setInterval(() => {
       setStats(prev => ({
-        clicks: prev.clicks + Math.floor(Math.random() * 5 + 1), // Increases randomly by 1-5
-        botLinks: prev.botLinks + Math.floor(Math.random() * 2),     // Increases randomly by 0-1
-        files: prev.files + Math.floor(Math.random() * 2)          // Increases randomly by 0-1
+        clicks: prev.clicks + Math.floor(Math.random() * 5 + 1),
+        botLinks: prev.botLinks + Math.floor(Math.random() * 2),
+        files: prev.files + Math.floor(Math.random() * 2)
       }));
-    }, Math.floor(Math.random() * 3000 + 5000)); // Every 5-8 seconds randomly
+    }, 5000);
 
-    return () => clearInterval(statsInterval);
-
+    return () => {
+      clearInterval(fadeInterval);
+      clearInterval(statsInterval);
+    };
   }, []);
 
   return (
@@ -111,8 +82,8 @@ const Home = () => {
       <Header />
       
       <main>
-        {/* HERO SECTION - MOBILE RESPONSIVE FIX */}
-        <section className="pt-[160px] lg:pt-48 pb-20 lg:pb-32 px-4 md:px-6 max-w-7xl mx-auto" ref={heroRef}>
+        {/* HERO SECTION - Fixed Padding for Mobile (pt-[160px]) */}
+        <section className="pt-[160px] lg:pt-[200px] pb-20 lg:pb-32 px-4 md:px-6 max-w-7xl mx-auto" ref={heroRef}>
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             <div className="reveal z-10">
               <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 font-bold text-xs md:text-sm mb-6 gap-2">
@@ -125,56 +96,62 @@ const Home = () => {
               <p className="text-lg md:text-xl text-slate-400 mb-8 max-w-lg leading-relaxed">
                 Experience the industry's highest paying shortener with a fast 2-page flow and secure file hosting.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+              <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto mt-6">
                 <Link to="/register" className="btn-action w-full sm:w-auto text-center px-8 py-4 rounded-full font-bold text-lg shadow-lg shadow-indigo-500/20">Start Earning</Link>
                 <a href="#features" className="w-full sm:w-auto text-center px-8 py-4 rounded-full font-bold text-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all">Features</a>
               </div>
             </div>
 
-            {/* 3D VISUAL - ALL 3 ORIGINAL CARDS ARE BACK & RESPONSIVE */}
-            <div className="relative h-[480px] md:h-[550px] lg:h-[600px] flex items-center justify-center perspective-[3000px] w-full max-w-[100vw] mt-10 lg:mt-0">
-              {/* Perspective container that rotates with mouse */}
-              <div ref={statContainerRef} className="relative w-full h-full transition-transform duration-200 ease-out" style={{transformStyle: 'preserve-3d', transform: 'rotateY(-8deg) rotateX(8deg)'}}>
+            {/* 3D VISUAL - Single Auto-Fading Card */}
+            <div className="relative h-[320px] md:h-[450px] lg:h-[500px] flex items-center justify-center perspective-[2000px] w-full mt-10 lg:mt-0">
+              <div ref={cardRef} className="relative w-full max-w-[400px] transition-transform duration-300 ease-out" style={{transformStyle: 'preserve-3d'}}>
                 
-                {/* 1. Total Clicks Card (Desktop: Top Left | Mobile: Top Center) */}
-                <div className="absolute top-[2%] left-1/2 -translate-x-1/2 lg:left-0 lg:translate-x-0 w-[90%] sm:w-auto sm:min-w-[280px] lg:min-w-[240px] p-6 lg:p-5 bg-[#0f172a]/95 backdrop-blur-2xl rounded-2xl border border-white/10 shadow-2xl reveal hover:-translate-y-2 transition-transform z-30" style={{transform: 'translateZ(100px)'}}>
-                   <div className="flex items-center gap-4">
-                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-xl shadow-[0_0_15px_rgba(16,185,129,0.3)]">
-                       <i className="fas fa-eye"></i>
-                     </div>
-                     <div>
-                       <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-0.5">Total Clicks</p>
-                       <p className="text-3xl font-black text-white"><AnimatedNumber value={stats.clicks} /></p>
-                       <p className="text-xs text-emerald-400 font-medium">Tracking Live</p>
-                     </div>
-                   </div>
+                {/* Floating High CPM Badge */}
+                <div className="absolute -top-5 -right-2 md:-top-8 md:-right-6 bg-emerald-500/90 p-3 rounded-xl shadow-2xl flex items-center gap-2 animate-bounce z-20" style={{transform: 'translateZ(40px)'}}>
+                   <i className="fas fa-chart-line text-white"></i>
+                   <span className="font-bold text-xs md:text-sm text-white">High CPM</span>
                 </div>
 
-                {/* 2. Bot Links Card (Desktop: Mid Right | Mobile: Center) */}
-                <div className="absolute top-[35%] left-1/2 -translate-x-1/2 lg:top-[30%] lg:right-0 lg:left-auto lg:translate-x-0 w-[90%] sm:w-auto sm:min-w-[280px] lg:min-w-[240px] p-6 lg:p-5 bg-[#0f172a]/95 backdrop-blur-2xl rounded-2xl border border-white/10 shadow-2xl reveal hover:-translate-y-2 transition-transform z-20" style={{transform: 'translateZ(150px)'}}>
-                   <div className="flex items-center gap-4">
-                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center text-white text-xl shadow-[0_0_15px_rgba(99,102,241,0.3)]">
-                       <i className="fab fa-telegram-plane"></i>
-                     </div>
-                     <div>
-                       <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-0.5">Links via Bot</p>
-                       <p className="text-3xl font-black text-white"><AnimatedNumber value={stats.botLinks} /></p>
-                       <p className="text-xs text-indigo-400 font-medium">@urlkings_bot</p>
-                     </div>
+                {/* Main Single Card */}
+                <div className="w-full p-6 md:p-8 bg-[#0f172a]/95 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden">
+                   
+                   {/* Mac Dots */}
+                   <div className="flex gap-2 mb-8 relative z-10">
+                     <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                     <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                     <div className="w-3 h-3 rounded-full bg-green-500"></div>
                    </div>
-                </div>
+                   
+                   {/* Auto-Fading Content Area */}
+                   <div className="relative h-[100px] mb-8 z-10">
+                     {fadingCards.map((card, index) => (
+                       <div 
+                         key={index} 
+                         className={`absolute inset-0 transition-all duration-700 ease-in-out flex items-center gap-5 ${
+                           activeCardIndex === index ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4 pointer-events-none'
+                         }`}
+                       >
+                         {/* Dynamic Icon */}
+                         <div className={`w-14 h-14 rounded-2xl bg-[#1e293b] flex items-center justify-center text-2xl border border-white/5 ${card.iconColor} ${card.bgGlow}`}>
+                           <i className={`fas ${card.icon}`}></i>
+                         </div>
+                         {/* Dynamic Text */}
+                         <div>
+                           <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">{card.title}</p>
+                           <p className="text-3xl md:text-4xl font-black text-white"><AnimatedNumber value={card.value} /></p>
+                           <p className={`text-xs font-medium mt-1 ${card.iconColor}`}>{card.sub}</p>
+                         </div>
+                       </div>
+                     ))}
+                   </div>
 
-                {/* 3. Uploaded Files Card (Desktop: Bottom Left | Mobile: Bottom Center) */}
-                <div className="absolute bottom-[2%] left-1/2 -translate-x-1/2 lg:bottom-[5%] lg:left-0 lg:translate-x-0 w-[90%] sm:w-auto sm:min-w-[280px] lg:min-w-[240px] p-6 lg:p-5 bg-[#0f172a]/95 backdrop-blur-2xl rounded-2xl border border-white/10 shadow-2xl reveal hover:-translate-y-2 transition-transform z-10" style={{transform: 'translateZ(120px)'}}>
-                   <div className="flex items-center gap-4">
-                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center text-white text-xl shadow-[0_0_15px_rgba(236,72,153,0.3)]">
-                       <i className="fas fa-file-upload"></i>
-                     </div>
-                     <div>
-                       <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-0.5">Files Uploaded</p>
-                       <p className="text-3xl font-black text-white"><AnimatedNumber value={stats.files} /></p>
-                       <p className="text-xs text-pink-400 font-medium">Safe Hosting</p>
-                     </div>
+                   {/* Static Animated Chart at Bottom */}
+                   <div className="flex items-end justify-between h-16 md:h-20 gap-2 relative z-10">
+                     <div className="w-full bg-indigo-500/20 rounded-t-lg h-[40%]"></div>
+                     <div className="w-full bg-indigo-500/40 rounded-t-lg h-[70%]"></div>
+                     <div className="w-full bg-indigo-500 rounded-t-lg h-[50%] shadow-[0_0_15px_rgba(99,102,241,0.5)]"></div>
+                     <div className="w-full bg-pink-500 rounded-t-lg h-[90%] shadow-[0_0_15px_rgba(236,72,153,0.5)]"></div>
+                     <div className="w-full bg-indigo-500/60 rounded-t-lg h-[60%]"></div>
                    </div>
                 </div>
 
@@ -183,7 +160,7 @@ const Home = () => {
           </div>
         </section>
 
-        {/* STATS SECTION (Static rate info below hero) */}
+        {/* REST OF THE SECTIONS (Stats, Features, How it works) */}
         <section className="py-16 md:py-20 border-y border-white/5 bg-white/[0.02] reveal">
           <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-10 text-center">
             <div><p className="text-4xl md:text-5xl font-black mb-2">$5.00</p><p className="text-indigo-400 font-bold tracking-widest text-xs md:text-sm uppercase">Global CPM</p></div>
@@ -192,7 +169,6 @@ const Home = () => {
           </div>
         </section>
 
-        {/* FEATURES */}
         <section className="py-20 md:py-24 px-6 max-w-7xl mx-auto" id="features">
           <div className="text-center mb-12 md:mb-16 reveal">
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-black mb-4">Enterprise <span className="text-indigo-400">Features</span></h2>
@@ -217,7 +193,6 @@ const Home = () => {
           </div>
         </section>
 
-        {/* HOW IT WORKS */}
         <section className="py-20 md:py-24 px-6 bg-indigo-500/[0.02]" id="how-it-works">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-12 md:mb-16 reveal">
