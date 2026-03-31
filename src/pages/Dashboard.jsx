@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-// Global Background Component
 import Particles from '../components/Particles';
-
-// Dashboard Components
 import Sidebar from '../components/dashboard/Sidebar';
 import DashboardOverview from '../components/dashboard/DashboardOverview';
 import UploadFile from '../components/dashboard/UploadFile';
@@ -21,6 +17,7 @@ const Dashboard = () => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   const token = localStorage.getItem("token");
@@ -31,17 +28,11 @@ const Dashboard = () => {
       navigate('/login');
       return;
     }
-    
     fetchUserProfile();
-    
-    // Auto-refresh wallet balance every 8 seconds
-    const interval = setInterval(fetchUserProfile, 8000);
-    return () => clearInterval(interval);
-  }, [token, navigate]);
+  }, [token]);
 
   const fetchUserProfile = async () => {
     try {
-      // 1. Fetch Main User Profile Data
       const res = await fetch(`${API}/api/me`, { 
         headers: { 
           'Authorization': `Bearer ${token}`,
@@ -49,121 +40,83 @@ const Dashboard = () => {
         } 
       });
       
-      // If unauthorized, clear everything and kick out
       if (res.status === 401 || res.status === 403) {
         localStorage.clear();
         navigate('/login');
         return;
       }
 
-      // If API fails (e.g. 500 server error)
-      if (!res.ok) {
-        throw new Error(`Profile API Failed with status: ${res.status}`);
-      }
-
       const data = await res.json();
       
-      // 2. Fetch Wallet Balance
-      // (Using a separate try/catch so if the wallet fails, the user can still use the dashboard)
-      let currentBalance = 0;
+      // Fetch Balance separately
+      let balance = 0;
       try {
-        const walletRes = await fetch(`${API}/api/wallet/balance`, { 
-          headers: { 
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json'
-          } 
+        const bRes = await fetch(`${API}/api/wallet/balance`, { 
+          headers: { 'Authorization': `Bearer ${token}` } 
         });
-        if (walletRes.ok) {
-          const walletData = await walletRes.json();
-          currentBalance = walletData.balance || walletData.balance_usd || 0;
-        }
-      } catch (walletErr) {
-        console.warn("Wallet fetch error (Ignoring to keep dashboard alive):", walletErr);
-      }
-      
-      // 3. Set REAL Backend Data to State
-      setUser({ 
-        ...data, 
-        balance: currentBalance 
+        const bData = await bRes.json();
+        balance = bData.balance || bData.balance_usd || 0;
+      } catch (e) { console.log("Balance fetch failed"); }
+
+      // Mapping backend data safely
+      setUser({
+        username: data.username || data.name || "User",
+        email: data.email || "",
+        api_token: data.api_token || "",
+        balance: balance,
+        ...data
       });
-      
       setIsLoading(false);
-
-    } catch (err) { 
-      console.error("Critical Error fetching real user data:", err); 
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load profile. Please refresh.");
       setIsLoading(false);
-      
-      // If we completely fail to get user data from the live server, we log them out
-      // so it doesn't crash the child components trying to read user properties.
-      localStorage.clear();
-      navigate('/login');
     }
   };
 
-  const renderContent = () => {
-    if (isLoading || !user) {
-      return (
-        <div className="flex flex-col items-center justify-center h-[60vh]">
-          <div className="w-16 h-16 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mb-4 shadow-[0_0_15px_rgba(99,102,241,0.5)]"></div>
-          <p className="text-slate-400 font-medium">Loading your profile...</p>
-        </div>
-      );
-    }
+  if (isLoading) return (
+    <div className="h-screen w-full flex items-center justify-center bg-[#020617] text-white">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-indigo-500"></div>
+    </div>
+  );
 
-    // Dynamic Tab Switching Logic
-    switch (activeSection) {
-      case 'create': 
-        return <DashboardOverview token={token} user={user} />;
-      case 'upload': 
-        return <UploadFile token={token} user={user} />;
-      case 'files': 
-        return <ManageFiles token={token} />;
-      case 'history': 
-        return <LinkHistory token={token} />;
-      case 'withdraw': 
-        return <Withdraw token={token} user={user} />;
-      case 'referrals': 
-        return <Referrals token={token} />;
-      case 'api': 
-        return <DeveloperApi token={token} user={user} fetchUserProfile={fetchUserProfile} />;
-      case 'quicklink': 
-        return <QuickLink user={user} />;
-      case 'profile': 
-        return <ProfileSettings token={token} user={user} fetchUserProfile={fetchUserProfile} />;
-      default:
-        return <div className="p-8 text-center text-slate-400">Coming soon...</div>;
-    }
-  };
+  if (error) return (
+    <div className="h-screen w-full flex items-center justify-center bg-[#020617] text-white p-6 text-center">
+      <div>
+        <p className="text-red-400 mb-4">{error}</p>
+        <button onClick={() => window.location.reload()} className="btn-action px-6 py-2 rounded-full">Try Again</button>
+      </div>
+    </div>
+  );
 
   return (
-    <>
-      {/* Background Particles */}
+    <div className="min-h-screen bg-[var(--bg-body)]">
       <Particles />
-      
-      {/* Mobile Top Navbar */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-40 glass-panel border-b border-[var(--glass-border)] p-4 flex items-center justify-between bg-[var(--bg-body)]">
-        <button onClick={() => setIsMobileOpen(true)} className="p-2 text-2xl text-[var(--text-primary)]">
-          <i className="fas fa-bars"></i>
-        </button>
-        <h1 className="text-lg font-bold tracking-wide text-[var(--text-primary)]">
-          URL<span className="text-indigo-500">KING</span>
-        </h1>
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 glass-panel border-b border-[var(--glass-border)] p-4 flex items-center justify-between">
+        <button onClick={() => setIsMobileOpen(true)} className="text-2xl text-white"><i className="fas fa-bars"></i></button>
+        <h1 className="text-lg font-bold text-white">URLKING</h1>
       </div>
 
-      {/* Sidebar Navigation */}
       <Sidebar 
         activeSection={activeSection} 
         setActiveSection={setActiveSection} 
         isMobileOpen={isMobileOpen} 
         setIsMobileOpen={setIsMobileOpen}
-        user={user}
+        user={user} 
       />
 
-      {/* Main Content Area */}
-      <main className="flex-1 min-w-0 w-full md:ml-72 p-4 md:p-10 pt-24 min-h-screen relative z-10 overflow-x-hidden">
-        {renderContent()}
+      <main className="flex-1 md:ml-72 p-4 md:p-10 pt-24 min-h-screen relative z-10">
+        {activeSection === 'create' && <DashboardOverview token={token} user={user} />}
+        {activeSection === 'upload' && <UploadFile token={token} user={user} />}
+        {activeSection === 'files' && <ManageFiles token={token} />}
+        {activeSection === 'history' && <LinkHistory token={token} />}
+        {activeSection === 'withdraw' && <Withdraw token={token} user={user} />}
+        {activeSection === 'referrals' && <Referrals token={token} />}
+        {activeSection === 'api' && <DeveloperApi token={token} user={user} fetchUserProfile={fetchUserProfile} />}
+        {activeSection === 'quicklink' && <QuickLink user={user} />}
+        {activeSection === 'profile' && <ProfileSettings token={token} user={user} fetchUserProfile={fetchUserProfile} />}
       </main>
-    </>
+    </div>
   );
 };
 
