@@ -1,38 +1,41 @@
 export const showToast = (message, type = 'success') => {
   let container = document.getElementById('toast-container');
   
-  // Agar container nahi hai, toh automatic bana do
+  // Create container if it doesn't exist
   if (!container) {
     container = document.createElement('div');
     container.id = 'toast-container';
     document.body.appendChild(container);
   }
 
+  // Create toast element
   const toast = document.createElement('div');
   const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
   const colorClass = type === 'success' ? 'text-emerald-500' : 'text-red-500';
-  const borderClass = type === 'success' ? 'border-emerald-500' : 'border-red-500';
   
-  // Custom UI for Toast
-  toast.className = `flex items-center gap-3 px-5 py-4 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.2)] bg-[var(--glass-panel)] backdrop-blur-xl border-l-4 ${borderClass} border-y border-r border-[var(--glass-border)] transform transition-all duration-500 translate-x-full mt-3 min-w-[300px] z-[99999]`;
+  // Assign classes from index.css
+  toast.className = `toast-original ${type}`;
   
+  // Construct inner HTML
   toast.innerHTML = `
     <i class="fas ${icon} ${colorClass} text-2xl"></i>
-    <span class="font-bold text-[var(--text-primary)] tracking-wide">${message}</span>
+    <span class="font-bold tracking-wide">${message}</span>
   `;
   
+  // Add to container
   container.appendChild(toast);
   
-  // Slide In Animation
+  // Trigger slide-in animation using requestAnimationFrame
   requestAnimationFrame(() => {
-    toast.classList.remove('translate-x-full');
-    toast.classList.add('translate-x-0');
+    toast.classList.add('show');
   });
   
-  // Remove after 3 seconds
+  // Trigger slide-out animation after 3 seconds
   setTimeout(() => {
-    toast.classList.remove('translate-x-0');
-    toast.classList.add('translate-x-full', 'opacity-0');
-    setTimeout(() => toast.remove(), 500);
+    toast.classList.remove('show');
+    toast.classList.add('hide');
+    
+    // Remove element from DOM after transition completes (400ms)
+    setTimeout(() => toast.remove(), 400); 
   }, 3000);
 };
