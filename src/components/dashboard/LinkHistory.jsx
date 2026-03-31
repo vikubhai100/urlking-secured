@@ -1,20 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { showToast } from '../../toast'; // Premium Toast
 
-const LinkHistory = ({ token }) => {
+// 1. isActive prop add kiya gaya
+const LinkHistory = ({ token, isActive }) => {
   const [links, setLinks] = useState([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
-  
+
   const [editModal, setEditModal] = useState({ open: false, id: '', url: '' });
-  
+
   const API = "https://go.urlking.site";
   const AD_BASE = "https://go.urlking.site/";
 
-  useEffect(() => { loadHistory(page); }, [page]);
+  // 2. isActive check karega aur silently data update karega
+  useEffect(() => {
+    if (isActive !== false) {
+      loadHistory(page, true); // true = silent refresh (no spinner)
+    }
+  }, [page, isActive, token]);
 
-  const loadHistory = async (p) => {
-    setLoading(true);
+  // 3. isSilent logic lagaya taaki background update me spinner na dikhe
+  const loadHistory = async (p, isSilent = false) => {
+    if (!isSilent) setLoading(true);
     try {
       const res = await fetch(`${API}/api/history?page=${p}`, { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
@@ -34,7 +41,7 @@ const LinkHistory = ({ token }) => {
       if (res.ok) { 
         showToast("Updated Successfully!", "success"); 
         setEditModal({ open: false, id: '', url: '' }); 
-        loadHistory(page); 
+        loadHistory(page, true); // Silent refresh after edit
       } else { 
         const d = await res.json(); 
         showToast(d.error || "Update failed", "error"); 
@@ -55,7 +62,7 @@ const LinkHistory = ({ token }) => {
   return (
     <div className="fade-in w-full max-w-5xl mx-auto space-y-6">
       <h2 className="text-2xl font-bold mb-4 text-[var(--text-primary)]">Link History</h2>
-      
+
       <div className="glass-panel rounded-2xl overflow-hidden flex flex-col min-h-[400px]">
         <div className="divide-y divide-[var(--glass-border)] flex-1 overflow-auto p-2">
           {loading ? (
@@ -83,7 +90,7 @@ const LinkHistory = ({ token }) => {
             })
           )}
         </div>
-        
+
         {/* ORIGINAL PAGINATION UI */}
         <div className="p-4 border-t border-[var(--glass-border)] bg-[var(--nav-hover)] flex justify-center items-center gap-4">
            <button onClick={() => setPage(page - 1)} disabled={page === 1} className="w-10 h-10 rounded-lg bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500 hover:text-white transition-colors disabled:opacity-30 disabled:hover:bg-indigo-500/20 disabled:hover:text-indigo-400"><i className="fas fa-chevron-left"></i></button>
