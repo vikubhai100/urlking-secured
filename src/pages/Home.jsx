@@ -80,38 +80,38 @@ const Home = () => {
               </div>
             </div>
 
-            {/* 3D Visual */}
-            <div className="relative h-[550px] flex items-center justify-center perspective-[2000px]">
-              <div ref={cardRef} className="relative w-full h-full transition-transform duration-100 ease-out" style={{transformStyle: 'preserve-3d', transform: 'rotateX(15deg) rotateY(-15deg)'}}>
+            {/* 3D Visual - MOBILE RESPONSIVE FIX */}
+            <div className="relative h-[350px] lg:h-[550px] flex items-center justify-center perspective-[2000px] w-full mt-10 lg:mt-0">
+              <div ref={cardRef} className="relative w-full max-w-[340px] md:max-w-[450px] h-full transition-transform duration-100 ease-out" style={{transformStyle: 'preserve-3d', transform: 'rotateX(15deg) rotateY(-15deg)'}}>
                 
-                {/* Floating Stat 1 */}
-                <div className="absolute top-[10%] -right-8 bg-[var(--bg-card)] p-4 rounded-2xl border border-[var(--glass-border)] shadow-2xl flex items-center gap-3 text-[var(--text-primary)] backdrop-blur-xl animate-[float_5s_infinite_alternate_ease-in-out]" style={{transform: 'translateZ(60px)'}}>
+                {/* Floating Stat 1 - Hidden on mobile */}
+                <div className="hidden lg:flex absolute top-[10%] -right-8 bg-[var(--bg-card)] p-4 rounded-2xl border border-[var(--glass-border)] shadow-2xl items-center gap-3 text-[var(--text-primary)] backdrop-blur-xl animate-[float_5s_infinite_alternate_ease-in-out]" style={{transform: 'translateZ(60px)'}}>
                    <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center"><i className="fas fa-chart-line text-white"></i></div>
                    <div><div className="text-xs text-slate-400">Conversion</div><div className="font-extrabold text-lg">+24.5%</div></div>
                 </div>
 
                 {/* Main 3D Card */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[450px] h-[320px] p-6 bg-[var(--bg-card)] rounded-3xl border border-[var(--glass-border)] shadow-[20px_20px_50px_rgba(0,0,0,0.2)] backdrop-blur-xl">
-                   <div className="flex gap-2 mb-6">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full p-5 lg:p-6 bg-[var(--bg-card)] rounded-3xl border border-[var(--glass-border)] shadow-[20px_20px_50px_rgba(0,0,0,0.2)] backdrop-blur-xl">
+                   <div className="flex gap-2 mb-4 lg:mb-6">
                      <div className="w-3 h-3 rounded-full bg-red-500"></div>
                      <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
                    </div>
-                   <div className="flex justify-between mb-6 text-[var(--text-primary)]">
+                   <div className="flex justify-between mb-4 lg:mb-6 text-[var(--text-primary)]">
                      <div>
-                       <p className="text-sm text-slate-400 font-semibold">Total Clicks</p>
-                       <p className="text-[2rem] font-extrabold leading-tight">128,409</p>
+                       <p className="text-xs lg:text-sm text-slate-400 font-semibold">Total Clicks</p>
+                       <p className="text-2xl lg:text-[2rem] font-extrabold leading-tight">128,409</p>
                      </div>
                      <div className="text-right">
-                       <p className="text-sm text-slate-400 font-semibold">Active Links</p>
-                       <p className="text-[2rem] font-extrabold text-indigo-500 leading-tight">842</p>
+                       <p className="text-xs lg:text-sm text-slate-400 font-semibold">Active Links</p>
+                       <p className="text-2xl lg:text-[2rem] font-extrabold text-indigo-500 leading-tight">842</p>
                      </div>
                    </div>
                    <div className="p-3 bg-indigo-500/10 border border-indigo-500/50 rounded-xl flex items-center gap-3 mb-6">
-                     <i className="fab fa-telegram text-xl text-indigo-500"></i>
-                     <p className="text-sm font-medium text-[var(--text-primary)]"><b>@urlkings_bot</b> generated 45 links today!</p>
+                     <i className="fab fa-telegram text-lg lg:text-xl text-indigo-500"></i>
+                     <p className="text-xs lg:text-sm font-medium text-[var(--text-primary)]"><b>@urlkings_bot</b> generated 45 links today!</p>
                    </div>
-                   <div className="flex items-end justify-between h-[80px] border-b border-[var(--glass-border)] pb-2">
+                   <div className="flex items-end justify-between h-[60px] lg:h-[80px] border-b border-[var(--glass-border)] pb-2">
                      <div className="w-[12%] bg-gradient-to-t from-[#4f46e5] to-[#6366f1] rounded-t-md h-[40%]"></div>
                      <div className="w-[12%] bg-gradient-to-t from-[#4f46e5] to-[#6366f1] rounded-t-md h-[70%]"></div>
                      <div className="w-[12%] bg-gradient-to-t from-[#4f46e5] to-[#6366f1] rounded-t-md h-[50%]"></div>
@@ -120,8 +120,8 @@ const Home = () => {
                    </div>
                 </div>
 
-                {/* Floating Stat 2 */}
-                <div className="absolute bottom-10 -left-10 bg-[var(--bg-card)] p-4 rounded-2xl border border-[var(--glass-border)] shadow-2xl flex items-center gap-3 text-[var(--text-primary)] backdrop-blur-xl animate-[float_4s_infinite_alternate-reverse_ease-in-out]" style={{transform: 'translateZ(80px)'}}>
+                {/* Floating Stat 2 - Hidden on mobile */}
+                <div className="hidden lg:flex absolute bottom-10 -left-10 bg-[var(--bg-card)] p-4 rounded-2xl border border-[var(--glass-border)] shadow-2xl items-center gap-3 text-[var(--text-primary)] backdrop-blur-xl animate-[float_4s_infinite_alternate-reverse_ease-in-out]" style={{transform: 'translateZ(80px)'}}>
                    <div className="w-10 h-10 bg-pink-500 rounded-full flex items-center justify-center"><i className="fas fa-file-upload text-white"></i></div>
                    <div><div className="text-xs text-slate-400">Secure Upload</div><div className="font-extrabold text-lg">Active</div></div>
                 </div>
@@ -147,7 +147,6 @@ const Home = () => {
                 <p className="text-lg text-slate-400">Everything you need to manage your links, track your audience, and grow your brand in one unified platform.</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {/* Feature Cards */}
                 <div className="glass-panel p-10 rounded-[24px] reveal hover:-translate-y-2 hover:border-indigo-500 transition-all duration-400 hover:shadow-[0_20px_40px_rgba(0,0,0,0.05)]">
                     <div className="w-16 h-16 bg-indigo-500/10 rounded-2xl flex items-center justify-center text-indigo-500 text-[1.5rem] mb-6"><i className="fas fa-cloud-upload-alt"></i></div>
                     <h3 className="text-[1.4rem] font-bold mb-3 text-[var(--text-primary)]">Secure File Uploader</h3>
