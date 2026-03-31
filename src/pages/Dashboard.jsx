@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Particles from '../components/Particles';
 import Sidebar from '../components/dashboard/Sidebar';
 import DashboardOverview from '../components/dashboard/DashboardOverview';
 import UploadFile from '../components/dashboard/UploadFile';
@@ -17,7 +16,6 @@ const Dashboard = () => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   const token = localStorage.getItem("token");
@@ -34,69 +32,59 @@ const Dashboard = () => {
   const fetchUserProfile = async () => {
     try {
       const res = await fetch(`${API}/api/me`, { 
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json' 
-        } 
+        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' } 
       });
       
-      if (res.status === 401 || res.status === 403) {
-        localStorage.clear();
-        navigate('/login');
-        return;
+      if (!res.ok) {
+        if (res.status === 401) { localStorage.clear(); navigate('/login'); }
+        throw new Error("Failed to fetch profile");
       }
 
       const data = await res.json();
       
-      // Fetch Balance separately
+      // Balance fetch (Safe)
       let balance = 0;
       try {
-        const bRes = await fetch(`${API}/api/wallet/balance`, { 
-          headers: { 'Authorization': `Bearer ${token}` } 
-        });
+        const bRes = await fetch(`${API}/api/wallet/balance`, { headers: { 'Authorization': `Bearer ${token}` } });
         const bData = await bRes.json();
         balance = bData.balance || bData.balance_usd || 0;
-      } catch (e) { console.log("Balance fetch failed"); }
+      } catch (e) { console.log("Balance fetch error"); }
 
-      // Mapping backend data safely
-      setUser({
-        username: data.username || data.name || "User",
-        email: data.email || "",
-        api_token: data.api_token || "",
-        balance: balance,
-        ...data
-      });
+      setUser({ ...data, balance });
       setIsLoading(false);
     } catch (err) {
       console.error(err);
-      setError("Failed to load profile. Please refresh.");
       setIsLoading(false);
     }
   };
 
-  if (isLoading) return (
-    <div className="h-screen w-full flex items-center justify-center bg-[#020617] text-white">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-indigo-500"></div>
-    </div>
-  );
+  const renderContent = () => {
+    // SECURITY: Kabhi bhi child components render mat karo jab tak user data load na ho
+    if (isLoading || !user) {
+      return (
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
+        </div>
+      );
+    }
 
-  if (error) return (
-    <div className="h-screen w-full flex items-center justify-center bg-[#020617] text-white p-6 text-center">
-      <div>
-        <p className="text-red-400 mb-4">{error}</p>
-        <button onClick={() => window.location.reload()} className="btn-action px-6 py-2 rounded-full">Try Again</button>
-      </div>
-    </div>
-  );
+    // Ab jab user load ho gaya hai, tabhi components dikhao (Black screen avoid karne ke liye)
+    switch (activeSection) {
+      case 'create': return <DashboardOverview token={token} user={user} />;
+      case 'upload': return <UploadFile token={token} user={user} />;
+      case 'files': return <ManageFiles token={token} />;
+      case 'history': return <LinkHistory token={token} />;
+      case 'withdraw': return <Withdraw token={token} user={user} />;
+      case 'referrals': return <Referrals token={token} />;
+      case 'api': return <DeveloperApi token={token} user={user} fetchUserProfile={fetchUserProfile} />;
+      case 'quicklink': return <QuickLink user={user} />;
+      case 'profile': return <ProfileSettings token={token} user={user} fetchUserProfile={fetchUserProfile} />;
+      default: return null;
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-body)]">
-      <Particles />
-      <div className="md:hidden fixed top-0 left-0 right-0 z-40 glass-panel border-b border-[var(--glass-border)] p-4 flex items-center justify-between">
-        <button onClick={() => setIsMobileOpen(true)} className="text-2xl text-white"><i className="fas fa-bars"></i></button>
-        <h1 className="text-lg font-bold text-white">URLKING</h1>
-      </div>
-
+    <div className="min-h-screen bg-[#020617]">
       <Sidebar 
         activeSection={activeSection} 
         setActiveSection={setActiveSection} 
@@ -104,17 +92,8 @@ const Dashboard = () => {
         setIsMobileOpen={setIsMobileOpen}
         user={user} 
       />
-
-      <main className="flex-1 md:ml-72 p-4 md:p-10 pt-24 min-h-screen relative z-10">
-        {activeSection === 'create' && <DashboardOverview token={token} user={user} />}
-        {activeSection === 'upload' && <UploadFile token={token} user={user} />}
-        {activeSection === 'files' && <ManageFiles token={token} />}
-        {activeSection === 'history' && <LinkHistory token={token} />}
-        {activeSection === 'withdraw' && <Withdraw token={token} user={user} />}
-        {activeSection === 'referrals' && <Referrals token={token} />}
-        {activeSection === 'api' && <DeveloperApi token={token} user={user} fetchUserProfile={fetchUserProfile} />}
-        {activeSection === 'quicklink' && <QuickLink user={user} />}
-        {activeSection === 'profile' && <ProfileSettings token={token} user={user} fetchUserProfile={fetchUserProfile} />}
+      <main className="md:ml-72 p-4 md:p-10 pt-24 min-h-screen relative z-10">
+        {renderContent()}
       </main>
     </div>
   );
