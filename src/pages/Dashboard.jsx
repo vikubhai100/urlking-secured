@@ -31,6 +31,7 @@ const Dashboard = () => {
       navigate('/login');
       return;
     }
+    
     fetchUserProfile();
     
     // Auto-refresh wallet balance every 8 seconds
@@ -40,42 +41,71 @@ const Dashboard = () => {
 
   const fetchUserProfile = async () => {
     try {
-      // 1. Fetch User Data
+      // 1. Fetch Main User Profile Data
       const res = await fetch(`${API}/api/me`, { 
-        headers: { Authorization: `Bearer ${token}` } 
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json' 
+        } 
       });
       
+      // If unauthorized, clear everything and kick out
       if (res.status === 401 || res.status === 403) {
         localStorage.clear();
         navigate('/login');
         return;
       }
+
+      // If API fails (e.g. 500 server error)
+      if (!res.ok) {
+        throw new Error(`Profile API Failed with status: ${res.status}`);
+      }
+
       const data = await res.json();
       
       // 2. Fetch Wallet Balance
-      const walletRes = await fetch(`${API}/api/wallet/balance`, { 
-        headers: { Authorization: `Bearer ${token}` } 
-      });
-      const walletData = await walletRes.json();
+      // (Using a separate try/catch so if the wallet fails, the user can still use the dashboard)
+      let currentBalance = 0;
+      try {
+        const walletRes = await fetch(`${API}/api/wallet/balance`, { 
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          } 
+        });
+        if (walletRes.ok) {
+          const walletData = await walletRes.json();
+          currentBalance = walletData.balance || walletData.balance_usd || 0;
+        }
+      } catch (walletErr) {
+        console.warn("Wallet fetch error (Ignoring to keep dashboard alive):", walletErr);
+      }
       
-      // Merge user data and wallet balance into one state
+      // 3. Set REAL Backend Data to State
       setUser({ 
         ...data, 
-        balance: walletData.balance || walletData.balance_usd || 0 
+        balance: currentBalance 
       });
       
       setIsLoading(false);
+
     } catch (err) { 
-      console.error("Error fetching user data", err); 
+      console.error("Critical Error fetching real user data:", err); 
+      setIsLoading(false);
+      
+      // If we completely fail to get user data from the live server, we log them out
+      // so it doesn't crash the child components trying to read user properties.
+      localStorage.clear();
+      navigate('/login');
     }
   };
 
   const renderContent = () => {
-    if (isLoading) {
+    if (isLoading || !user) {
       return (
         <div className="flex flex-col items-center justify-center h-[60vh]">
           <div className="w-16 h-16 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mb-4 shadow-[0_0_15px_rgba(99,102,241,0.5)]"></div>
-          <p className="text-slate-400 font-medium">Syncing your data...</p>
+          <p className="text-slate-400 font-medium">Loading your profile...</p>
         </div>
       );
     }
