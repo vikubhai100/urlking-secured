@@ -17,6 +17,7 @@ const Login = () => {
   const navigate = useNavigate();
   const API = "https://go.urlking.site";
 
+  // --- LOGIN LOGIC ---
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -29,12 +30,17 @@ const Login = () => {
       });
 
       const data = await res.json();
+      
       if (res.ok) {
         localStorage.setItem("token", data.token);
-        showToast("Welcome back to URLKING!", "success");
-        navigate("/dashboard");
+        showToast("Welcome back!", "success"); // Original jaisa message
+        // Original ki tarah 1 second ka delay taaki toast dikh sake
+        setTimeout(() => {
+          navigate("/dashboard");
+        }, 1000);
       } else {
-        showToast(data.message || "Invalid Credentials", "error");
+        // Original ki tarah data.error catch kiya
+        showToast(data.error || "Login failed", "error");
       }
     } catch (err) {
       showToast("Server Error! Check your connection.", "error");
@@ -43,6 +49,7 @@ const Login = () => {
     }
   };
 
+  // --- FORGOT PASSWORD LOGIC (FIXED ENDPOINT) ---
   const handleForgotPassword = async (e) => {
     e.preventDefault();
     if (!forgotEmail) {
@@ -51,24 +58,26 @@ const Login = () => {
 
     setForgotLoading(true);
     try {
-      // Yahan aapke backend ka forgot password API aayega
-      const res = await fetch(`${API}/api/forgot-password`, {
+      // YAHAN FIX KIYA HAI: /api/auth/forgot-password (Original HTML wala)
+      const res = await fetch(`${API}/api/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: forgotEmail }),
       });
 
       const data = await res.json();
-      if (res.ok || res.status === 200) {
-        showToast("Password reset link sent to your email!", "success");
+      
+      if (res.ok) {
+        showToast("Reset link sent to your email!", "success");
         setForgotModalOpen(false);
         setForgotEmail(''); // Reset field
       } else {
-        showToast(data.message || "Email not found", "error");
+        // Backend ka asli error message pakdega
+        showToast(data.error || "Failed to send link", "error");
       }
     } catch (err) {
-      // Agar API abhi ready nahi hai, toh as a fallback error dikhayega
-      showToast("Server Error! Reset link could not be sent.", "error");
+      showToast("Server Error. Check console.", "error");
+      console.error(err);
     } finally {
       setForgotLoading(false);
     }
@@ -78,25 +87,29 @@ const Login = () => {
     <div className="min-h-screen bg-[var(--bg-body)] text-[var(--text-primary)] flex flex-col justify-center items-center relative overflow-hidden transition-colors duration-300">
       <Particles />
       
-      <Link to="/" className="absolute top-8 left-8 text-slate-400 hover:text-indigo-400 font-medium flex items-center gap-2 transition-colors z-20">
-        <i className="fas fa-arrow-left"></i> Home
+      <Link to="/" className="absolute top-8 left-8 text-slate-400 hover:text-indigo-400 font-medium flex items-center gap-2 transition-colors z-20 bg-[var(--fab-bg)] border border-[var(--input-border)] px-4 py-2 rounded-full backdrop-blur-md shadow-lg hover:scale-105">
+        <i className="fas fa-arrow-left text-sm"></i> <span className="text-sm">Home</span>
       </Link>
-      <Link to="/register" className="absolute top-8 right-8 text-slate-400 hover:text-indigo-400 font-medium flex items-center gap-2 transition-colors z-20">
-        Sign Up Free <i className="fas fa-arrow-right"></i>
+      
+      <Link to="/register" className="absolute top-8 right-8 group flex items-center gap-2 px-5 py-2 rounded-full bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 hover:bg-indigo-600 hover:text-white transition-all backdrop-blur-md shadow-lg z-20">
+        <span className="font-medium text-sm">Sign Up Free</span>
+        <i className="fas fa-arrow-right text-xs group-hover:translate-x-0.5 transition-transform"></i>
       </Link>
 
-      <div className="w-full max-w-md p-8 relative z-10 fade-in">
+      <div className="w-full max-w-md p-8 relative z-10 fade-in mt-12 md:mt-0">
         <div className="text-center mb-10">
-          <div className="w-16 h-16 mx-auto bg-[var(--glass-card)] rounded-2xl flex items-center justify-center text-3xl text-indigo-500 mb-6 shadow-[0_0_30px_rgba(99,102,241,0.15)] border border-[var(--glass-border)]">
-            <i className="fas fa-crown"></i>
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl border border-slate-700/30 mb-4 shadow-xl bg-gradient-to-br from-[#1e293b] to-[#0f172a] light:from-white light:to-[#f1f5f9]">
+            <i className="fas fa-crown text-indigo-500 text-2xl drop-shadow-[0_0_10px_rgba(99,102,241,0.5)]"></i>
           </div>
-          <h2 className="text-4xl font-extrabold mb-3 text-[var(--text-primary)]">Welcome Back</h2>
-          <p className="text-slate-400 text-lg">Log in to manage your empire.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-[var(--text-primary)] mb-2">
+            URL<span className="text-indigo-500">KING</span>
+          </h1>
+          <p className="text-sm text-[var(--text-secondary)]">Welcome back, Creator.</p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-6">
+        <form onSubmit={handleLogin} className="space-y-5">
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[var(--input-icon)]">
               <i className="fas fa-envelope"></i>
             </div>
             <input 
@@ -105,12 +118,12 @@ const Login = () => {
               onChange={(e) => setEmail(e.target.value)} 
               required 
               placeholder="Email Address"
-              className="w-full pl-12 pr-4 py-4 input-premium rounded-xl" 
+              className="w-full pl-12 pr-4 py-4 input-premium rounded-xl text-sm" 
             />
           </div>
 
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[var(--input-icon)]">
               <i className="fas fa-lock"></i>
             </div>
             <input 
@@ -119,60 +132,81 @@ const Login = () => {
               onChange={(e) => setPassword(e.target.value)} 
               required 
               placeholder="Password"
-              className="w-full pl-12 pr-4 py-4 input-premium rounded-xl" 
+              className="w-full pl-12 pr-4 py-4 input-premium rounded-xl text-sm" 
             />
           </div>
 
-          <div className="flex items-center justify-between text-sm">
-            <label className="flex items-center gap-2 text-slate-400 cursor-pointer">
-              <input type="checkbox" className="rounded border-[var(--glass-border)] bg-[var(--input-bg)] text-indigo-500 focus:ring-indigo-500" />
+          <div className="flex items-center justify-between text-xs px-1 text-[var(--text-secondary)]">
+            <label className="flex items-center gap-2 cursor-pointer hover:text-indigo-500 transition-colors">
+              <input type="checkbox" className="w-4 h-4 rounded border-slate-700 bg-slate-800 accent-indigo-500" />
               Keep me logged in
             </label>
-            {/* FIXED FORGOT PASSWORD BUTTON */}
             <button 
               type="button" 
               onClick={() => setForgotModalOpen(true)} 
-              className="text-indigo-500 hover:text-indigo-400 font-bold transition-colors"
+              className="text-indigo-500 hover:text-indigo-400 font-semibold transition-colors"
             >
               Forgot Password?
             </button>
           </div>
 
-          <button type="submit" disabled={loading} className="btn-action w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2">
-            {loading ? <i className="fas fa-circle-notch fa-spin text-xl"></i> : "Access Dashboard"}
+          <button type="submit" disabled={loading} className="btn-premium w-full py-3.5 rounded-xl font-bold text-white tracking-wide shadow-lg transform active:scale-95 transition-transform flex justify-center items-center">
+            {loading ? <i className="fas fa-circle-notch fa-spin text-lg"></i> : "Access Dashboard"}
           </button>
         </form>
 
-        <p className="text-center mt-8 text-slate-400">
-          No account? <Link to="/register" className="text-indigo-500 font-bold hover:underline">Get started</Link>
+        <p className="text-center text-sm mt-6 text-[var(--text-secondary)]">
+          No account? 
+          <Link to="/register" className="text-indigo-500 font-bold hover:text-indigo-400 transition-colors ml-1 underline-offset-4 hover:underline">
+            Get started
+          </Link>
         </p>
+      </div>
+
+      {/* Stats Footer like original */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-[600px] text-center px-4 mt-8 relative z-10 fade-in">
+        <div className="flex flex-col items-center gap-2 p-4 bg-[var(--nav-hover)] rounded-2xl border border-[var(--input-border)] hover:-translate-y-1 transition-transform shadow-sm">
+          <i className="fas fa-users text-indigo-500 text-lg"></i>
+          <span className="text-xs font-bold text-[var(--text-secondary)]">10K+ Users</span>
+        </div>
+        <div className="flex flex-col items-center gap-2 p-4 bg-[var(--nav-hover)] rounded-2xl border border-[var(--input-border)] hover:-translate-y-1 transition-transform shadow-sm">
+          <i className="fas fa-link text-indigo-500 text-lg"></i>
+          <span className="text-xs font-bold text-[var(--text-secondary)]">50M+ Links</span>
+        </div>
+        <div className="flex flex-col items-center gap-2 p-4 bg-[var(--nav-hover)] rounded-2xl border border-[var(--input-border)] hover:-translate-y-1 transition-transform shadow-sm">
+          <i className="fas fa-shield-alt text-indigo-500 text-lg"></i>
+          <span className="text-xs font-bold text-[var(--text-secondary)]">Secure</span>
+        </div>
+        <div className="flex flex-col items-center gap-2 p-4 bg-[var(--nav-hover)] rounded-2xl border border-[var(--input-border)] hover:-translate-y-1 transition-transform shadow-sm">
+          <i className="fas fa-bolt text-indigo-500 text-lg"></i>
+          <span className="text-xs font-bold text-[var(--text-secondary)]">Fast</span>
+        </div>
       </div>
 
       {/* =========================================
           FORGOT PASSWORD MODAL
           ========================================= */}
       {forgotModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm fade-in">
-          <div className="glass-panel p-8 rounded-3xl w-full max-w-sm text-center shadow-2xl relative">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm fade-in">
+          <div className="bg-[var(--glass-card)] border border-[var(--glass-border)] w-full max-w-[380px] rounded-3xl p-8 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] relative transform scale-100 transition-transform">
             
-            {/* Close Button */}
-            <button 
-              onClick={() => setForgotModalOpen(false)} 
-              className="absolute top-4 right-4 text-slate-400 hover:text-[var(--text-primary)] transition-colors"
-            >
-              <i className="fas fa-times text-xl"></i>
-            </button>
-
-            <div className="w-20 h-20 mx-auto bg-indigo-500/10 rounded-full flex items-center justify-center mb-6 border border-indigo-500/20">
-              <i className="fas fa-unlock-alt text-3xl text-indigo-500"></i>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-[var(--text-primary)]">Reset Password</h3>
+              <button 
+                onClick={() => setForgotModalOpen(false)} 
+                className="text-slate-500 hover:text-red-500 transition-colors"
+              >
+                <i className="fas fa-times text-lg"></i>
+              </button>
             </div>
             
-            <h3 className="text-2xl font-bold mb-2 text-[var(--text-primary)]">Reset Password</h3>
-            <p className="text-sm text-slate-400 mb-6">Enter your registered email address and we'll send you a link to reset your password.</p>
+            <p className="text-sm mb-6 text-[var(--text-secondary)]">
+              Enter your registered email address. We'll send you a secure link to reset your password.
+            </p>
             
             <form onSubmit={handleForgotPassword} className="space-y-4">
               <div className="relative text-left">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[var(--input-icon)]">
                   <i className="fas fa-envelope text-sm"></i>
                 </div>
                 <input 
@@ -182,13 +216,14 @@ const Login = () => {
                   onChange={(e) => setForgotEmail(e.target.value)}
                   placeholder="Enter your email" 
                   className="w-full pl-10 pr-4 py-3 input-premium rounded-xl text-sm" 
+                  autoComplete="email"
                 />
               </div>
               
               <button 
                 type="submit" 
                 disabled={forgotLoading}
-                className="btn-action w-full py-3 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2"
+                className="btn-premium w-full py-3 rounded-xl font-bold text-white tracking-wide shadow-lg flex justify-center items-center gap-2"
               >
                 {forgotLoading ? <i className="fas fa-circle-notch fa-spin"></i> : "Send Reset Link"}
               </button>
