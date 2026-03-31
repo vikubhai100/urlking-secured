@@ -9,11 +9,12 @@ import {
   Filler
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
-import { showToast } from '../../toast'; // Premium Toast Import kiya gaya hai
+import { showToast } from '../../toast'; 
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Filler);
 
-const DashboardOverview = ({ token, user }) => {
+// NOTE: isActive is added to enable silent data refreshing
+const DashboardOverview = ({ token, user, isActive }) => {
   const [url, setUrl] = useState('');
   const [alias, setAlias] = useState('');
   const [resultLink, setResultLink] = useState('');
@@ -22,8 +23,10 @@ const DashboardOverview = ({ token, user }) => {
   const API = "https://go.urlking.site";
 
   useEffect(() => {
-    fetchStats();
-  }, [token]); // Token dependency add ki gayi
+    if (isActive !== false) { // Will fetch on first load or when active
+      fetchStats();
+    }
+  }, [token, isActive]); 
 
   const fetchStats = async () => {
     try {
@@ -38,36 +41,35 @@ const DashboardOverview = ({ token, user }) => {
   };
 
   const handleShorten = async () => {
-    if (!url) return showToast("Please enter a valid URL to shorten.", "error"); // NATIVE ALERT REMOVED
-    
+    if (!url) return showToast("Please enter a valid URL to shorten.", "error"); 
+
     try {
       const res = await fetch(`${API}/api/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ url, alias })
       });
-      
+
       const data = await res.json();
-      
+
       if (!res.ok) throw new Error(data.error || "Failed to create short link");
 
-      setResultLink(`https://go.urlking.site/${data.id}`); // Constructing the final link
+      setResultLink(`https://go.urlking.site/${data.id}`); 
       setUrl('');
       setAlias('');
-      fetchStats(); // refresh stats
-      
-      showToast("Link successfully shortened!", "success"); // NATIVE ALERT REMOVED
+      fetchStats(); 
+
+      showToast("Link successfully shortened!", "success"); 
     } catch (e) { 
-      showToast(e.message, "error"); // NATIVE ALERT REMOVED
+      showToast(e.message, "error"); 
     }
   };
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(resultLink);
-    showToast("Link Copied Successfully!", "success"); // NATIVE ALERT REMOVED
+    showToast("Link Copied Successfully!", "success"); 
   };
 
-  // Chart Data Preparation - Theme Variables support
   const chartData = {
     labels: Array.from({ length: stats.daily.length }, (_, i) => i + 1),
     datasets: [
@@ -75,7 +77,7 @@ const DashboardOverview = ({ token, user }) => {
         fill: true,
         data: stats.daily,
         borderColor: '#818cf8',
-        backgroundColor: 'rgba(99, 102, 241, 0.2)', // Light/Dark mode dono me acha lagta hai
+        backgroundColor: 'rgba(99, 102, 241, 0.2)', 
         borderWidth: 2,
         pointBackgroundColor: '#6366f1',
         tension: 0.4
@@ -90,11 +92,11 @@ const DashboardOverview = ({ token, user }) => {
     scales: { 
       x: { 
         grid: { display: false },
-        ticks: { color: '#94a3b8' } // Text color for x-axis
+        ticks: { color: '#94a3b8' } 
       }, 
       y: { 
-        grid: { color: 'rgba(148, 163, 184, 0.1)' }, // Muted grid line color for light/dark mode
-        ticks: { color: '#94a3b8' }, // Text color for y-axis
+        grid: { color: 'rgba(148, 163, 184, 0.1)' }, 
+        ticks: { color: '#94a3b8' }, 
         beginAtZero: true 
       } 
     }
@@ -102,7 +104,7 @@ const DashboardOverview = ({ token, user }) => {
 
   return (
     <div className="fade-in w-full max-w-5xl mx-auto space-y-6 md:space-y-8 px-1 md:px-0">
-      
+
       {/* Header & Wallet Cards */}
       <div className="flex flex-col md:flex-row justify-between items-center md:items-end gap-4">
         <div className="w-full md:w-auto text-center md:text-left">
@@ -139,7 +141,7 @@ const DashboardOverview = ({ token, user }) => {
           <h3 className="text-lg md:text-xl font-bold flex items-center gap-2 text-[var(--text-primary)]">
             <i className="fas fa-magic text-indigo-500"></i> Shorten New URL
           </h3>
-          
+
           <div className="flex flex-col gap-4">
             <div className="relative flex-1">
               <i className="fas fa-link absolute left-4 top-1/2 -translate-y-1/2 text-[var(--input-icon)]"></i>
@@ -151,7 +153,7 @@ const DashboardOverview = ({ token, user }) => {
                 onChange={(e) => setUrl(e.target.value)} 
               />
             </div>
-            
+
             <div className="flex flex-col md:flex-row gap-4">
               <div className="relative flex-1">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--input-icon)]">/</span>
@@ -204,7 +206,7 @@ const DashboardOverview = ({ token, user }) => {
           <p className="text-4xl md:text-5xl font-black tracking-tight text-[var(--text-primary)]">{stats.total.toLocaleString()}</p>
           <div className="h-1.5 w-16 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full mt-6"></div>
         </div>
-        
+
         <div className="glass-panel rounded-3xl p-6 md:p-8 relative overflow-hidden group hover:border-pink-500/50 transition-colors">
           <div className="absolute -right-4 -top-4 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
             <i className="fas fa-calendar-day text-8xl text-[var(--text-primary)]"></i>
@@ -215,16 +217,44 @@ const DashboardOverview = ({ token, user }) => {
         </div>
       </div>
 
-      {/* Analytics Chart */}
-      <div className="glass-panel rounded-3xl p-5 md:p-8 mt-8">
-        <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-[var(--text-primary)]">
-          <i className="fas fa-chart-area text-indigo-500"></i> Monthly Analytics
-        </h3>
-        <div className="w-full h-[300px] md:h-[400px]">
-          <Line data={chartData} options={chartOptions} />
+      {/* Analytics Chart & Support Block */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
+        
+        {/* Chart Column */}
+        <div className="lg:col-span-2 glass-panel rounded-3xl p-5 md:p-8">
+          <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-[var(--text-primary)]">
+            <i className="fas fa-chart-area text-indigo-500"></i> Monthly Analytics
+          </h3>
+          <div className="w-full h-[300px]">
+            <Line data={chartData} options={chartOptions} />
+          </div>
         </div>
+
+        {/* Support / Manager Contact Column */}
+        <div className="glass-panel rounded-3xl p-6 md:p-8 flex flex-col justify-between border-t-4 border-indigo-500">
+          <div>
+            <div className="w-14 h-14 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-500 mb-6 shadow-inner border border-indigo-500/20">
+              <i className="fas fa-headset text-2xl"></i>
+            </div>
+            <h3 className="text-xl font-bold mb-2 text-[var(--text-primary)]">Dedicated Support</h3>
+            <p className="text-sm text-slate-400 mb-6 leading-relaxed">
+              Need higher CPM, API integrations, or have payment queries? Contact our management team directly for priority assistance.
+            </p>
+          </div>
+          
+          <div className="space-y-3">
+            <a href="https://t.me/vikubhai01" target="_blank" rel="noopener noreferrer" className="w-full py-3 px-4 rounded-xl bg-[#0088cc] hover:bg-[#0077b5] text-white font-bold text-sm flex items-center justify-center gap-2 transition-colors shadow-lg shadow-[#0088cc]/20">
+              <i className="fab fa-telegram-plane text-lg"></i> Contact Manager
+            </a>
+            
+            <a href="mailto:support@urlking.site" className="w-full py-3 px-4 rounded-xl bg-[var(--nav-hover)] border border-[var(--glass-border)] text-[var(--text-primary)] hover:border-indigo-500/50 font-bold text-sm flex items-center justify-center gap-2 transition-colors">
+              <i className="fas fa-envelope text-indigo-500"></i> Email Support
+            </a>
+          </div>
+        </div>
+
       </div>
-      
+
     </div>
   );
 };
