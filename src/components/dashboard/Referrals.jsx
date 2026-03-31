@@ -9,13 +9,16 @@ const Referrals = ({ token }) => {
   const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
 
   const loadReferrals = useCallback(async () => {
+    // FIX 1: Agar token abhi tak load nahi hua hai, toh API call mat karo (Prevent premature fetch fail)
+    if (!token) return; 
+
     setLoading(true);
     try {
       const res = await fetch(`${API}/api/referral/stats`, { 
         headers: { Authorization: `Bearer ${token}` } 
       });
       const data = await res.json();
-      
+
       if (res.ok) {
         setStats({
           link: data.referral_link || '',
@@ -35,11 +38,17 @@ const Referrals = ({ token }) => {
   }, [API, token]);
 
   useEffect(() => { 
+    // Jab bhi token change/load hoga, ye function automatically call ho jayega
     loadReferrals(); 
-  }, [loadReferrals]);
+  }, [loadReferrals, token]);
 
   const handleCopy = () => {
-    if (!stats.link) return showToast("Link not available yet", "error");
+    // FIX 2: Toast ke sath block format use kiya taaki properly execute ho
+    if (!stats.link) {
+      showToast("Link not available yet", "error");
+      return;
+    }
+    
     navigator.clipboard.writeText(stats.link);
     showToast("Referral link copied!", "success");
   };
