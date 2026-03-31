@@ -5,7 +5,6 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   
-  // URL check karne ke liye taaki "Active" link highlight ho sake
   const location = useLocation();
   const currentPath = location.pathname;
 
@@ -18,7 +17,6 @@ const Header = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Menu band karne ke liye jab user kisi link par click kare
   const closeMenu = () => {
     setIsMenuOpen(false);
   };
@@ -27,8 +25,8 @@ const Header = () => {
     <header className={`fixed top-4 md:top-5 left-1/2 -translate-x-1/2 w-[95%] max-w-7xl z-[100] transition-all duration-300 ${scrolled ? 'shadow-2xl' : ''}`}>
       <nav className={`bg-[var(--nav-bg)] backdrop-blur-xl border border-[var(--glass-border)] rounded-2xl h-[80px] flex items-center justify-between px-6 md:px-8 w-full transition-all duration-300 ${scrolled ? 'bg-opacity-95 shadow-[0_10px_40px_rgba(0,0,0,0.1)]' : 'bg-opacity-80'}`}>
         
-        {/* Logo */}
-        <Link to="/" onClick={closeMenu} className="text-2xl font-extrabold flex items-center gap-3 text-[var(--text-primary)] transition-transform hover:scale-105">
+        {/* Logo - z-index high rakha hai taaki menu ke upar rahe */}
+        <Link to="/" onClick={closeMenu} className="text-2xl font-extrabold flex items-center gap-3 text-[var(--text-primary)] transition-transform hover:scale-105 z-50">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-pink-500 flex items-center justify-center text-white shadow-[0_0_20px_rgba(99,102,241,0.4)]">
             <i className="fas fa-crown text-lg"></i>
           </div>
@@ -38,16 +36,15 @@ const Header = () => {
         {/* Desktop & Mobile Links Container */}
         <div className={`
           absolute lg:static top-[90px] left-0 w-full lg:w-auto 
-          bg-[var(--bg-card)] lg:bg-transparent backdrop-blur-xl lg:backdrop-blur-none
+          bg-[var(--bg-body)] lg:bg-transparent /* <-- YAHI MAIN FIX HAI: Mobile me Solid Background */
           flex flex-col lg:flex-row items-center gap-6 lg:gap-8 
           p-8 lg:p-0 rounded-3xl lg:rounded-none
           border border-[var(--glass-border)] lg:border-none
-          shadow-2xl lg:shadow-none
-          transition-all duration-400 cubic-bezier(0.4, 0, 0.2, 1)
+          shadow-[0_30px_60px_rgba(0,0,0,0.5)] lg:shadow-none
+          transition-all duration-400 ease-out z-40
           ${isMenuOpen ? 'translate-y-0 opacity-100 visible' : '-translate-y-4 opacity-0 invisible lg:translate-y-0 lg:opacity-100 lg:visible'}
         `}>
           
-          {/* UPDATED LINKS TO NEW PAGES */}
           <Link 
             to="/rates" 
             onClick={closeMenu} 
@@ -75,6 +72,7 @@ const Header = () => {
             <span className={`absolute -bottom-1.5 left-0 h-0.5 bg-indigo-500 transition-all duration-300 ${currentPath === '/uploader' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
           </Link>
 
+          {/* Divider for Mobile */}
           <div className="w-full h-[1px] bg-[var(--glass-border)] lg:hidden my-2"></div>
 
           {/* Auth Buttons */}
@@ -97,11 +95,10 @@ const Header = () => {
 
         </div>
 
-        {/* Mobile Toggle Button */}
+        {/* Mobile Toggle Button - z-index high rakha hai */}
         <button 
-          className="lg:hidden w-12 h-12 rounded-xl bg-[var(--nav-hover)] border border-[var(--glass-border)] text-xl text-[var(--text-primary)] focus:outline-none flex items-center justify-center transition-colors hover:text-indigo-500" 
+          className="lg:hidden w-12 h-12 rounded-xl bg-[var(--nav-hover)] border border-[var(--glass-border)] text-xl text-[var(--text-primary)] focus:outline-none flex items-center justify-center transition-colors hover:text-indigo-500 z-50" 
           onClick={() => setIsMenuOpen(!isMenuOpen)}
-          aria-label="Toggle Menu"
         >
           <i className={`fas ${isMenuOpen ? 'fa-times' : 'fa-bars'}`}></i>
         </button>
