@@ -1,10 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+
+// --- Saare Pages Import Kar Liye ---
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
-import ResetPassword from './pages/ResetPassword'; // <-- Naya import add kar diya
+import ResetPassword from './pages/ResetPassword';
+import Rates from './pages/Rates';           // <-- Naya Add Hua
+import PaymentProof from './pages/PaymentProof'; // <-- Naya Add Hua
+import Uploader from './pages/Uploader';     // <-- Naya Add Hua
 
 function App() {
   const [isLightMode, setIsLightMode] = useState(false);
@@ -35,7 +40,12 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/reset-password" element={<ResetPassword />} /> {/* <-- Naya route add ho gaya */}
+        <Route path="/reset-password" element={<ResetPassword />} />
+        
+        {/* --- Naye Pages Ke Routes --- */}
+        <Route path="/rates" element={<Rates />} />
+        <Route path="/payment-proof" element={<PaymentProof />} />
+        <Route path="/uploader" element={<Uploader />} />
       </Routes>
 
       {/* Global Floating Theme Button */}
