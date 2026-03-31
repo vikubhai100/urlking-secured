@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  
+  // URL check karne ke liye taaki "Active" link highlight ho sake
+  const location = useLocation();
+  const currentPath = location.pathname;
 
   // Scroll effect for navbar background shadow
   useEffect(() => {
@@ -14,42 +18,90 @@ const Header = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Menu band karne ke liye jab user kisi link par click kare
+  const closeMenu = () => {
+    setIsMenuOpen(false);
+  };
+
   return (
-    <header className={`fixed top-5 left-1/2 -translate-x-1/2 w-[95%] max-w-7xl z-50 transition-all duration-300 ${scrolled ? 'shadow-2xl' : ''}`}>
-      <nav className="bg-[var(--nav-hover)] backdrop-blur-xl border border-[var(--glass-border)] rounded-2xl h-[80px] flex items-center justify-between px-8 w-full">
+    <header className={`fixed top-4 md:top-5 left-1/2 -translate-x-1/2 w-[95%] max-w-7xl z-[100] transition-all duration-300 ${scrolled ? 'shadow-2xl' : ''}`}>
+      <nav className={`bg-[var(--nav-bg)] backdrop-blur-xl border border-[var(--glass-border)] rounded-2xl h-[80px] flex items-center justify-between px-6 md:px-8 w-full transition-all duration-300 ${scrolled ? 'bg-opacity-95 shadow-[0_10px_40px_rgba(0,0,0,0.1)]' : 'bg-opacity-80'}`}>
+        
         {/* Logo */}
-        <Link to="/" className="text-2xl font-extrabold flex items-center gap-3 text-[var(--text-primary)]">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-pink-500 flex items-center justify-center text-white shadow-[0_0_20px_rgba(236,72,153,0.3)]">
-            <i className="fas fa-crown"></i>
+        <Link to="/" onClick={closeMenu} className="text-2xl font-extrabold flex items-center gap-3 text-[var(--text-primary)] transition-transform hover:scale-105">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-pink-500 flex items-center justify-center text-white shadow-[0_0_20px_rgba(99,102,241,0.4)]">
+            <i className="fas fa-crown text-lg"></i>
           </div>
           <span className="tracking-tight">URLKING</span>
         </Link>
 
-        {/* Desktop & Mobile Links */}
-        <div className={`fixed lg:static top-[90px] left-0 w-full lg:w-auto bg-[var(--bg-body)] lg:bg-transparent flex flex-col lg:flex-row items-start lg:items-center gap-8 p-6 lg:p-0 transition-transform duration-300 ${isMenuOpen ? 'translate-y-0 shadow-2xl rounded-2xl border border-[var(--glass-border)]' : '-translate-y-[150%] lg:translate-y-0'} lg:border-none lg:shadow-none`}>
-          <a href="#features" className="font-semibold text-slate-400 hover:text-[var(--text-primary)] transition-colors relative group">
-            Features
-            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-indigo-500 transition-all group-hover:w-full"></span>
-          </a>
-          <a href="#pricing" className="font-semibold text-slate-400 hover:text-[var(--text-primary)] transition-colors relative group">
-            Rates
-            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-indigo-500 transition-all group-hover:w-full"></span>
-          </a>
-          <a href="#how-it-works" className="font-semibold text-slate-400 hover:text-[var(--text-primary)] transition-colors relative group">
-            How it Works
-          </a>
-          <Link to="/login" className="font-semibold text-slate-400 hover:text-[var(--text-primary)] transition-colors">
-            Log In
+        {/* Desktop & Mobile Links Container */}
+        <div className={`
+          absolute lg:static top-[90px] left-0 w-full lg:w-auto 
+          bg-[var(--bg-card)] lg:bg-transparent backdrop-blur-xl lg:backdrop-blur-none
+          flex flex-col lg:flex-row items-center gap-6 lg:gap-8 
+          p-8 lg:p-0 rounded-3xl lg:rounded-none
+          border border-[var(--glass-border)] lg:border-none
+          shadow-2xl lg:shadow-none
+          transition-all duration-400 cubic-bezier(0.4, 0, 0.2, 1)
+          ${isMenuOpen ? 'translate-y-0 opacity-100 visible' : '-translate-y-4 opacity-0 invisible lg:translate-y-0 lg:opacity-100 lg:visible'}
+        `}>
+          
+          {/* UPDATED LINKS TO NEW PAGES */}
+          <Link 
+            to="/rates" 
+            onClick={closeMenu} 
+            className={`font-bold text-sm uppercase tracking-wider transition-colors relative group ${currentPath === '/rates' ? 'text-indigo-500' : 'text-slate-500 hover:text-[var(--text-primary)]'}`}
+          >
+            Payout Rates
+            <span className={`absolute -bottom-1.5 left-0 h-0.5 bg-indigo-500 transition-all duration-300 ${currentPath === '/rates' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
           </Link>
-          <Link to="/register" className="btn-action px-8 py-3 rounded-full font-bold text-white shadow-lg shadow-indigo-500/30">
-            Get Started
+
+          <Link 
+            to="/payment-proof" 
+            onClick={closeMenu} 
+            className={`font-bold text-sm uppercase tracking-wider transition-colors relative group ${currentPath === '/payment-proof' ? 'text-indigo-500' : 'text-slate-500 hover:text-[var(--text-primary)]'}`}
+          >
+            Payment Proof
+            <span className={`absolute -bottom-1.5 left-0 h-0.5 bg-indigo-500 transition-all duration-300 ${currentPath === '/payment-proof' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
           </Link>
+
+          <Link 
+            to="/uploader" 
+            onClick={closeMenu} 
+            className={`font-bold text-sm uppercase tracking-wider transition-colors relative group ${currentPath === '/uploader' ? 'text-indigo-500' : 'text-slate-500 hover:text-[var(--text-primary)]'}`}
+          >
+            Bot Guide
+            <span className={`absolute -bottom-1.5 left-0 h-0.5 bg-indigo-500 transition-all duration-300 ${currentPath === '/uploader' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
+          </Link>
+
+          <div className="w-full h-[1px] bg-[var(--glass-border)] lg:hidden my-2"></div>
+
+          {/* Auth Buttons */}
+          <div className="flex flex-col lg:flex-row items-center gap-4 w-full lg:w-auto">
+            <Link 
+              to="/login" 
+              onClick={closeMenu} 
+              className="w-full lg:w-auto text-center font-bold text-slate-500 hover:text-[var(--text-primary)] transition-colors py-2"
+            >
+              Sign In
+            </Link>
+            <Link 
+              to="/register" 
+              onClick={closeMenu} 
+              className="btn-action w-full lg:w-auto text-center px-8 py-3 rounded-full font-black text-white shadow-[0_10px_20px_rgba(99,102,241,0.3)] hover:-translate-y-1 transition-transform duration-300"
+            >
+              Sign Up Free
+            </Link>
+          </div>
+
         </div>
-        
+
         {/* Mobile Toggle Button */}
         <button 
-          className="lg:hidden text-2xl text-[var(--text-primary)] focus:outline-none" 
+          className="lg:hidden w-12 h-12 rounded-xl bg-[var(--nav-hover)] border border-[var(--glass-border)] text-xl text-[var(--text-primary)] focus:outline-none flex items-center justify-center transition-colors hover:text-indigo-500" 
           onClick={() => setIsMenuOpen(!isMenuOpen)}
+          aria-label="Toggle Menu"
         >
           <i className={`fas ${isMenuOpen ? 'fa-times' : 'fa-bars'}`}></i>
         </button>
