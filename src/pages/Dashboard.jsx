@@ -12,7 +12,6 @@ import QuickLink from '../components/dashboard/QuickLink';
 import ProfileSettings from '../components/dashboard/ProfileSettings';
 
 const Dashboard = () => {
-  // FIXED: Changed 'tab' to 'v' to match original URL structure
   const [searchParams, setSearchParams] = useSearchParams();
   const activeSection = searchParams.get('v') || 'create';
 
@@ -50,7 +49,7 @@ const Dashboard = () => {
         throw new Error("Failed to fetch profile");
       }
       const data = await res.json();
-      
+
       let balance = 0;
       try {
         const bRes = await fetch(`${API}/api/wallet/balance`, { headers: { 'Authorization': `Bearer ${token}` } });
@@ -74,16 +73,37 @@ const Dashboard = () => {
 
     return (
       <div className="relative w-full">
-        <div className={activeSection === 'create' ? 'block fade-in' : 'hidden'}>{mountedTabs.includes('create') && <DashboardOverview token={token} user={user} />}</div>
-        <div className={activeSection === 'upload' ? 'block fade-in' : 'hidden'}>{mountedTabs.includes('upload') && <UploadFile token={token} user={user} />}</div>
-        <div className={activeSection === 'files' ? 'block fade-in' : 'hidden'}>{mountedTabs.includes('files') && <ManageFiles token={token} />}</div>
-        <div className={activeSection === 'history' ? 'block fade-in' : 'hidden'}>{mountedTabs.includes('history') && <LinkHistory token={token} />}</div>
-        <div className={activeSection === 'withdraw' ? 'block fade-in' : 'hidden'}>{mountedTabs.includes('withdraw') && <Withdraw token={token} user={user} />}</div>
-        <div className={activeSection === 'referrals' ? 'block fade-in' : 'hidden'}>{mountedTabs.includes('referrals') && <Referrals token={token} />}</div>
-        <div className={activeSection === 'api' ? 'block fade-in' : 'hidden'}>{mountedTabs.includes('api') && <DeveloperApi token={token} user={user} fetchUserProfile={fetchUserProfile} />}</div>
-        <div className={activeSection === 'quicklink' ? 'block fade-in' : 'hidden'}>{mountedTabs.includes('quicklink') && <QuickLink user={user} />}</div>
-        <div className={activeSection === 'profile' ? 'block fade-in' : 'hidden'}>{mountedTabs.includes('profile') && <ProfileSettings token={token} user={user} fetchUserProfile={fetchUserProfile} />}</div>
-        <div className={activeSection === 'admin-users' ? 'block fade-in' : 'hidden'}>{mountedTabs.includes('admin-users') && <div className="p-6 glass-panel rounded-2xl">Manage Users</div>}</div>
+        {/* YAHAN HAR COMPONENT MEIN isActive PASS KIYA HAI */}
+        <div className={activeSection === 'create' ? 'block fade-in' : 'hidden'}>
+          {mountedTabs.includes('create') && <DashboardOverview token={token} user={user} isActive={activeSection === 'create'} />}
+        </div>
+        <div className={activeSection === 'upload' ? 'block fade-in' : 'hidden'}>
+          {mountedTabs.includes('upload') && <UploadFile token={token} user={user} isActive={activeSection === 'upload'} />}
+        </div>
+        <div className={activeSection === 'files' ? 'block fade-in' : 'hidden'}>
+          {mountedTabs.includes('files') && <ManageFiles token={token} isActive={activeSection === 'files'} />}
+        </div>
+        <div className={activeSection === 'history' ? 'block fade-in' : 'hidden'}>
+          {mountedTabs.includes('history') && <LinkHistory token={token} isActive={activeSection === 'history'} />}
+        </div>
+        <div className={activeSection === 'withdraw' ? 'block fade-in' : 'hidden'}>
+          {mountedTabs.includes('withdraw') && <Withdraw token={token} user={user} isActive={activeSection === 'withdraw'} />}
+        </div>
+        <div className={activeSection === 'referrals' ? 'block fade-in' : 'hidden'}>
+          {mountedTabs.includes('referrals') && <Referrals token={token} isActive={activeSection === 'referrals'} />}
+        </div>
+        <div className={activeSection === 'api' ? 'block fade-in' : 'hidden'}>
+          {mountedTabs.includes('api') && <DeveloperApi token={token} user={user} fetchUserProfile={fetchUserProfile} isActive={activeSection === 'api'} />}
+        </div>
+        <div className={activeSection === 'quicklink' ? 'block fade-in' : 'hidden'}>
+          {mountedTabs.includes('quicklink') && <QuickLink user={user} isActive={activeSection === 'quicklink'} />}
+        </div>
+        <div className={activeSection === 'profile' ? 'block fade-in' : 'hidden'}>
+          {mountedTabs.includes('profile') && <ProfileSettings token={token} user={user} fetchUserProfile={fetchUserProfile} isActive={activeSection === 'profile'} />}
+        </div>
+        <div className={activeSection === 'admin-users' ? 'block fade-in' : 'hidden'}>
+          {mountedTabs.includes('admin-users') && <div className="p-6 glass-panel rounded-2xl">Manage Users</div>}
+        </div>
       </div>
     );
   };
