@@ -20,7 +20,7 @@ const DashboardOverview = ({ token, user, isActive }) => {
   const [resultLink, setResultLink] = useState('');
   const [stats, setStats] = useState({ total: 0, today: 0, daily: Array(30).fill(0) });
 
-  const API = "https://go.urlking.site";
+  const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
 
   useEffect(() => {
     if (isActive !== false) { // Will fetch on first load or when active
@@ -33,7 +33,11 @@ const DashboardOverview = ({ token, user, isActive }) => {
       const res = await fetch(`${API}/api/stats`, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {
         const data = await res.json();
-        setStats({ total: data.total || 0, today: data.today || 0, daily: data.daily || Array(30).fill(0) });
+        setStats({ 
+          total: data.total || 0, 
+          today: data.today || 0, 
+          daily: data.daily || Array(30).fill(0) 
+        });
       }
     } catch (err) { 
       console.error("Error fetching stats", err); 
@@ -219,11 +223,11 @@ const DashboardOverview = ({ token, user, isActive }) => {
 
       {/* Analytics Chart & Support Block */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
-        
+
         {/* Chart Column */}
         <div className="lg:col-span-2 glass-panel rounded-3xl p-5 md:p-8">
           <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-[var(--text-primary)]">
-            <i className="fas fa-chart-area text-indigo-500"></i> Monthly Analytics
+            <i className="fas fa-chart-area text-indigo-500"></i> Daily Clicks Chart (30 Days)
           </h3>
           <div className="w-full h-[300px]">
             <Line data={chartData} options={chartOptions} />
@@ -241,12 +245,22 @@ const DashboardOverview = ({ token, user, isActive }) => {
               Need higher CPM, API integrations, or have payment queries? Contact our management team directly for priority assistance.
             </p>
           </div>
-          
+
           <div className="space-y-3">
+            {/* WHATSAPP SUPPORT BUTTON */}
+            <a 
+              href="https://wa.me/919304266995" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="w-full py-3 px-4 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold text-sm flex items-center justify-center gap-2 transition-colors shadow-lg shadow-green-600/20"
+            >
+              <i className="fab fa-whatsapp text-xl"></i> WhatsApp Support
+            </a>
+
             <a href="https://t.me/vikubhai01" target="_blank" rel="noopener noreferrer" className="w-full py-3 px-4 rounded-xl bg-[#0088cc] hover:bg-[#0077b5] text-white font-bold text-sm flex items-center justify-center gap-2 transition-colors shadow-lg shadow-[#0088cc]/20">
               <i className="fab fa-telegram-plane text-lg"></i> Contact Manager
             </a>
-            
+
             <a href="mailto:support@urlking.site" className="w-full py-3 px-4 rounded-xl bg-[var(--nav-hover)] border border-[var(--glass-border)] text-[var(--text-primary)] hover:border-indigo-500/50 font-bold text-sm flex items-center justify-center gap-2 transition-colors">
               <i className="fas fa-envelope text-indigo-500"></i> Email Support
             </a>
