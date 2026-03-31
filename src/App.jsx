@@ -7,9 +7,11 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import ResetPassword from './pages/ResetPassword';
-import Rates from './pages/Rates';           // <-- Naya Add Hua
-import PaymentProof from './pages/PaymentProof'; // <-- Naya Add Hua
-import Uploader from './pages/Uploader';     // <-- Naya Add Hua
+import Rates from './pages/Rates';           
+import PaymentProof from './pages/PaymentProof'; 
+import Uploader from './pages/Uploader';     
+import Admin from './pages/Admin';             // <-- Naya Add Hua
+import InvalidLink from './pages/InvalidLink'; // <-- Naya Add Hua
 
 function App() {
   const [isLightMode, setIsLightMode] = useState(false);
@@ -36,16 +38,21 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* Main Public & User Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        
-        {/* --- Naye Pages Ke Routes --- */}
         <Route path="/rates" element={<Rates />} />
         <Route path="/payment-proof" element={<PaymentProof />} />
         <Route path="/uploader" element={<Uploader />} />
+
+        {/* Admin Route */}
+        <Route path="/admin" element={<Admin />} />
+
+        {/* Catch-All Route for 404 / Invalid Links */}
+        <Route path="*" element={<InvalidLink />} />
       </Routes>
 
       {/* Global Floating Theme Button */}
