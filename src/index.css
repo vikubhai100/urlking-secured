@@ -6,35 +6,29 @@
    1. THEME VARIABLES (DARK MODE DEFAULT)
    ========================================= */
 :root {
-  /* Brand Colors */
   --primary: #6366f1;       
   --primary-dark: #4f46e5;  
   --primary-glow: rgba(99, 102, 241, 0.3);
   --accent: #ec4899;        
   --accent-glow: rgba(236, 72, 153, 0.3);
 
-  /* Backgrounds */
   --bg-body: #020617;
   --bg-gradient-start: #020617;
   --bg-gradient-end: #0f172a;
 
-  /* Text Colors */
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
 
-  /* Glassmorphism Panels */
   --glass-panel: rgba(15, 23, 42, 0.7);
   --glass-card: rgba(30, 41, 59, 0.4);
   --glass-border: rgba(255, 255, 255, 0.08);
   --nav-hover: rgba(255, 255, 255, 0.05);
   --bg-card: rgba(30, 41, 59, 0.6);
 
-  /* Inputs */
   --input-bg: rgba(2, 6, 23, 0.6);
   --input-border: rgba(255, 255, 255, 0.1);
   --input-text: #ffffff;
 
-  /* Components */
   --fab-bg: rgba(15, 23, 42, 0.9);
   --fab-border: #6366f1;
   --sidebar-bg: rgba(15, 23, 42, 0.95);
@@ -71,34 +65,40 @@ html.light-mode, body.light-mode {
 /* =========================================
    3. MAGIC THEME CONVERTER (CRITICAL FIX)
    ========================================= */
-/* Ye code React ke hardcoded Tailwind colors ko Light Mode me auto-convert karega */
+/* Convert Hardcoded Dark Backgrounds to Light Variables */
 html.light-mode .bg-\[\#020617\],
+html.light-mode .bg-\[\#0b1120\],
+html.light-mode .bg-\[\#0b1121\],
 html.light-mode .bg-slate-900,
 html.light-mode .bg-slate-950 {
   background-color: var(--bg-body) !important;
 }
 
+/* Convert Cards/Charts/Panels to White */
 html.light-mode .bg-\[\#0f172a\],
+html.light-mode .bg-\[\#1e293b\],
 html.light-mode .bg-slate-800,
 html.light-mode .bg-slate-800\/50,
-html.light-mode .bg-slate-800\/80 {
+html.light-mode .bg-slate-800\/80,
+html.light-mode .bg-slate-800\/90 {
   background-color: var(--glass-panel) !important;
   border-color: var(--glass-border) !important;
 }
 
+/* Convert Hardcoded Text to Black/Gray */
 html.light-mode .text-white {
   color: var(--text-primary) !important;
 }
-
 html.light-mode .text-slate-400,
 html.light-mode .text-slate-300 {
   color: var(--text-secondary) !important;
 }
 
-/* Override borders for light mode consistency */
+/* Fix Hardcoded Borders */
 html.light-mode .border-white\/10,
 html.light-mode .border-white\/5,
-html.light-mode .border-slate-800 {
+html.light-mode .border-slate-800,
+html.light-mode .border-slate-700 {
   border-color: var(--glass-border) !important;
 }
 
@@ -117,131 +117,39 @@ body {
   font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
-/* Scrollbar Customization */
+/* Custom Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.5); border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.8); }
 
-/* Glass Panels */
-.glass-panel { 
-  background: var(--glass-panel); 
-  backdrop-filter: blur(16px); 
-  border: 1px solid var(--glass-border); 
-  transition: background 0.3s ease, border-color 0.3s ease; 
-}
+/* Panels & Buttons */
+.glass-panel { background: var(--glass-panel); backdrop-filter: blur(16px); border: 1px solid var(--glass-border); transition: background 0.3s ease, border-color 0.3s ease; }
+.glass-card { background: var(--glass-card); backdrop-filter: blur(12px); border: 1px solid var(--glass-border); transition: transform 0.2s, background 0.2s, border-color 0.3s; }
 
-.glass-card { 
-  background: var(--glass-card); 
-  backdrop-filter: blur(12px); 
-  border: 1px solid var(--glass-border); 
-  transition: transform 0.2s, background 0.2s, border-color 0.3s; 
-}
-
-/* Inputs */
-.input-premium { 
-  background: var(--input-bg); 
-  border: 1px solid var(--input-border); 
-  color: var(--input-text); 
-  transition: all 0.3s; 
-}
-.input-premium:focus:not([readonly]) {
-  border-color: #818cf8; 
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); 
-  outline: none; 
-}
-.input-premium[readonly] { 
-  background: var(--nav-hover); 
-  color: var(--text-secondary); 
-  cursor: not-allowed; 
-}
+.input-premium { background: var(--input-bg); border: 1px solid var(--input-border); color: var(--input-text); transition: all 0.3s; }
+.input-premium:focus:not([readonly]) { border-color: #818cf8; box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); outline: none; }
+.input-premium[readonly] { background: var(--nav-hover); color: var(--text-secondary); cursor: not-allowed; }
 body.light-mode .input-premium::placeholder { color: #94a3b8; }
 
-/* Buttons */
-.btn-action, .btn-premium { 
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); 
-  color: white !important; 
-  transition: all 0.3s; 
-  border: none;
-  cursor: pointer;
-}
-.btn-action:hover, .btn-premium:hover { 
-  box-shadow: 0 8px 25px var(--primary-glow); 
-  transform: translateY(-2px); 
-}
-.btn-action:active, .btn-premium:active {
-  transform: translateY(0);
-}
-.btn-action:disabled, .btn-premium:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
+.btn-action { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white !important; transition: all 0.3s; border: none; cursor: pointer; }
+.btn-action:hover { box-shadow: 0 8px 25px var(--primary-glow); transform: translateY(-2px); }
+.btn-action:disabled { opacity: 0.7; cursor: not-allowed; }
 
-/* Floating Theme Button */
-.floating-theme-btn {
-  position: fixed; 
-  bottom: 20px; right: 20px;
-  border-radius: 50%; 
-  width: 50px; height: 50px;
-  background: var(--fab-bg); 
-  border: 2px solid var(--fab-border);
-  color: var(--text-primary);
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; 
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-  z-index: 10000;
-  box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
-}
-@media (min-width: 768px) {
-  .floating-theme-btn { bottom: 40px; right: 40px; width: 60px; height: 60px; font-size: 1.4rem; }
-}
-.floating-theme-btn:hover {
-  transform: scale(1.1) rotate(15deg);
-}
+.floating-theme-btn { position: fixed; bottom: 20px; right: 20px; border-radius: 50%; width: 50px; height: 50px; background: var(--fab-bg); border: 2px solid var(--fab-border); color: var(--text-primary); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 10000; box-shadow: 0 0 20px rgba(99, 102, 241, 0.4); }
+@media (min-width: 768px) { .floating-theme-btn { bottom: 40px; right: 40px; width: 60px; height: 60px; font-size: 1.4rem; } }
+.floating-theme-btn:hover { transform: scale(1.1) rotate(15deg); }
 
-/* Animations */
 .reveal { opacity: 0; transform: translateY(40px); transition: all 0.8s cubic-bezier(0.5, 0, 0, 1); }
 .reveal.active { opacity: 1; transform: translateY(0); }
-
 .fade-in { animation: fadeIn 0.4s ease-out forwards; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-@keyframes float {
-  0% { transform: translate(0, 0) scale(1); }
-  100% { transform: translate(50px, 50px) scale(1.2); }
-}
 
 /* =========================================
    5. ORIGINAL TOP-RIGHT TOAST UI
    ========================================= */
-#toast-container { 
-  position: fixed; 
-  top: 20px; 
-  right: 20px; 
-  z-index: 999999; 
-  display: flex; 
-  flex-direction: column; 
-  gap: 12px; 
-  pointer-events: none; 
-}
-
-.toast-original { 
-  pointer-events: auto;
-  background: var(--glass-panel); 
-  border: 1px solid var(--glass-border); 
-  backdrop-filter: blur(16px); 
-  color: var(--text-primary); 
-  padding: 1rem 1.5rem; 
-  border-radius: 12px; 
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3); 
-  display: flex; 
-  align-items: center; 
-  gap: 14px; 
-  transform: translateX(120%); 
-  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s; 
-  min-width: 300px; 
-}
-
+#toast-container { position: fixed; top: 20px; right: 20px; z-index: 999999; display: flex; flex-direction: column; gap: 12px; pointer-events: none; }
+.toast-original { pointer-events: auto; background: var(--glass-panel); border: 1px solid var(--glass-border); backdrop-filter: blur(16px); color: var(--text-primary); padding: 1rem 1.5rem; border-radius: 12px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3); display: flex; align-items: center; gap: 14px; transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s; min-width: 300px; }
 .toast-original.show { transform: translateX(0); opacity: 1; }
 .toast-original.hide { transform: translateX(120%); opacity: 0; }
 .toast-original.success { border-left: 4px solid #10b981; }
