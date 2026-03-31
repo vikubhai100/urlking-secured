@@ -3,7 +3,8 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import Dashboard from './pages/Dashboard'; // <-- Ye line missing thi!
+import Dashboard from './pages/Dashboard';
+import ResetPassword from './pages/ResetPassword'; // <-- Naya import add kar diya
 
 function App() {
   const [isLightMode, setIsLightMode] = useState(false);
@@ -33,7 +34,8 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/dashboard" element={<Dashboard />} /> {/* <-- Dashboard route add ho gaya */}
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/reset-password" element={<ResetPassword />} /> {/* <-- Naya route add ho gaya */}
       </Routes>
 
       {/* Global Floating Theme Button */}
