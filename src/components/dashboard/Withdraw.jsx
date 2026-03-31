@@ -38,10 +38,19 @@ const Withdraw = ({ token, user }) => {
     const amt = parseFloat(amount);
     const availableBalance = parseFloat(user?.balance || 0);
 
-    // Front-end Validations
-    if (!amt || isNaN(amt)) return showToast("Please enter a valid amount", "error");
-    if (amt < 2.00) return showToast("Minimum withdrawal is $2.00", "error");
-    if (amt > availableBalance) return showToast("Insufficient balance!", "error");
+    // FIX: Front-end Validations block properly terminated
+    if (!amt || isNaN(amt)) {
+      showToast("Please enter a valid amount", "error");
+      return;
+    }
+    if (amt < 2.00) {
+      showToast("Minimum withdrawal is $2.00", "error");
+      return;
+    }
+    if (amt > availableBalance) {
+      showToast("Insufficient balance!", "error");
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -51,7 +60,7 @@ const Withdraw = ({ token, user }) => {
         body: JSON.stringify({ amount: amt })
       });
       const data = await res.json();
-      
+
       if (res.ok) { 
         showToast("Withdrawal requested successfully!", "success"); 
         setAmount(''); 
@@ -60,6 +69,7 @@ const Withdraw = ({ token, user }) => {
         showToast(data.error || "Request failed", "error"); 
       }
     } catch(e) { 
+      console.error(e);
       showToast("Server Error, please try again", "error"); 
     } finally {
       setIsSubmitting(false);
