@@ -747,6 +747,22 @@ const AdminConsole = () => {
                               <div className="bg-green-900/20 p-4 rounded-xl text-center"><i className="fas fa-sack-dollar text-green-400 mb-2 text-lg"></i><div className="text-xl font-bold">${userModal.data.stats?.earnings || '0.00'}</div><div className="text-[10px] uppercase text-green-400/70">Total Income</div></div>
                               <div className="bg-yellow-900/20 p-4 rounded-xl text-center"><i className="fas fa-coins text-yellow-400 mb-2 text-lg"></i><div className="text-xl font-bold">${userModal.data.stats?.today_earnings || '0.00'}</div><div className="text-[10px] uppercase text-yellow-400/70">Earned Today</div></div>
                             </div>
+                            
+                            {/* 🔥 REFERRED BY BOX 🔥 */}
+                            <div className="bg-purple-900/10 border border-purple-500/20 p-5 rounded-xl flex items-center justify-between">
+                              <div>
+                                <h4 className="text-purple-400 font-bold mb-1"><i className="fas fa-user-plus mr-1"></i> Referral Info</h4>
+                                <p className="text-xs text-slate-400">User who invited this account to the platform.</p>
+                              </div>
+                              <div className="text-right">
+                                <span className="block text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1">Referred By</span>
+                                <span className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded font-bold text-sm border border-purple-500/30">
+                                  {userModal.data.referred_by ? 
+                                    (allUsers.find(x => x.uid === userModal.data.referred_by)?.username || `UID: ${userModal.data.referred_by.substring(0,8)}...`) 
+                                    : "None / Direct"}
+                                </span>
+                              </div>
+                            </div>
                           </div>
                         )}
 
