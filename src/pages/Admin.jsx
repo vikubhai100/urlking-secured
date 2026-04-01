@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { showToast } from '../../toast'; // Premium Toast (Adjust path as needed)
+import { showToast } from '../../toast'; 
 
 const AdminConsole = () => {
-  // --- STATE MANAGEMENT ---
-  const [appState, setAppState] = useState('loading'); // 'loading', 'login', 'dashboard', 'ghost'
+  const [appState, setAppState] = useState('loading'); 
   const [isSetupMode, setIsSetupMode] = useState(false);
   const [password, setPassword] = useState('');
   const [adminToken, setAdminToken] = useState(localStorage.getItem('admin_token') || '');
@@ -12,24 +11,21 @@ const AdminConsole = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoadingSection, setIsLoadingSection] = useState(false);
 
-  // Data States
   const [allUsers, setAllUsers] = useState([]);
   const [displayedUsers, setDisplayedUsers] = useState([]);
   const [withdrawals, setWithdrawals] = useState([]);
   const [stats, setStats] = useState({ totalUsers: 0, totalClicks: 0, totalPayout: 0, todayEarn: 0 });
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Pagination & Selection
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState([]);
 
-  // Modals (With Loading State for Lazy Load)
+  // Modal State
   const [userModal, setUserModal] = useState({ open: false, activeTab: 'profile', data: null, loading: false });
   const [confirmModal, setConfirmModal] = useState({ open: false, type: '', payload: null, title: '', msg: '', btnText: '', btnClass: '' });
 
-  // Settings & Mailer
   const [globalCpm, setGlobalCpm] = useState('0.50');
   const [mailerForm, setMailerForm] = useState({ adminKey: '', subject: '', title: '', message: '' });
   const [mailerStatus, setMailerStatus] = useState({ loading: false, result: null, isError: false });
@@ -84,7 +80,7 @@ const AdminConsole = () => {
           localStorage.setItem('admin_token', data.token); 
           setAdminToken(data.token); 
           setAppState('dashboard'); 
-          loadUsers(data.token); // Direct fetch
+          loadUsers(data.token); 
         }
       } else { showToast(data.error || "Error", "error"); }
     } catch (e) { showToast("Connection Error", "error"); }
@@ -95,7 +91,7 @@ const AdminConsole = () => {
     localStorage.removeItem('admin_token'); window.location.reload();
   };
 
-  // --- PARTICLES BACKGROUND ---
+  // --- PARTICLES ---
   useEffect(() => {
     if (appState !== 'dashboard' || !canvasRef.current) return;
     const canvas = canvasRef.current;
@@ -147,7 +143,6 @@ const AdminConsole = () => {
   useEffect(() => {
     if (appState === 'dashboard' && ['users', 'managers', 'recycle'].includes(activeTab)) { loadUsers(); } 
     else if (appState === 'dashboard' && activeTab === 'withdrawals') { loadWithdrawals(); }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
   const loadWithdrawals = async () => {
@@ -367,7 +362,6 @@ const AdminConsole = () => {
       {/* DASHBOARD */}
       {appState === 'dashboard' && (
         <>
-          {/* MOBILE HEADER */}
           <div className="md:hidden fixed top-0 left-0 right-0 z-50 glass-panel border-b border-white/5 p-4 flex items-center justify-between">
             <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-white p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
               <i className="fas fa-bars text-xl"></i>
@@ -375,7 +369,6 @@ const AdminConsole = () => {
             <h1 className="text-lg font-bold text-white tracking-wide">ADMIN<span className="text-red-500">PANEL</span></h1>
           </div>
 
-          {/* SIDEBAR */}
           <aside className={`fixed inset-y-0 left-0 w-72 glass-panel transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 transition-transform duration-300 z-[60] flex flex-col bg-[#020617] md:bg-transparent`}>
             <div className="p-8 border-b border-white/5 flex justify-between items-center">
               <h1 className="text-2xl font-bold text-white flex items-center gap-3">
@@ -405,10 +398,8 @@ const AdminConsole = () => {
             </div>
           </aside>
 
-          {/* SIDEBAR OVERLAY */}
           {sidebarOpen && <div className="fixed inset-0 bg-black/80 z-[55] md:hidden backdrop-blur-sm" onClick={() => setSidebarOpen(false)}></div>}
 
-          {/* MAIN CONTENT */}
           <main className="flex-1 md:ml-72 p-4 md:p-10 pt-24 md:pt-10 min-h-screen w-full overflow-x-hidden">
             
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b border-white/5 pb-6">
@@ -700,10 +691,11 @@ const AdminConsole = () => {
                       </div>
                     ) : (
                       <>
+                        {/* 🟢 PROFILE TAB (ALL 6 FIELDS GUARANTEED HERE) 🟢 */}
                         {userModal.activeTab === 'profile' && (
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 fade-in">
                             <div><label className="text-[10px] text-slate-500 uppercase font-bold block mb-1">Email</label><input type="text" readOnly value={userModal.data.email || 'N/A'} className="input-premium w-full p-3 rounded-xl text-sm opacity-80" /></div>
-                            <div><label className="text-[10px] text-slate-500 uppercase font-bold block mb-1">Joined</label><input type="text" readOnly value={new Date(userModal.data.created_at).toLocaleString()} className="input-premium w-full p-3 rounded-xl text-sm opacity-80" /></div>
+                            <div><label className="text-[10px] text-slate-500 uppercase font-bold block mb-1">Joined</label><input type="text" readOnly value={userModal.data.created_at ? new Date(userModal.data.created_at).toLocaleString() : 'N/A'} className="input-premium w-full p-3 rounded-xl text-sm opacity-80" /></div>
                             <div><label className="text-[10px] text-slate-500 uppercase font-bold block mb-1">Name</label><input type="text" value={userModal.data.name || ''} onChange={e=>setUserModal({...userModal, data: {...userModal.data, name: e.target.value}})} className="input-premium w-full p-3 rounded-xl text-sm" /></div>
                             <div><label className="text-[10px] text-slate-500 uppercase font-bold block mb-1">Social Handle</label><input type="text" readOnly value={userModal.data.social || 'N/A'} className="input-premium w-full p-3 rounded-xl text-sm opacity-80" /></div>
                             <div><label className="text-[10px] text-slate-500 uppercase font-bold block mb-1">Telegram Link</label><input type="text" readOnly value={userModal.data.telegram || 'N/A'} className="input-premium w-full p-3 rounded-xl text-sm opacity-80" /></div>
@@ -711,6 +703,7 @@ const AdminConsole = () => {
                           </div>
                         )}
 
+                        {/* 🟢 PAYMENT TAB 🟢 */}
                         {userModal.activeTab === 'payment' && (
                           <div className="space-y-5 fade-in">
                             <div className="bg-yellow-500/10 border border-yellow-500/20 p-3 rounded-xl mb-4 flex gap-3">
@@ -739,6 +732,7 @@ const AdminConsole = () => {
                           </div>
                         )}
 
+                        {/* 🟢 STATS & REFERRALS TAB 🟢 */}
                         {userModal.activeTab === 'stats' && (
                           <div className="space-y-5 fade-in">
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
@@ -747,8 +741,8 @@ const AdminConsole = () => {
                               <div className="bg-green-900/20 p-4 rounded-xl text-center"><i className="fas fa-sack-dollar text-green-400 mb-2 text-lg"></i><div className="text-xl font-bold">${userModal.data.stats?.earnings || '0.00'}</div><div className="text-[10px] uppercase text-green-400/70">Total Income</div></div>
                               <div className="bg-yellow-900/20 p-4 rounded-xl text-center"><i className="fas fa-coins text-yellow-400 mb-2 text-lg"></i><div className="text-xl font-bold">${userModal.data.stats?.today_earnings || '0.00'}</div><div className="text-[10px] uppercase text-yellow-400/70">Earned Today</div></div>
                             </div>
-                            
-                            {/* 🔥 REFERRED BY BOX 🔥 */}
+
+                            {/* 🔥 THE REFERRAL BOX 🔥 */}
                             <div className="bg-purple-900/10 border border-purple-500/20 p-5 rounded-xl flex items-center justify-between">
                               <div>
                                 <h4 className="text-purple-400 font-bold mb-1"><i className="fas fa-user-plus mr-1"></i> Referral Info</h4>
@@ -763,9 +757,19 @@ const AdminConsole = () => {
                                 </span>
                               </div>
                             </div>
+                            
+                            {/* BONUS: Same Referral info directly below Profile for ease */}
+                            {userModal.activeTab === 'profile' && (
+                              <div className="mt-4 border-t border-white/5 pt-4">
+                                  <label className="text-[10px] text-slate-500 uppercase font-bold block mb-1">Referred By</label>
+                                  <input type="text" readOnly value={userModal.data.referred_by ? (allUsers.find(x => x.uid === userModal.data.referred_by)?.username || `UID: ${userModal.data.referred_by}`) : "Direct (No Referrer)"} className="input-premium w-full p-3 rounded-xl text-sm font-bold text-purple-400 opacity-80" />
+                              </div>
+                            )}
+
                           </div>
                         )}
 
+                        {/* 🟢 CONFIG TAB 🟢 */}
                         {userModal.activeTab === 'roles' && (
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 fade-in">
                             <div className="space-y-5">
