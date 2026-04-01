@@ -3,8 +3,8 @@ import { showToast } from '../../toast'; // Premium Toast
 
 const ProfileSettings = ({ token, user, fetchUserProfile }) => {
   const [form, setForm] = useState({
-    name: '', social: '', mobile: '', 
-    withdrawal_method: '', withdrawal_account: '', // Naye fields
+    name: '', social: '', mobile: '', telegram: '', youtube: '', 
+    withdrawal_method: '', withdrawal_account: '',
     bank_holder: '', bank_name: '', bank_ifsc: '', bank_account: ''
   });
   
@@ -17,6 +17,8 @@ const ProfileSettings = ({ token, user, fetchUserProfile }) => {
         name: user.name || '', 
         social: user.social || '', 
         mobile: user.mobile || '',
+        telegram: user.telegram || '',
+        youtube: user.youtube || '',
         withdrawal_method: user.withdrawal_method || 'upi', // Default method
         withdrawal_account: user.withdrawal_account || '',
         bank_holder: user.bank_holder || '',
@@ -83,7 +85,7 @@ const ProfileSettings = ({ token, user, fetchUserProfile }) => {
           </div>
           <div>
             <h3 className="text-xl font-bold text-[var(--text-primary)]">Edit Profile</h3>
-            <p className="text-sm text-slate-400">Update your public information</p>
+            <p className="text-sm text-slate-400">Update your public information and social links</p>
           </div>
         </div>
 
@@ -101,8 +103,20 @@ const ProfileSettings = ({ token, user, fetchUserProfile }) => {
             <input name="name" value={form.name} onChange={handleChange} className="input-premium w-full p-3 rounded-xl focus:ring-2 focus:ring-indigo-500/50" placeholder="e.g. John Doe" />
           </div>
           <div>
-            <label className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-2 block">WhatsApp / Contact Number</label>
+            <label className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-2 block">WhatsApp / Mobile</label>
             <input name="mobile" value={form.mobile} onChange={handleChange} className="input-premium w-full p-3 rounded-xl focus:ring-2 focus:ring-indigo-500/50" placeholder="+91..." />
+          </div>
+          <div>
+            <label className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-2 block">Social Handle</label>
+            <input name="social" value={form.social} onChange={handleChange} className="input-premium w-full p-3 rounded-xl focus:ring-2 focus:ring-indigo-500/50" placeholder="@username" />
+          </div>
+          <div>
+            <label className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-2 block">Telegram Link</label>
+            <input name="telegram" value={form.telegram} onChange={handleChange} className="input-premium w-full p-3 rounded-xl focus:ring-2 focus:ring-indigo-500/50" placeholder="https://t.me/..." />
+          </div>
+          <div className="md:col-span-2">
+            <label className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-2 block">YouTube Channel Link</label>
+            <input name="youtube" value={form.youtube} onChange={handleChange} className="input-premium w-full p-3 rounded-xl focus:ring-2 focus:ring-indigo-500/50" placeholder="https://youtube.com/..." />
           </div>
         </div>
       </div>
