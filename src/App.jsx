@@ -1,17 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
-// --- Saare Pages Import Kar Liye ---
-import Home from './pages/Home';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
-import ResetPassword from './pages/ResetPassword';
-import Rates from './pages/Rates';           
-import PaymentProof from './pages/PaymentProof'; 
-import Uploader from './pages/Uploader';     
-import Admin from './pages/Admin';             // <-- Naya Add Hua
-import InvalidLink from './pages/InvalidLink'; // <-- Naya Add Hua
+// --- 🚀 LAZY LOADING (Code Splitting): Isse website compressed aur super-fast load hogi ---
+const Home = lazy(() => import('./pages/Home'));
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const Rates = lazy(() => import('./pages/Rates'));
+const PaymentProof = lazy(() => import('./pages/PaymentProof'));
+const Uploader = lazy(() => import('./pages/Uploader'));
+const Admin = lazy(() => import('./pages/Admin'));
+const InvalidLink = lazy(() => import('./pages/InvalidLink'));
 
 function App() {
   const [isLightMode, setIsLightMode] = useState(false);
@@ -37,23 +37,26 @@ function App() {
 
   return (
     <Router>
-      <Routes>
-        {/* Main Public & User Routes */}
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/rates" element={<Rates />} />
-        <Route path="/payment-proof" element={<PaymentProof />} />
-        <Route path="/uploader" element={<Uploader />} />
+      {/* fallback={null} ka matlab hai ki background mein code load hoga, par user ko koi loader nahi dikhega */}
+      <Suspense fallback={null}>
+        <Routes>
+          {/* Main Public & User Routes */}
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/rates" element={<Rates />} />
+          <Route path="/payment-proof" element={<PaymentProof />} />
+          <Route path="/uploader" element={<Uploader />} />
 
-        {/* Admin Route */}
-        <Route path="/admin" element={<Admin />} />
+          {/* Admin Route */}
+          <Route path="/admin" element={<Admin />} />
 
-        {/* Catch-All Route for 404 / Invalid Links */}
-        <Route path="*" element={<InvalidLink />} />
-      </Routes>
+          {/* Catch-All Route for 404 / Invalid Links */}
+          <Route path="*" element={<InvalidLink />} />
+        </Routes>
+      </Suspense>
 
       {/* Global Floating Theme Button */}
       <button onClick={toggleTheme} className="floating-theme-btn" title="Toggle Theme">
