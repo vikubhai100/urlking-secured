@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { showToast } from '../toast'; // Premium Toast
+
 const AdminConsole = () => {
   const [appState, setAppState] = useState('loading'); 
   const [isSetupMode, setIsSetupMode] = useState(false);
@@ -98,7 +99,7 @@ const AdminConsole = () => {
     canvas.width = window.innerWidth; canvas.height = window.innerHeight;
     let particles = [];
     for (let i = 0; i < 40; i++) particles.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, dx: (Math.random() - 0.5) * 0.5, dy: (Math.random() - 0.5) * 0.5 });
-    
+
     let animationFrameId;
     const anim = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -125,15 +126,15 @@ const AdminConsole = () => {
       const res = await fetch(`${API}/api/admin/users?deleted=${isRecycle}`, { headers: { 'x-admin-token': tokenToUse } });
       if (res.status === 401) return logout();
       const data = await res.json();
-      
+
       setAllUsers(data);
       filterAndSetUsers(data, activeTab, searchQuery);
-      
+
       const tUsers = data.length;
       const tClicks = data.reduce((sum, u) => sum + (u.stats?.total || 0), 0);
       const tPayout = data.reduce((sum, u) => sum + parseFloat(u.stats?.earnings || 0), 0);
       const tToday = data.reduce((sum, u) => sum + parseFloat(u.stats?.today_earnings || 0), 0);
-      
+
       setStats({ totalUsers: tUsers, totalClicks: tClicks, totalPayout: tPayout, todayEarn: tToday });
     } catch (e) { showToast("Failed to load users", "error"); } 
     finally { setIsLoadingSection(false); }
@@ -235,7 +236,7 @@ const AdminConsole = () => {
 
       const res = await fetch(`${API}${endpoint}`, { method, headers: { 'Content-Type': 'application/json', 'x-admin-token': adminToken }, body: JSON.stringify(body) });
       const d = await res.json();
-      
+
       if (d.ok || res.ok) { showToast("System updated successfully", "success"); loadUsers(); setSelectedUsers([]); } 
       else { showToast(d.error || "Action Blocked", "error"); }
     } catch (e) { showToast("Server execution failed", "error"); } 
@@ -269,11 +270,18 @@ const AdminConsole = () => {
     } catch(e) { setMailerStatus({ loading: false, result: e.message, isError: true }); }
   };
 
+  // 🔥 UPDATED: Now includes click_percentage 🔥
   const saveUserChanges = async () => {
     try {
       await fetch(`${API}/api/admin/user`, { 
           method: "PUT", headers: { 'Content-Type': 'application/json', 'x-admin-token': adminToken }, 
-          body: JSON.stringify({ uid: userModal.data.uid, role: userModal.data.role, cpm: userModal.data.cpm, name: userModal.data.name }) 
+          body: JSON.stringify({ 
+            uid: userModal.data.uid, 
+            role: userModal.data.role, 
+            cpm: userModal.data.cpm, 
+            name: userModal.data.name,
+            click_percentage: userModal.data.click_percentage || 100 // System default is 100%
+          }) 
       });
       await fetch(`${API}/api/dev/toggle-permission`, {
           method: "POST", headers: { 'Content-Type': 'application/json' },
@@ -296,7 +304,7 @@ const AdminConsole = () => {
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-50 font-['Plus_Jakarta_Sans',sans-serif] overflow-x-hidden flex relative z-0">
-      
+
       {/* CUSTOM CSS */}
       <style>{`
         .glass-panel { background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
@@ -325,7 +333,7 @@ const AdminConsole = () => {
 
       {/* CANVAS BACKGROUND */}
       <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full -z-10 bg-gradient-to-b from-[#020617] to-[#1e1b4b]"></canvas>
-      
+
       {/* SECTION LOADER */}
       {isLoadingSection && (
         <div className="fixed inset-0 z-[85] bg-black/60 flex flex-col items-center justify-center fade-in">
@@ -400,7 +408,7 @@ const AdminConsole = () => {
           {sidebarOpen && <div className="fixed inset-0 bg-black/80 z-[55] md:hidden backdrop-blur-sm" onClick={() => setSidebarOpen(false)}></div>}
 
           <main className="flex-1 md:ml-72 p-4 md:p-10 pt-24 md:pt-10 min-h-screen w-full overflow-x-hidden">
-            
+
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b border-white/5 pb-6">
               <div>
                 <h2 className="text-3xl font-bold text-white tracking-tight capitalize">
@@ -666,7 +674,7 @@ const AdminConsole = () => {
               <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setUserModal({ open: false, data: null, activeTab: 'profile', loading: false })}></div>
               <div className="relative z-10 w-full max-w-3xl border-animated p-1">
                 <div className="bg-slate-900 rounded-2xl flex flex-col max-h-[90vh]">
-                  
+
                   <div className="flex justify-between items-center p-6 border-b border-white/5 bg-slate-800/50 rounded-t-xl">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xl font-bold text-white shadow-inner">{(userModal.data.username || 'U').charAt(0).toUpperCase()}</div>
@@ -674,7 +682,7 @@ const AdminConsole = () => {
                     </div>
                     <button onClick={() => setUserModal({ open: false, data: null, activeTab: 'profile', loading: false })} className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors"><i className="fas fa-times"></i></button>
                   </div>
-                  
+
                   <div className="flex overflow-x-auto border-b border-white/5 px-6 pt-4 gap-6 bg-slate-900 custom-scrollbar">
                     {[{id: 'profile', icon: 'fa-user', label: 'Profile'}, {id: 'payment', icon: 'fa-wallet', label: 'Payment'}, {id: 'stats', icon: 'fa-chart-bar', label: 'Stats'}, {id: 'roles', icon: 'fa-shield-alt', label: 'Config'}].map(tab => (
                       <button key={tab.id} onClick={() => setUserModal({ ...userModal, activeTab: tab.id })} className={`modal-tab ${userModal.activeTab === tab.id ? 'active' : 'text-slate-400 border-transparent'}`}><i className={`fas ${tab.icon} mr-1`}></i> {tab.label}</button>
@@ -682,7 +690,7 @@ const AdminConsole = () => {
                   </div>
 
                   <div className="p-6 overflow-y-auto flex-1 custom-scrollbar bg-slate-900/80 min-h-[300px]">
-                    
+
                     {userModal.loading ? (
                       <div className="flex flex-col items-center justify-center h-full space-y-4 pt-10">
                         <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
@@ -690,7 +698,7 @@ const AdminConsole = () => {
                       </div>
                     ) : (
                       <>
-                        {/* 🟢 PROFILE TAB (ALL 6 FIELDS GUARANTEED HERE) 🟢 */}
+                        {/* 🟢 PROFILE TAB 🟢 */}
                         {userModal.activeTab === 'profile' && (
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 fade-in">
                             <div><label className="text-[10px] text-slate-500 uppercase font-bold block mb-1">Email</label><input type="text" readOnly value={userModal.data.email || 'N/A'} className="input-premium w-full p-3 rounded-xl text-sm opacity-80" /></div>
@@ -719,7 +727,7 @@ const AdminConsole = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <div><label className="text-[10px] text-slate-500 uppercase font-bold block mb-1">Mobile / WhatsApp</label><input type="text" readOnly value={userModal.data.mobile || 'N/A'} className="input-premium w-full p-2.5 rounded-lg text-sm" /></div>
                               <div><label className="text-[10px] text-slate-500 uppercase font-bold block mb-1">Alternate UPI ID</label><input type="text" readOnly value={userModal.data.upi_id || 'N/A'} className="input-premium w-full p-2.5 rounded-lg text-sm" /></div>
-                              
+
                               <div className="md:col-span-2 border-t border-white/5 pt-4 mt-2">
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-3">Bank Details (Reference)</span>
                               </div>
@@ -756,7 +764,7 @@ const AdminConsole = () => {
                                 </span>
                               </div>
                             </div>
-                            
+
                             {/* BONUS: Same Referral info directly below Profile for ease */}
                             {userModal.activeTab === 'profile' && (
                               <div className="mt-4 border-t border-white/5 pt-4">
@@ -768,7 +776,7 @@ const AdminConsole = () => {
                           </div>
                         )}
 
-                        {/* 🟢 CONFIG TAB 🟢 */}
+                        {/* 🟢 CONFIG TAB (🔥 NEW: Click Percentage Added Here 🔥) 🟢 */}
                         {userModal.activeTab === 'roles' && (
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 fade-in">
                             <div className="space-y-5">
@@ -782,7 +790,22 @@ const AdminConsole = () => {
                                 <label className="text-[10px] text-slate-500 uppercase font-bold block mb-2">Custom CPM ($)</label>
                                 <input type="number" step="0.01" value={userModal.data.cpm} onChange={e=>setUserModal({...userModal, data: {...userModal.data, cpm: e.target.value}})} className="input-premium w-full p-3 rounded-xl font-mono" />
                               </div>
+                              
+                              {/* 🔥 NEW SHAVING/PERCENTAGE INPUT 🔥 */}
+                              <div>
+                                <label className="text-[10px] text-slate-500 uppercase font-bold block mb-2">Valid Click Percentage (%)</label>
+                                <input 
+                                  type="number" 
+                                  max="100" 
+                                  min="0" 
+                                  value={userModal.data.click_percentage ?? 100} 
+                                  onChange={e => setUserModal({...userModal, data: {...userModal.data, click_percentage: e.target.value}})} 
+                                  className="input-premium w-full p-3 rounded-xl font-mono text-indigo-300 focus:ring-2 focus:ring-indigo-500/50" 
+                                />
+                                <p className="text-[10px] text-slate-500 mt-1 mt-2"><i className="fas fa-info-circle"></i> Example: 90 = 10% clicks hidden from user.</p>
+                              </div>
                             </div>
+
                             <div className="bg-slate-800/50 p-5 rounded-xl border border-white/5">
                               <h4 className="text-xs text-slate-400 uppercase font-bold mb-4 border-b border-white/5 pb-2">Feature Permissions</h4>
                               <div className="flex items-center justify-between">
@@ -795,7 +818,7 @@ const AdminConsole = () => {
                       </>
                     )}
                   </div>
-                  
+
                   <div className="p-6 border-t border-white/5 flex justify-end gap-3 bg-slate-900 rounded-b-xl">
                     <button onClick={() => setUserModal({ open: false, data: null, activeTab: 'profile', loading: false })} className="px-6 py-2.5 rounded-xl text-slate-400 hover:text-white transition-colors text-sm font-bold">Cancel</button>
                     <button onClick={saveUserChanges} disabled={userModal.loading} className="btn-action px-8 py-2.5 rounded-xl text-white font-bold text-sm shadow-lg disabled:opacity-50"><i className="fas fa-save mr-2"></i> Save Configuration</button>
