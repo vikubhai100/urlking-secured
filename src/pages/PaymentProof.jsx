@@ -20,9 +20,9 @@ const PaymentProof = () => {
   // Proofs Data
   const proofs = [
     { id: 1, amount: 'RS:315', img: 'https://i.ibb.co/dR4KH9p/IMG-20260326-172254-536.jpg' },
-    { id: 2, amount: 'RS:140.00', img: 'https://i.ibb.co/d0MrQjDt/IMG-20260326-172242-394.jpg' },
+    { id: 2, amount: 'RS:2000.00', img: 'https://i.ibb.co/fzT5f6Cy/IMG-20260402-152124-640.jpg' },
     { id: 3, amount: 'RS:400.00', img: 'https://i.ibb.co/p6yRqb9G/IMG-20260326-172247-081.jpg' },
-    { id: 4, amount: 'RS:166.00', img: 'https://i.ibb.co/rRjTrwcv/IMG-20260326-172231-571.jpg' },
+    { id: 4, amount: 'RS:430.00', img: 'https://i.ibb.co/yFwjCHMQ/IMG-20260329-WA0017.jpg' },
   ];
 
   return (
