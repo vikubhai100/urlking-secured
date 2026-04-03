@@ -5,12 +5,10 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
   const navigate = useNavigate();
   const isAdmin = user && (user.role === 1 || user.role === 'admin' || user.role === 'owner' || user.role === 'manager');
 
-  // 🟢 Accordion States
   const [isManageOpen, setIsManageOpen] = useState(false);
   const [isToolsOpen, setIsToolsOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  // 🟢 Auto-open accordion if user is currently on a sub-page
   useEffect(() => {
     if (['files', 'history'].includes(activeSection)) setIsManageOpen(true);
     if (['api', 'quicklink', 'mass-shrinker', 'full-page'].includes(activeSection)) setIsToolsOpen(true);
@@ -22,10 +20,9 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
     navigate('/login');
   };
 
-  // Menu Data
   const manageNav = [
     { id: 'files', label: 'All Files' },
-    { id: 'history', label: 'Links History' },
+    { id: 'history', label: 'All Links' }, // Isko bhi thoda clean kar diya
   ];
 
   const toolNav = [
@@ -35,7 +32,6 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
     { id: 'api', label: 'Developers API' },
   ];
 
-  // Helper for normal buttons
   const renderSingleButton = (id, icon, label) => (
     <button key={id} onClick={() => { setActiveSection(id); setIsMobileOpen(false); }}
       className={`w-full flex items-center gap-3 px-4 py-3 mb-1 rounded-xl transition-all font-medium text-left ${activeSection === id ? 'bg-indigo-600/10 text-indigo-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'}`}>
@@ -46,12 +42,10 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
 
   return (
     <>
-      {/* Mobile Overlay */}
       {isMobileOpen && <div className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[70]" onClick={() => setIsMobileOpen(false)}></div>}
       
       <aside className={`fixed top-0 left-0 h-full w-72 bg-[#0f172a] border-r border-slate-800 flex flex-col transition-transform duration-300 z-[80] shadow-2xl ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
         
-        {/* Header */}
         <div className="p-6 flex items-center justify-between border-b border-slate-800">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white">
@@ -64,20 +58,20 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
           </button>
         </div>
 
-        {/* Scrollable Navigation */}
         <nav className="flex-1 overflow-y-auto p-4 scrollbar-hide">
           
           {renderSingleButton('create', 'fa-home', 'Statistics')}
           {renderSingleButton('upload', 'fa-cloud-upload-alt', 'Upload File')}
 
-          {/* 🟢 MANAGE LINKS ACCORDION */}
+          {/* 🟢 UPDATED: "Manage Links" ko "Files & Links" kar diya */}
           <div className="mb-1">
             <button 
               onClick={() => setIsManageOpen(!isManageOpen)}
               className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all font-medium text-left ${isManageOpen ? 'bg-slate-800/50 text-white' : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'}`}
             >
               <div className="flex items-center gap-3">
-                <i className={`fas fa-link w-5 text-center ${isManageOpen ? 'text-indigo-400' : 'text-slate-500'}`}></i> Manage Links
+                {/* Icon bhi folder wala kar diya jo dono ko represent karta hai */}
+                <i className={`fas fa-folder-open w-5 text-center ${isManageOpen ? 'text-indigo-400' : 'text-slate-500'}`}></i> Files & Links
               </div>
               <i className={`fas fa-chevron-left text-xs transition-transform duration-300 ${isManageOpen ? '-rotate-90 text-slate-300' : 'text-slate-500'}`}></i>
             </button>
@@ -95,7 +89,6 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
 
           {renderSingleButton('withdraw', 'fa-dollar-sign', 'Withdraw')}
 
-          {/* 🟢 TOOLS ACCORDION */}
           <div className="mb-1">
             <button 
               onClick={() => setIsToolsOpen(!isToolsOpen)}
@@ -120,7 +113,6 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
 
           {renderSingleButton('referrals', 'fa-exchange-alt', 'Referrals')}
 
-          {/* 🟢 SETTINGS ACCORDION */}
           <div className="mb-1">
             <button 
               onClick={() => setIsSettingsOpen(!isSettingsOpen)}
@@ -141,7 +133,6 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
             </div>
           </div>
 
-          {/* ADMIN MENU (If Admin) */}
           {isAdmin && (
             <div className="mt-6 border-t border-slate-800 pt-4">
               <p className="px-4 text-[10px] font-bold text-pink-500 uppercase tracking-widest mb-3">Admin Panel</p>
@@ -152,7 +143,6 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
           )}
         </nav>
 
-        {/* Footer Profile Info */}
         <div className="p-4 bg-slate-800/30 border-t border-slate-800">
           <div className="flex items-center gap-3 mb-4 px-2">
             <div className="relative">
