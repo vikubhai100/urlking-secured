@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { showToast } from '../../toast'; // Premium Toast Import kiya gaya hai
+import { showToast } from '../../toast'; 
 
 const UploadFile = ({ token, user }) => {
   const [file, setFile] = useState(null);
@@ -7,27 +7,57 @@ const UploadFile = ({ token, user }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [resultLink, setResultLink] = useState('');
   
-  const API = "https://go.urlking.site";
+  // 🟢 STATES: Speed, Size, aur Time (ETA) track karne ke liye
+  const [loadedSize, setLoadedSize] = useState('0 B');
+  const [totalSize, setTotalSize] = useState('0 B');
+  const [uploadSpeed, setUploadSpeed] = useState('0 B/s');
+  const [eta, setEta] = useState('Calculating...'); // NAYA ETA STATE
+
+  const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
       setResultLink('');
+      // Reset metrics on new file selection
+      setProgress(0);
+      setLoadedSize('0 B');
+      setTotalSize('0 B');
+      setUploadSpeed('0 B/s');
+      setEta('Calculating...');
     }
   };
 
+  // Helper function: Bytes ko MB/KB mein convert karne ke liye
+  const formatBytes = (bytes) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // 🟢 Helper function: Seconds ko minutes aur seconds me format karne ke liye
+  const formatTime = (seconds) => {
+    if (!Number.isFinite(seconds) || seconds < 0) return "Calculating...";
+    if (seconds < 60) return Math.floor(seconds) + "s";
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}m ${s}s`;
+  };
+
   const startUpload = async () => {
-    // 1. NATIVE ALERT REMOVED
     if (!file) return showToast("Please select a file to upload.", "error");
-    
+
     setIsUploading(true);
     setProgress(0);
+    setTotalSize(formatBytes(file.size));
 
     try {
       // 1. Get Server
       const serverRes = await fetch(`${API}/api/dev/server`, { headers: { Authorization: `Bearer ${token}` } });
       const serverData = await serverRes.json();
-      
+
       if (!serverData.url) {
         showToast("Could not connect to upload server", "error");
         setIsUploading(false);
@@ -40,13 +70,43 @@ const UploadFile = ({ token, user }) => {
       formData.append('utype', 'reg');
       formData.append('file_0', file);
 
-      // 3. XHR for Progress Tracking
+      // 3. XHR for High-Speed Progress Tracking
       const xhr = new XMLHttpRequest();
       xhr.open('POST', serverData.url, true);
 
+      // Speed & ETA calculation variables
+      let startTime = Date.now();
+      let lastLoaded = 0;
+
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) {
-          setProgress(Math.floor((e.loaded / e.total) * 100));
+          const currentPercent = Math.floor((e.loaded / e.total) * 100);
+          setProgress(currentPercent);
+          setLoadedSize(formatBytes(e.loaded));
+
+          // Calculate speed & ETA every 500ms for smooth UI update
+          const now = Date.now();
+          const timeDiff = (now - startTime) / 1000; // in seconds
+
+          if (timeDiff >= 0.5 && currentPercent < 100) {
+            const bytesPerSecond = (e.loaded - lastLoaded) / timeDiff;
+            setUploadSpeed(formatBytes(bytesPerSecond) + '/s');
+            
+            // 🟢 Calculate ETA (Remaining bytes / Bytes per second)
+            const bytesRemaining = e.total - e.loaded;
+            const secondsRemaining = bytesPerSecond > 0 ? bytesRemaining / bytesPerSecond : 0;
+            setEta(formatTime(secondsRemaining));
+            
+            // Reset for next interval
+            startTime = now;
+            lastLoaded = e.loaded;
+          } 
+          
+          // Agar 100% ho gaya toh UI update kardo Server response ke wait ke liye
+          if (currentPercent === 100) {
+            setUploadSpeed('Finishing...');
+            setEta('Processing...');
+          }
         }
       };
 
@@ -55,7 +115,7 @@ const UploadFile = ({ token, user }) => {
           try {
             const response = JSON.parse(xhr.responseText);
             let fileCode = Array.isArray(response) && response[0] ? response[0].file_code : response.file_code;
-            
+
             let fileSizeStr = file.size >= 1048576 
               ? (file.size / 1048576).toFixed(2) + " MB" 
               : (file.size / 1024).toFixed(2) + " KB";
@@ -67,12 +127,10 @@ const UploadFile = ({ token, user }) => {
               body: JSON.stringify({ file_code: fileCode, file_name: file.name, file_size: fileSizeStr })
             });
             const finalData = await finalRes.json();
-            
+
             setResultLink(`https://go.urlking.site/${finalData.short_id}`);
-            
-            // 2. SUCCESS TOAST ADDED
             showToast("File uploaded & shortened successfully!", "success");
-            
+
           } catch(e) { 
             showToast("Error finalizing upload: " + e.message, "error"); 
           }
@@ -86,9 +144,9 @@ const UploadFile = ({ token, user }) => {
         showToast("Upload network error. Check your connection.", "error"); 
         setIsUploading(false); 
       };
-      
+
       xhr.send(formData);
-      
+
     } catch (e) {
       showToast(e.message || "An unexpected error occurred", "error");
       setIsUploading(false);
@@ -97,7 +155,6 @@ const UploadFile = ({ token, user }) => {
 
   const handleCopy = () => {
     navigator.clipboard.writeText(resultLink);
-    // 3. COPY TOAST ADDED
     showToast("Link Copied Successfully!", "success");
   };
 
@@ -121,8 +178,8 @@ const UploadFile = ({ token, user }) => {
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-2xl font-bold text-[var(--text-primary)]">Upload File</h2>
       </div>
-      
-      {/* Bot Banner - Kept colorful but adapted for theme */}
+
+      {/* Bot Banner */}
       <div className="glass-panel p-6 rounded-3xl bg-gradient-to-r from-[#0088cc]/10 to-indigo-900/10 border border-[#0088cc]/30 relative overflow-hidden flex flex-col md:flex-row items-center gap-6 text-center md:text-left shadow-lg">
         <div className="w-16 h-16 rounded-full bg-[#0088cc]/20 flex items-center justify-center text-[#0088cc] text-3xl shrink-0 border border-[#0088cc]/30 shadow-[0_0_20px_rgba(0,136,204,0.3)] z-10">
           <i className="fab fa-telegram-plane"></i>
@@ -139,7 +196,7 @@ const UploadFile = ({ token, user }) => {
       <div className="border-animated p-1 mt-8">
         <div className="relative z-10 p-6 md:p-10 glass-panel border-none rounded-[1.2rem]">
           <div className="space-y-8">
-            
+
             {/* Upload Area */}
             <div className={`relative border-2 border-dashed rounded-2xl p-10 text-center transition-all duration-300 ${
               file ? 'border-indigo-500 bg-indigo-500/5' : 'border-[var(--glass-border)] bg-[var(--nav-hover)] hover:border-indigo-500/50'
@@ -151,7 +208,7 @@ const UploadFile = ({ token, user }) => {
                 disabled={isUploading} 
                 title="Select a file to upload"
               />
-              
+
               {!file ? (
                 <div className="pointer-events-none">
                   <div className="w-20 h-20 mx-auto bg-indigo-500/10 rounded-full flex items-center justify-center mb-4">
@@ -174,19 +231,37 @@ const UploadFile = ({ token, user }) => {
               )}
             </div>
 
-            {/* Progress Bar */}
+            {/* 🟢 ENHANCED Progress Bar with ETA, Speed & MB Display */}
             {isUploading && (
-              <div className="space-y-3 p-4 glass-panel rounded-xl">
-                <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
-                  <span className="flex items-center gap-2"><i className="fas fa-spinner fa-spin text-indigo-500"></i> Uploading to secure server...</span>
-                  <span className="text-indigo-500">{progress}%</span>
+              <div className="space-y-2 p-4 md:p-5 glass-panel rounded-xl border border-indigo-500/20">
+                <div className="flex justify-between items-center text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  <span className="flex items-center gap-2">
+                    <i className="fas fa-spinner fa-spin text-indigo-500"></i> Uploading...
+                  </span>
+                  <span className="text-indigo-400 text-sm font-black">{progress}%</span>
                 </div>
-                <div className="h-3 rounded-full overflow-hidden bg-[var(--nav-hover)] border border-[var(--glass-border)]">
+                
+                <div className="h-4 rounded-full overflow-hidden bg-slate-800 border border-slate-700/50 shadow-inner">
                   <div 
-                    className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300 relative" 
+                    className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 transition-all duration-300 relative bg-[length:200%_100%] animate-[gradient_2s_linear_infinite]" 
                     style={{ width: `${progress}%` }}
                   >
                     <div className="absolute inset-0 bg-white/20 animate-[pulse_1s_infinite]"></div>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap md:flex-nowrap justify-between items-center mt-2 text-[10px] sm:text-[11px] font-bold text-slate-400 font-mono tracking-wide gap-2">
+                  <span className="bg-slate-800 px-2.5 py-1.5 rounded-md border border-slate-700 w-full md:w-auto text-center md:text-left">
+                    <i className="fas fa-hdd text-slate-500 mr-1"></i> {loadedSize} / {totalSize}
+                  </span>
+                  
+                  <div className="flex gap-2 w-full md:w-auto justify-between md:justify-end">
+                    <span className="bg-blue-500/10 text-blue-400 px-2.5 py-1.5 rounded-md border border-blue-500/20 flex-1 text-center md:flex-none">
+                      <i className="fas fa-clock mr-1"></i> {eta}
+                    </span>
+                    <span className="bg-emerald-500/10 text-emerald-400 px-2.5 py-1.5 rounded-md border border-emerald-500/20 flex-1 text-center md:flex-none">
+                      <i className="fas fa-tachometer-alt mr-1"></i> {uploadSpeed}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -201,7 +276,7 @@ const UploadFile = ({ token, user }) => {
                   </div>
                   <p className="text-sm uppercase font-black text-emerald-500 tracking-wider">Upload & Shortening Complete!</p>
                 </div>
-                
+
                 <div className="flex flex-col sm:flex-row gap-3">
                   <input 
                     type="text" 
