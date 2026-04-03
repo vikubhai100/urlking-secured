@@ -14,6 +14,10 @@ const AdminConsole = () => {
   const [allUsers, setAllUsers] = useState([]);
   const [displayedUsers, setDisplayedUsers] = useState([]);
   const [withdrawals, setWithdrawals] = useState([]);
+  
+  // 🟢 NAYA STATE: Support Tickets store karne ke liye
+  const [tickets, setTickets] = useState([]); 
+  
   const [stats, setStats] = useState({ totalUsers: 0, totalClicks: 0, totalPayout: 0, todayEarn: 0 });
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -25,6 +29,9 @@ const AdminConsole = () => {
   // Modal State
   const [userModal, setUserModal] = useState({ open: false, activeTab: 'profile', data: null, loading: false });
   const [confirmModal, setConfirmModal] = useState({ open: false, type: '', payload: null, title: '', msg: '', btnText: '', btnClass: '' });
+  
+  // 🟢 NAYA MODAL: Ticket ka full message padhne ke liye
+  const [ticketModal, setTicketModal] = useState({ open: false, data: null });
 
   const [globalCpm, setGlobalCpm] = useState('0.50');
   const [mailerForm, setMailerForm] = useState({ adminKey: '', subject: '', title: '', message: '' });
@@ -51,7 +58,6 @@ const AdminConsole = () => {
       } catch (e) { setAppState('ghost'); }
     };
     checkAccess();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkSystem = async () => {
@@ -140,11 +146,6 @@ const AdminConsole = () => {
     finally { setIsLoadingSection(false); }
   }, [adminToken, activeTab, searchQuery, API]);
 
-  useEffect(() => {
-    if (appState === 'dashboard' && ['users', 'managers', 'recycle'].includes(activeTab)) { loadUsers(); } 
-    else if (appState === 'dashboard' && activeTab === 'withdrawals') { loadWithdrawals(); }
-  }, [activeTab]);
-
   const loadWithdrawals = async () => {
     setIsLoadingSection(true);
     try {
@@ -154,6 +155,25 @@ const AdminConsole = () => {
     } catch (e) { showToast("Failed to load withdrawals", "error"); } 
     finally { setIsLoadingSection(false); }
   };
+
+  // 🟢 NAYA FUNCTION: Fetch Tickets from DB
+  const loadTickets = async () => {
+    setIsLoadingSection(true);
+    try {
+      const res = await fetch(`${API}/api/support/admin/tickets`, { headers: { 'x-admin-token': adminToken } });
+      const data = await res.json();
+      setTickets(Array.isArray(data) ? data : []);
+    } catch (e) { showToast("Failed to load tickets", "error"); } 
+    finally { setIsLoadingSection(false); }
+  };
+
+  useEffect(() => {
+    if (appState === 'dashboard') {
+      if (['users', 'managers', 'recycle'].includes(activeTab)) loadUsers();
+      else if (activeTab === 'withdrawals') loadWithdrawals();
+      else if (activeTab === 'tickets') loadTickets(); // 🟢 TICKET TAB ACTIVE HONE PAR FETCH
+    }
+  }, [activeTab]);
 
   const filterAndSetUsers = (users, tab, search) => {
     let source = users;
@@ -180,7 +200,6 @@ const AdminConsole = () => {
     else openConfirmModal('delete', selectedUsers);
   };
 
-  // --- LAZY LOADING USER DETAILS ---
   const openUserDetails = async (basicUser) => {
     setUserModal({ open: true, activeTab: 'profile', data: basicUser, loading: true });
     try {
@@ -199,7 +218,23 @@ const AdminConsole = () => {
     }
   };
 
-  // --- MODALS & ACTIONS ---
+  // 🟢 NAYA FUNCTION: Ticket Status Update Karne Ke Liye (Open <-> Closed)
+  const handleTicketStatus = async (id, status) => {
+    if(!window.confirm(`Mark this ticket as ${status}?`)) return;
+    try {
+      const res = await fetch(`${API}/api/support/admin/tickets/${id}`, {
+        method: "PUT", headers: { 'Content-Type': 'application/json', 'x-admin-token': adminToken },
+        body: JSON.stringify({ status })
+      });
+      const data = await res.json();
+      if(data.ok || res.ok) { 
+        showToast(`Ticket marked as ${status}`, "success"); 
+        setTicketModal({ open: false, data: null });
+        loadTickets(); 
+      } else showToast("Failed to update ticket", "error");
+    } catch(e) { showToast("Server error", "error"); }
+  };
+
   const openConfirmModal = (type, payload) => {
     let title = '', msg = '', btnText = '', btnClass = '';
     if (type === 'global_cpm') { title = "System CPM Update"; msg = `Enforce fixed CPM of $${payload} across ALL accounts.`; btnText = "Enforce CPM Update"; btnClass = "bg-green-600 hover:bg-green-500"; } 
@@ -270,7 +305,6 @@ const AdminConsole = () => {
     } catch(e) { setMailerStatus({ loading: false, result: e.message, isError: true }); }
   };
 
-  // 🔥 UPDATED: Now includes click_percentage 🔥
   const saveUserChanges = async () => {
     try {
       await fetch(`${API}/api/admin/user`, { 
@@ -280,7 +314,7 @@ const AdminConsole = () => {
             role: userModal.data.role, 
             cpm: userModal.data.cpm, 
             name: userModal.data.name,
-            click_percentage: userModal.data.click_percentage || 100 // System default is 100%
+            click_percentage: userModal.data.click_percentage || 100 
           }) 
       });
       await fetch(`${API}/api/dev/toggle-permission`, {
@@ -388,6 +422,7 @@ const AdminConsole = () => {
               {[
                 { id: 'users', icon: 'fa-users', label: 'All Users', color: '' },
                 { id: 'withdrawals', icon: 'fa-money-check-alt', label: 'Withdrawals', color: 'text-green-400' },
+                { id: 'tickets', icon: 'fa-life-ring', label: 'Support Tickets', color: 'text-rose-400' }, // 🟢 NAYA TAB YAHAN ADD KIYA HAI
                 { id: 'mailer', icon: 'fa-paper-plane', label: 'Bulk Mailer', color: 'text-blue-400' },
                 { id: 'managers', icon: 'fa-user-tie', label: 'Managers', color: 'text-purple-400' },
                 { id: 'recycle', icon: 'fa-trash-alt', label: 'Recycle Bin', color: 'text-yellow-500' },
@@ -395,6 +430,8 @@ const AdminConsole = () => {
               ].map(tab => (
                 <button key={tab.id} onClick={() => { setActiveTab(tab.id); setSidebarOpen(false); setIsSelectionMode(false); setSelectedUsers([]); }} className={`nav-item ${activeTab === tab.id ? 'active' : ''}`}>
                   <i className={`fas ${tab.icon} w-6 text-center ${activeTab === tab.id ? '' : tab.color}`}></i> <span className="font-medium">{tab.label}</span>
+                  {/* Agar koi naya ticket open hai toh chota sa red dot dikha do */}
+                  {tab.id === 'tickets' && tickets.some(t => t.status === 'Open') && <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse ml-auto"></div>}
                 </button>
               ))}
             </nav>
@@ -603,6 +640,63 @@ const AdminConsole = () => {
               </section>
             )}
 
+            {/* 🟢 NAYA TAB: SUPPORT TICKETS 🟢 */}
+            {activeTab === 'tickets' && (
+              <section className="space-y-6 fade-in">
+                <div className="flex justify-between items-center glass-panel p-5 rounded-xl border-rose-500/20 bg-gradient-to-r from-rose-900/10 to-transparent">
+                  <h3 className="text-xl font-bold text-white flex items-center gap-3"><i className="fas fa-life-ring text-rose-400 p-2 bg-rose-500/10 rounded-lg"></i> Support Tickets</h3>
+                  <button onClick={loadTickets} className="btn-action !bg-rose-600 !from-rose-600 !to-pink-600 px-5 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg shadow-rose-500/20"><i className="fas fa-sync-alt mr-2"></i> Refresh</button>
+                </div>
+                <div className="glass-panel rounded-2xl overflow-hidden flex flex-col min-h-[400px] shadow-2xl">
+                  <div className="overflow-x-auto flex-1">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="text-xs font-bold tracking-wider text-slate-400 uppercase border-b border-white/10 bg-black/20">
+                          <th className="p-4 w-16">ID</th>
+                          <th className="p-4 w-48">User Info</th>
+                          <th className="p-4 w-48">Subject / Category</th>
+                          <th className="p-4 w-24 text-center">Priority</th>
+                          <th className="p-4 w-24 text-center">Status</th>
+                          <th className="p-4 w-32 text-center">Date</th>
+                          <th className="p-4 w-32 text-right">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-sm divide-y divide-white/5">
+                        {tickets.length === 0 ? (
+                          <tr><td colSpan="7" className="p-12 text-center text-slate-500 font-medium">No support tickets found.</td></tr>
+                        ) : (
+                          tickets.map(t => (
+                            <tr key={t.id} className="hover:bg-white/5 transition-colors cursor-pointer" onClick={() => setTicketModal({ open: true, data: t })}>
+                              <td className="p-4 font-mono text-slate-500 text-xs">#{t.id}</td>
+                              <td className="p-4"><div className="font-bold text-white text-sm">{t.name || 'User'}</div><div className="text-[10px] text-slate-500 truncate w-40">{t.email}</div></td>
+                              <td className="p-4">
+                                <div className="font-bold text-indigo-300 text-xs truncate w-48">{t.subject}</div>
+                                <div className="text-[10px] uppercase text-slate-500 mt-1">{t.category}</div>
+                              </td>
+                              <td className="p-4 text-center">
+                                {t.priority === 'Urgent' ? <span className="bg-red-500/20 text-red-400 px-2 py-1 rounded text-[10px] font-bold uppercase">Urgent</span> :
+                                 t.priority === 'High' ? <span className="bg-orange-500/20 text-orange-400 px-2 py-1 rounded text-[10px] font-bold uppercase">High</span> :
+                                 t.priority === 'Normal' ? <span className="bg-blue-500/20 text-blue-400 px-2 py-1 rounded text-[10px] font-bold uppercase">Normal</span> :
+                                 <span className="bg-slate-500/20 text-slate-400 px-2 py-1 rounded text-[10px] font-bold uppercase">Low</span>}
+                              </td>
+                              <td className="p-4 text-center">
+                                {t.status === 'Open' ? <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider"><i className="fas fa-circle text-[8px] mr-1"></i> Open</span> :
+                                 <span className="bg-slate-800 text-slate-500 border border-slate-700 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider">Closed</span>}
+                              </td>
+                              <td className="p-4 text-center text-[11px] text-slate-400 font-mono">{new Date(t.created_at).toLocaleString()}</td>
+                              <td className="p-4 text-right">
+                                <button onClick={(e) => { e.stopPropagation(); setTicketModal({ open: true, data: t }); }} className="p-2 rounded bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500 hover:text-white border border-indigo-500/20 text-xs transition-all mr-1"><i className="fas fa-eye"></i> View</button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </section>
+            )}
+
             {/* TAB: MAILER */}
             {activeTab === 'mailer' && (
               <section className="fade-in max-w-4xl mx-auto space-y-6">
@@ -668,7 +762,7 @@ const AdminConsole = () => {
 
           </main>
 
-          {/* USER EDIT MODAL (LAZY LOADING) */}
+          {/* USER EDIT MODAL */}
           {userModal.open && userModal.data && (
             <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setUserModal({ open: false, data: null, activeTab: 'profile', loading: false })}></div>
@@ -698,7 +792,6 @@ const AdminConsole = () => {
                       </div>
                     ) : (
                       <>
-                        {/* 🟢 PROFILE TAB 🟢 */}
                         {userModal.activeTab === 'profile' && (
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 fade-in">
                             <div><label className="text-[10px] text-slate-500 uppercase font-bold block mb-1">Email</label><input type="text" readOnly value={userModal.data.email || 'N/A'} className="input-premium w-full p-3 rounded-xl text-sm opacity-80" /></div>
@@ -710,7 +803,6 @@ const AdminConsole = () => {
                           </div>
                         )}
 
-                        {/* 🟢 PAYMENT TAB 🟢 */}
                         {userModal.activeTab === 'payment' && (
                           <div className="space-y-5 fade-in">
                             <div className="bg-yellow-500/10 border border-yellow-500/20 p-3 rounded-xl mb-4 flex gap-3">
@@ -739,7 +831,6 @@ const AdminConsole = () => {
                           </div>
                         )}
 
-                        {/* 🟢 STATS & REFERRALS TAB 🟢 */}
                         {userModal.activeTab === 'stats' && (
                           <div className="space-y-5 fade-in">
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
@@ -749,7 +840,6 @@ const AdminConsole = () => {
                               <div className="bg-yellow-900/20 p-4 rounded-xl text-center"><i className="fas fa-coins text-yellow-400 mb-2 text-lg"></i><div className="text-xl font-bold">${userModal.data.stats?.today_earnings || '0.00'}</div><div className="text-[10px] uppercase text-yellow-400/70">Earned Today</div></div>
                             </div>
 
-                            {/* 🔥 THE REFERRAL BOX 🔥 */}
                             <div className="bg-purple-900/10 border border-purple-500/20 p-5 rounded-xl flex items-center justify-between">
                               <div>
                                 <h4 className="text-purple-400 font-bold mb-1"><i className="fas fa-user-plus mr-1"></i> Referral Info</h4>
@@ -764,19 +854,9 @@ const AdminConsole = () => {
                                 </span>
                               </div>
                             </div>
-
-                            {/* BONUS: Same Referral info directly below Profile for ease */}
-                            {userModal.activeTab === 'profile' && (
-                              <div className="mt-4 border-t border-white/5 pt-4">
-                                  <label className="text-[10px] text-slate-500 uppercase font-bold block mb-1">Referred By</label>
-                                  <input type="text" readOnly value={userModal.data.referred_by ? (allUsers.find(x => x.uid === userModal.data.referred_by)?.username || `UID: ${userModal.data.referred_by}`) : "Direct (No Referrer)"} className="input-premium w-full p-3 rounded-xl text-sm font-bold text-purple-400 opacity-80" />
-                              </div>
-                            )}
-
                           </div>
                         )}
 
-                        {/* 🟢 CONFIG TAB (🔥 NEW: Click Percentage Added Here 🔥) 🟢 */}
                         {userModal.activeTab === 'roles' && (
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 fade-in">
                             <div className="space-y-5">
@@ -790,19 +870,15 @@ const AdminConsole = () => {
                                 <label className="text-[10px] text-slate-500 uppercase font-bold block mb-2">Custom CPM ($)</label>
                                 <input type="number" step="0.01" value={userModal.data.cpm} onChange={e=>setUserModal({...userModal, data: {...userModal.data, cpm: e.target.value}})} className="input-premium w-full p-3 rounded-xl font-mono" />
                               </div>
-                              
-                              {/* 🔥 NEW SHAVING/PERCENTAGE INPUT 🔥 */}
                               <div>
                                 <label className="text-[10px] text-slate-500 uppercase font-bold block mb-2">Valid Click Percentage (%)</label>
                                 <input 
-                                  type="number" 
-                                  max="100" 
-                                  min="0" 
+                                  type="number" max="100" min="0" 
                                   value={userModal.data.click_percentage ?? 100} 
                                   onChange={e => setUserModal({...userModal, data: {...userModal.data, click_percentage: e.target.value}})} 
                                   className="input-premium w-full p-3 rounded-xl font-mono text-indigo-300 focus:ring-2 focus:ring-indigo-500/50" 
                                 />
-                                <p className="text-[10px] text-slate-500 mt-1 mt-2"><i className="fas fa-info-circle"></i> Example: 90 = 10% clicks hidden from user.</p>
+                                <p className="text-[10px] text-slate-500 mt-2"><i className="fas fa-info-circle"></i> Example: 90 = 10% clicks hidden from user.</p>
                               </div>
                             </div>
 
@@ -823,6 +899,72 @@ const AdminConsole = () => {
                     <button onClick={() => setUserModal({ open: false, data: null, activeTab: 'profile', loading: false })} className="px-6 py-2.5 rounded-xl text-slate-400 hover:text-white transition-colors text-sm font-bold">Cancel</button>
                     <button onClick={saveUserChanges} disabled={userModal.loading} className="btn-action px-8 py-2.5 rounded-xl text-white font-bold text-sm shadow-lg disabled:opacity-50"><i className="fas fa-save mr-2"></i> Save Configuration</button>
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 🟢 NAYA MODAL: TICKET MESSAGE VIEW KARNE KE LIYE 🟢 */}
+          {ticketModal.open && ticketModal.data && (
+            <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setTicketModal({ open: false, data: null })}></div>
+              <div className="relative z-10 w-full max-w-lg border-animated p-1">
+                <div className="bg-slate-900 rounded-2xl flex flex-col">
+                  
+                  {/* Header */}
+                  <div className="flex justify-between items-center p-6 border-b border-white/5 bg-slate-800/50 rounded-t-xl">
+                    <div>
+                      <h3 className="text-xl font-bold text-white flex items-center gap-2"><i className="fas fa-envelope-open-text text-indigo-400"></i> Ticket #{ticketModal.data.id}</h3>
+                      <p className="text-xs text-slate-400 mt-1">{new Date(ticketModal.data.created_at).toLocaleString()}</p>
+                    </div>
+                    <button onClick={() => setTicketModal({ open: false, data: null })} className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors"><i className="fas fa-times"></i></button>
+                  </div>
+
+                  {/* Body */}
+                  <div className="p-6 space-y-4">
+                    <div className="bg-slate-800/50 p-4 rounded-xl border border-white/5">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <p className="text-sm font-bold text-white">{ticketModal.data.name}</p>
+                          <p className="text-xs text-slate-400">{ticketModal.data.email}</p>
+                        </div>
+                        <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
+                          ticketModal.data.priority === 'Urgent' ? 'bg-red-500/20 text-red-400' :
+                          ticketModal.data.priority === 'High' ? 'bg-orange-500/20 text-orange-400' :
+                          ticketModal.data.priority === 'Normal' ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-500/20 text-slate-400'
+                        }`}>{ticketModal.data.priority} Priority</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Subject / Category</h4>
+                      <p className="text-sm font-bold text-indigo-300">{ticketModal.data.subject} <span className="text-slate-400 font-normal">({ticketModal.data.category})</span></p>
+                    </div>
+
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Message Body</h4>
+                      <div className="bg-[#020617] p-4 rounded-xl border border-white/5 text-sm text-slate-300 whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto custom-scrollbar">
+                        {ticketModal.data.message}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Footer Actions */}
+                  <div className="p-6 border-t border-white/5 flex items-center justify-between bg-slate-800/30 rounded-b-xl">
+                    <div>
+                      {ticketModal.data.status === 'Open' ? 
+                        <span className="text-emerald-400 font-bold text-xs bg-emerald-500/10 px-3 py-1.5 rounded-lg"><i className="fas fa-circle text-[8px] animate-pulse"></i> Status: Open</span> : 
+                        <span className="text-slate-400 font-bold text-xs bg-slate-800 px-3 py-1.5 rounded-lg">Status: Closed</span>}
+                    </div>
+                    <div className="flex gap-3">
+                      {ticketModal.data.status === 'Open' && (
+                        <button onClick={() => handleTicketStatus(ticketModal.data.id, 'Closed')} className="bg-emerald-600 hover:bg-emerald-500 px-5 py-2 rounded-xl text-white font-bold text-sm shadow-lg transition-all">
+                          <i className="fas fa-check mr-1"></i> Mark Resolved
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
                 </div>
               </div>
             </div>
