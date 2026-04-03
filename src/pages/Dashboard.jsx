@@ -9,6 +9,8 @@ import Withdraw from '../components/dashboard/Withdraw';
 import Referrals from '../components/dashboard/Referrals';
 import DeveloperApi from '../components/dashboard/DeveloperApi';
 import QuickLink from '../components/dashboard/QuickLink';
+import MassShrinker from '../components/dashboard/MassShrinker'; // 🟢 NAYA IMPORT
+import FullPageScript from '../components/dashboard/FullPageScript'; // 🟢 NAYA IMPORT
 import ProfileSettings from '../components/dashboard/ProfileSettings';
 
 const Dashboard = () => {
@@ -98,6 +100,16 @@ const Dashboard = () => {
         <div className={activeSection === 'quicklink' ? 'block fade-in' : 'hidden'}>
           {mountedTabs.includes('quicklink') && <QuickLink user={user} isActive={activeSection === 'quicklink'} />}
         </div>
+        
+        {/* 🟢 NAYE TOOLS YAHAN ADD KIYE HAIN */}
+        <div className={activeSection === 'mass-shrinker' ? 'block fade-in' : 'hidden'}>
+          {mountedTabs.includes('mass-shrinker') && <MassShrinker token={token} isActive={activeSection === 'mass-shrinker'} />}
+        </div>
+        <div className={activeSection === 'full-page' ? 'block fade-in' : 'hidden'}>
+          {mountedTabs.includes('full-page') && <FullPageScript user={user} isActive={activeSection === 'full-page'} />}
+        </div>
+        {/* ------------------------------------- */}
+
         <div className={activeSection === 'profile' ? 'block fade-in' : 'hidden'}>
           {mountedTabs.includes('profile') && <ProfileSettings token={token} user={user} fetchUserProfile={fetchUserProfile} isActive={activeSection === 'profile'} />}
         </div>
