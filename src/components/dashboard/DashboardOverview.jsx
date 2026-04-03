@@ -147,56 +147,49 @@ const DashboardOverview = ({ token, user, isActive }) => {
         </div>
       </div>
 
-      {/* 🟢 UPDATED: Shorten Link Box (Compact & Image Matched) */}
+      {/* 🟢 STRICTLY MATCHING THE IMAGE LAYOUT */}
       <div className="border-animated p-1">
-        <div className="relative z-10 p-5 md:p-6 glass-panel border-none rounded-[1.2rem]">
-          <h3 className="text-lg font-bold flex items-center gap-2 text-[var(--text-primary)] mb-5">
+        <div className="relative z-10 p-5 md:p-8 glass-panel border-none rounded-[1.2rem]">
+          <h3 className="text-lg font-bold flex items-center gap-2 text-[var(--text-primary)] mb-6">
             <i className="fas fa-magic text-indigo-500"></i> Shorten New URL
           </h3>
 
-          <div className="flex flex-col gap-4">
+          <div className="space-y-6">
             
-            {/* Main URL Input */}
+            {/* 1. Main URL Input (Simple, No internal icon) */}
             <div>
-              <div className="relative">
-                <i className="fas fa-link absolute left-4 top-1/2 -translate-y-1/2 text-[var(--input-icon)]"></i>
-                <input 
-                  type="url" 
-                  placeholder="Your URL Here (https://...)" 
-                  className="input-premium w-full p-3.5 pl-11 rounded-xl text-sm" 
-                  value={url} 
-                  onChange={(e) => setUrl(e.target.value)} 
-                />
-              </div>
+              <input 
+                type="url" 
+                placeholder="Your URL Here" 
+                className="input-premium w-full p-4 rounded-xl text-sm" 
+                value={url} 
+                onChange={(e) => setUrl(e.target.value)} 
+              />
             </div>
 
-            {/* Alias Input */}
+            {/* 2. Alias Input */}
             <div>
-              <label className="block text-sm font-extrabold text-[var(--text-primary)] mb-1.5 tracking-wide">
+              <label className="block text-[15px] font-bold text-[var(--text-primary)] mb-2 tracking-wide">
                 Alias
               </label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--input-icon)]">/</span>
-                <input 
-                  type="text" 
-                  placeholder="Alias (Optional)" 
-                  className="input-premium w-full p-3.5 pl-9 rounded-xl text-sm" 
-                  value={alias} 
-                  onChange={(e) => setAlias(e.target.value)} 
-                />
-              </div>
+              <input 
+                type="text" 
+                placeholder="Alias" 
+                className="input-premium w-full p-3.5 rounded-xl text-sm" 
+                value={alias} 
+                onChange={(e) => setAlias(e.target.value)} 
+              />
             </div>
 
-            {/* Expiration Date Input */}
+            {/* 3. Expiration Date Input */}
             <div>
-              <label className="block text-sm font-extrabold text-[var(--text-primary)] mb-1.5 tracking-wide">
+              <label className="block text-[15px] font-bold text-[var(--text-primary)] mb-2 tracking-wide">
                 Expiration date
               </label>
-              <div className="relative w-full md:w-2/3 lg:w-1/2">
-                <i className="fas fa-clock absolute left-4 top-1/2 -translate-y-1/2 text-[var(--input-icon)]"></i>
+              <div className="flex items-center">
                 <input 
                   type="datetime-local" 
-                  className="input-premium w-full p-3.5 pl-11 pr-4 rounded-xl text-sm text-slate-400 focus:text-[var(--text-primary)]" 
+                  className="input-premium w-full md:w-auto min-w-[240px] p-3.5 rounded-xl text-sm text-slate-400 focus:text-[var(--text-primary)]" 
                   value={expirationDate} 
                   min={today}
                   onChange={(e) => setExpirationDate(e.target.value)} 
@@ -204,13 +197,13 @@ const DashboardOverview = ({ token, user, isActive }) => {
               </div>
             </div>
 
-            {/* Submit Button (Left Aligned on Desktop) */}
-            <div className="mt-2">
+            {/* 4. Shorten Button (Left Aligned, Specific size like image) */}
+            <div className="pt-2">
               <button 
                 onClick={handleShorten} 
-                className="btn-action w-full md:w-auto px-8 py-3 rounded-xl text-white font-bold shadow-[0_5px_15px_rgba(99,102,241,0.3)] flex items-center justify-center gap-2 hover:-translate-y-1 transition-transform"
+                className="bg-[#3b82f6] hover:bg-[#2563eb] text-white px-8 py-2.5 rounded-lg font-medium shadow-md transition-colors"
               >
-                <span>Shorten</span> <i className="fas fa-bolt"></i>
+                Shorten
               </button>
             </div>
 
@@ -218,7 +211,7 @@ const DashboardOverview = ({ token, user, isActive }) => {
 
           {/* Success Link Display */}
           {resultLink && (
-            <div className="mt-5 p-4 rounded-xl flex flex-col md:flex-row items-center justify-between gap-3 bg-emerald-500/10 border border-emerald-500/30 shadow-inner fade-in">
+            <div className="mt-8 p-4 rounded-xl flex flex-col md:flex-row items-center justify-between gap-3 bg-emerald-500/10 border border-emerald-500/30 shadow-inner fade-in">
               <div className="flex-1 min-w-0 w-full text-center md:text-left">
                 <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider mb-1 flex items-center justify-center md:justify-start gap-1">
                   <i className="fas fa-check-circle"></i> Success! Your Link:
@@ -290,6 +283,10 @@ const DashboardOverview = ({ token, user, isActive }) => {
             </a>
             <a href="https://t.me/vikubhai01" target="_blank" rel="noopener noreferrer" className="w-full py-2.5 px-4 rounded-xl bg-[#0088cc] hover:bg-[#0077b5] text-white font-bold text-sm flex items-center justify-center gap-2 transition-colors shadow-md">
               <i className="fab fa-telegram-plane text-lg"></i> Contact Manager
+            </a>
+            {/* 🟢 EMAIL SUPPORT RESTORED */}
+            <a href="mailto:support@urlking.site" className="w-full py-2.5 px-4 rounded-xl bg-[var(--nav-hover)] border border-[var(--glass-border)] text-[var(--text-primary)] hover:border-indigo-500/50 font-bold text-sm flex items-center justify-center gap-2 transition-colors shadow-md">
+              <i className="fas fa-envelope text-indigo-500 text-lg"></i> Email Support
             </a>
           </div>
         </div>
