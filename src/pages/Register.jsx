@@ -24,25 +24,50 @@ const Register = () => {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    if (!username || !email || !password || !confirmPass) return showToast("Please fill in all fields.", "error");
+    
+    // 🟢 BUG FIX: Data Sanitization (Space hatana aur chote akshar me karna)
+    const cleanUsername = username.trim().toLowerCase();
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (!cleanUsername || !cleanEmail || !password || !confirmPass) {
+      return showToast("Please fill in all fields.", "error");
+    }
+    
+    // Username me space allow nahi karna hai
+    if (cleanUsername.includes(" ")) {
+      return showToast("Username cannot contain spaces.", "error");
+    }
+
     if (password !== confirmPass) return showToast("Passwords do not match!", "error");
     if (password.length < 6) return showToast("Password should be at least 6 characters.", "error");
 
     setIsLoading(true);
     try {
+      // 🟢 Firebase nahi, sirf Backend API call jayegi
       const res = await fetch(`${API}/api/register`, {
         method: "POST", 
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, email, password, ref: currentRef })
+        body: JSON.stringify({ 
+          username: cleanUsername, 
+          email: cleanEmail, 
+          password: password, 
+          ref: currentRef 
+        })
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Registration failed");
+      
+      // Agar backend se error aayi (jaise Username already taken) toh yahan rok dega
+      if (!res.ok) {
+        throw new Error(data.error || "Registration failed");
+      }
 
       showToast("Account created successfully! Redirecting...", "success");
       localStorage.removeItem('saved_ref_code');
       setTimeout(() => navigate('/login'), 1500);
+      
     } catch (e) { 
+      // User ko directly screen par dikhega ki exact error kya hai
       showToast(e.message, "error");
     } finally {
       setIsLoading(false);
@@ -65,7 +90,7 @@ const Register = () => {
 
       {/* Main Registration Area */}
       <div className="flex-1 flex flex-col items-center justify-center p-4 min-h-screen relative z-10 w-full pt-24 pb-12">
-        
+
         {/* Registration Card */}
         <div className="border-animated w-full max-w-[400px] mb-6 shadow-2xl">
           <div className="relative z-20 p-8 md:p-10 bg-slate-900 rounded-2xl">
@@ -123,10 +148,10 @@ const Register = () => {
               <span className="text-[10px] uppercase font-bold text-slate-500">Upload</span>
             </div>
           </div>
-          
+
           <h3 className="text-sm font-bold text-white mb-2">Why Join URLKING?</h3>
           <p className="text-xs text-slate-400 leading-relaxed">
-            Shorten URLs, bypass file limits with our powerful Telegram Bot, and earn up to <strong className="text-green-400">$5.00 CPM</strong> using our ultra-fast 2-page flow system.
+            Shorten URLs, bypass file limits with our Telegram Bot, and earn up to <strong className="text-green-400">$5.00 CPM</strong> using our ultra-fast 2-page flow system.
           </p>
         </div>
 
