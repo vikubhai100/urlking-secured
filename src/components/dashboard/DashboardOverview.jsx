@@ -13,17 +13,17 @@ import { showToast } from '../../toast';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Filler);
 
-// NOTE: isActive is added to enable silent data refreshing
 const DashboardOverview = ({ token, user, isActive }) => {
   const [url, setUrl] = useState('');
   const [alias, setAlias] = useState('');
+  const [expirationDate, setExpirationDate] = useState('');
   const [resultLink, setResultLink] = useState('');
   const [stats, setStats] = useState({ total: 0, today: 0, daily: Array(30).fill(0) });
 
   const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
 
   useEffect(() => {
-    if (isActive !== false) { // Will fetch on first load or when active
+    if (isActive !== false) { 
       fetchStats();
     }
   }, [token, isActive]); 
@@ -47,11 +47,16 @@ const DashboardOverview = ({ token, user, isActive }) => {
   const handleShorten = async () => {
     if (!url) return showToast("Please enter a valid URL to shorten.", "error"); 
 
+    const payload = { url, alias };
+    if (expirationDate) {
+      payload.expires_at = expirationDate;
+    }
+
     try {
       const res = await fetch(`${API}/api/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ url, alias })
+        body: JSON.stringify(payload)
       });
 
       const data = await res.json();
@@ -61,6 +66,7 @@ const DashboardOverview = ({ token, user, isActive }) => {
       setResultLink(`https://go.urlking.site/${data.id}`); 
       setUrl('');
       setAlias('');
+      setExpirationDate(''); 
       fetchStats(); 
 
       showToast("Link successfully shortened!", "success"); 
@@ -106,8 +112,10 @@ const DashboardOverview = ({ token, user, isActive }) => {
     }
   };
 
+  const today = new Date().toISOString().slice(0, 16);
+
   return (
-    <div className="fade-in w-full max-w-5xl mx-auto space-y-6 md:space-y-8 px-1 md:px-0">
+    <div className="fade-in w-full max-w-5xl mx-auto space-y-6 px-1 md:px-0">
 
       {/* Header & Wallet Cards */}
       <div className="flex flex-col md:flex-row justify-between items-center md:items-end gap-4">
@@ -139,61 +147,91 @@ const DashboardOverview = ({ token, user, isActive }) => {
         </div>
       </div>
 
-      {/* Shorten Link Box */}
+      {/* 🟢 UPDATED: Shorten Link Box (Compact & Image Matched) */}
       <div className="border-animated p-1">
-        <div className="relative z-10 p-5 md:p-8 space-y-6 glass-panel border-none rounded-[1.2rem]">
-          <h3 className="text-lg md:text-xl font-bold flex items-center gap-2 text-[var(--text-primary)]">
+        <div className="relative z-10 p-5 md:p-6 glass-panel border-none rounded-[1.2rem]">
+          <h3 className="text-lg font-bold flex items-center gap-2 text-[var(--text-primary)] mb-5">
             <i className="fas fa-magic text-indigo-500"></i> Shorten New URL
           </h3>
 
           <div className="flex flex-col gap-4">
-            <div className="relative flex-1">
-              <i className="fas fa-link absolute left-4 top-1/2 -translate-y-1/2 text-[var(--input-icon)]"></i>
-              <input 
-                type="url" 
-                placeholder="Paste your long link here (https://...)" 
-                className="input-premium w-full p-4 pl-12 rounded-xl text-sm md:text-base" 
-                value={url} 
-                onChange={(e) => setUrl(e.target.value)} 
-              />
+            
+            {/* Main URL Input */}
+            <div>
+              <div className="relative">
+                <i className="fas fa-link absolute left-4 top-1/2 -translate-y-1/2 text-[var(--input-icon)]"></i>
+                <input 
+                  type="url" 
+                  placeholder="Your URL Here (https://...)" 
+                  className="input-premium w-full p-3.5 pl-11 rounded-xl text-sm" 
+                  value={url} 
+                  onChange={(e) => setUrl(e.target.value)} 
+                />
+              </div>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="relative flex-1">
+            {/* Alias Input */}
+            <div>
+              <label className="block text-sm font-extrabold text-[var(--text-primary)] mb-1.5 tracking-wide">
+                Alias
+              </label>
+              <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--input-icon)]">/</span>
                 <input 
                   type="text" 
-                  placeholder="Custom Alias (Optional)" 
-                  className="input-premium w-full p-4 pl-8 rounded-xl text-sm md:text-base" 
+                  placeholder="Alias (Optional)" 
+                  className="input-premium w-full p-3.5 pl-9 rounded-xl text-sm" 
                   value={alias} 
                   onChange={(e) => setAlias(e.target.value)} 
                 />
               </div>
+            </div>
+
+            {/* Expiration Date Input */}
+            <div>
+              <label className="block text-sm font-extrabold text-[var(--text-primary)] mb-1.5 tracking-wide">
+                Expiration date
+              </label>
+              <div className="relative w-full md:w-2/3 lg:w-1/2">
+                <i className="fas fa-clock absolute left-4 top-1/2 -translate-y-1/2 text-[var(--input-icon)]"></i>
+                <input 
+                  type="datetime-local" 
+                  className="input-premium w-full p-3.5 pl-11 pr-4 rounded-xl text-sm text-slate-400 focus:text-[var(--text-primary)]" 
+                  value={expirationDate} 
+                  min={today}
+                  onChange={(e) => setExpirationDate(e.target.value)} 
+                />
+              </div>
+            </div>
+
+            {/* Submit Button (Left Aligned on Desktop) */}
+            <div className="mt-2">
               <button 
                 onClick={handleShorten} 
-                className="btn-action px-6 md:px-10 py-4 rounded-xl text-white font-bold shadow-[0_10px_20px_rgba(99,102,241,0.3)] flex items-center justify-center gap-2 hover:-translate-y-1 transition-transform"
+                className="btn-action w-full md:w-auto px-8 py-3 rounded-xl text-white font-bold shadow-[0_5px_15px_rgba(99,102,241,0.3)] flex items-center justify-center gap-2 hover:-translate-y-1 transition-transform"
               >
                 <span>Shorten</span> <i className="fas fa-bolt"></i>
               </button>
             </div>
+
           </div>
 
           {/* Success Link Display */}
           {resultLink && (
-            <div className="mt-6 p-5 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4 bg-emerald-500/10 border border-emerald-500/30 shadow-inner fade-in">
+            <div className="mt-5 p-4 rounded-xl flex flex-col md:flex-row items-center justify-between gap-3 bg-emerald-500/10 border border-emerald-500/30 shadow-inner fade-in">
               <div className="flex-1 min-w-0 w-full text-center md:text-left">
-                <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider mb-1 flex items-center justify-center md:justify-start gap-1">
+                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider mb-1 flex items-center justify-center md:justify-start gap-1">
                   <i className="fas fa-check-circle"></i> Success! Your Link:
                 </p>
-                <p className="font-mono truncate text-lg font-bold text-[var(--text-primary)]">
+                <p className="font-mono truncate text-base font-bold text-[var(--text-primary)]">
                   {resultLink}
                 </p>
               </div>
               <button 
                 onClick={copyToClipboard} 
-                className="w-full md:w-auto px-8 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold shadow-lg flex items-center justify-center gap-2 transition-colors"
+                className="w-full md:w-auto px-6 py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold shadow-md flex items-center justify-center gap-2 transition-colors"
               >
-                <i className="far fa-copy"></i> Copy Link
+                <i className="far fa-copy"></i> Copy
               </button>
             </div>
           )}
@@ -201,68 +239,57 @@ const DashboardOverview = ({ token, user, isActive }) => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6 mt-8">
-        <div className="glass-panel rounded-3xl p-6 md:p-8 relative overflow-hidden group hover:border-indigo-500/50 transition-colors">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6 mt-6">
+        <div className="glass-panel rounded-3xl p-6 relative overflow-hidden group hover:border-indigo-500/50 transition-colors">
           <div className="absolute -right-4 -top-4 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
             <i className="fas fa-mouse-pointer text-8xl text-[var(--text-primary)]"></i>
           </div>
-          <p className="text-sm font-bold uppercase tracking-wider mb-2 text-slate-400">Total Clicks</p>
-          <p className="text-4xl md:text-5xl font-black tracking-tight text-[var(--text-primary)]">{stats.total.toLocaleString()}</p>
-          <div className="h-1.5 w-16 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full mt-6"></div>
+          <p className="text-xs font-bold uppercase tracking-wider mb-2 text-slate-400">Total Clicks</p>
+          <p className="text-3xl md:text-4xl font-black tracking-tight text-[var(--text-primary)]">{stats.total.toLocaleString()}</p>
+          <div className="h-1.5 w-12 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full mt-4"></div>
         </div>
 
-        <div className="glass-panel rounded-3xl p-6 md:p-8 relative overflow-hidden group hover:border-pink-500/50 transition-colors">
+        <div className="glass-panel rounded-3xl p-6 relative overflow-hidden group hover:border-pink-500/50 transition-colors">
           <div className="absolute -right-4 -top-4 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
             <i className="fas fa-calendar-day text-8xl text-[var(--text-primary)]"></i>
           </div>
-          <p className="text-sm font-bold uppercase tracking-wider mb-2 text-slate-400">Today's Clicks</p>
-          <p className="text-4xl md:text-5xl font-black tracking-tight text-[var(--text-primary)]">{stats.today.toLocaleString()}</p>
-          <div className="h-1.5 w-16 bg-gradient-to-r from-pink-500 to-orange-500 rounded-full mt-6"></div>
+          <p className="text-xs font-bold uppercase tracking-wider mb-2 text-slate-400">Today's Clicks</p>
+          <p className="text-3xl md:text-4xl font-black tracking-tight text-[var(--text-primary)]">{stats.today.toLocaleString()}</p>
+          <div className="h-1.5 w-12 bg-gradient-to-r from-pink-500 to-orange-500 rounded-full mt-4"></div>
         </div>
       </div>
 
       {/* Analytics Chart & Support Block */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
 
         {/* Chart Column */}
-        <div className="lg:col-span-2 glass-panel rounded-3xl p-5 md:p-8">
-          <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-[var(--text-primary)]">
+        <div className="lg:col-span-2 glass-panel rounded-3xl p-5 md:p-6">
+          <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-[var(--text-primary)]">
             <i className="fas fa-chart-area text-indigo-500"></i> Daily Clicks Chart (30 Days)
           </h3>
-          <div className="w-full h-[300px]">
+          <div className="w-full h-[250px]">
             <Line data={chartData} options={chartOptions} />
           </div>
         </div>
 
-        {/* Support / Manager Contact Column */}
-        <div className="glass-panel rounded-3xl p-6 md:p-8 flex flex-col justify-between border-t-4 border-indigo-500">
+        {/* Support Column */}
+        <div className="glass-panel rounded-3xl p-6 flex flex-col justify-between border-t-4 border-indigo-500">
           <div>
-            <div className="w-14 h-14 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-500 mb-6 shadow-inner border border-indigo-500/20">
-              <i className="fas fa-headset text-2xl"></i>
+            <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-500 mb-4 shadow-inner border border-indigo-500/20">
+              <i className="fas fa-headset text-xl"></i>
             </div>
-            <h3 className="text-xl font-bold mb-2 text-[var(--text-primary)]">Dedicated Support</h3>
-            <p className="text-sm text-slate-400 mb-6 leading-relaxed">
-              Need higher CPM, API integrations, or have payment queries? Contact our management team directly for priority assistance.
+            <h3 className="text-lg font-bold mb-2 text-[var(--text-primary)]">Dedicated Support</h3>
+            <p className="text-xs text-slate-400 mb-6 leading-relaxed">
+              Need higher CPM, API integrations, or have queries? Contact our management team for priority assistance.
             </p>
           </div>
 
           <div className="space-y-3">
-            {/* WHATSAPP SUPPORT BUTTON */}
-            <a 
-              href="https://wa.me/919304266995" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="w-full py-3 px-4 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold text-sm flex items-center justify-center gap-2 transition-colors shadow-lg shadow-green-600/20"
-            >
-              <i className="fab fa-whatsapp text-xl"></i> WhatsApp Support
+            <a href="https://wa.me/919304266995" target="_blank" rel="noopener noreferrer" className="w-full py-2.5 px-4 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold text-sm flex items-center justify-center gap-2 transition-colors shadow-md">
+              <i className="fab fa-whatsapp text-lg"></i> WhatsApp Support
             </a>
-
-            <a href="https://t.me/vikubhai01" target="_blank" rel="noopener noreferrer" className="w-full py-3 px-4 rounded-xl bg-[#0088cc] hover:bg-[#0077b5] text-white font-bold text-sm flex items-center justify-center gap-2 transition-colors shadow-lg shadow-[#0088cc]/20">
+            <a href="https://t.me/vikubhai01" target="_blank" rel="noopener noreferrer" className="w-full py-2.5 px-4 rounded-xl bg-[#0088cc] hover:bg-[#0077b5] text-white font-bold text-sm flex items-center justify-center gap-2 transition-colors shadow-md">
               <i className="fab fa-telegram-plane text-lg"></i> Contact Manager
-            </a>
-
-            <a href="mailto:support@urlking.site" className="w-full py-3 px-4 rounded-xl bg-[var(--nav-hover)] border border-[var(--glass-border)] text-[var(--text-primary)] hover:border-indigo-500/50 font-bold text-sm flex items-center justify-center gap-2 transition-colors">
-              <i className="fas fa-envelope text-indigo-500"></i> Email Support
             </a>
           </div>
         </div>
