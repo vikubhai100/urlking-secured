@@ -6,7 +6,7 @@ const Footer = () => {
     <footer className="bg-[var(--bg-body)] pt-20 pb-10 border-t border-[var(--glass-border)] mt-10 transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-16">
-          
+
           {/* Logo & Description */}
           <div className="md:col-span-2">
             <Link to="/" className="text-2xl font-extrabold flex items-center gap-3 text-[var(--text-primary)] mb-6 transition-colors">
@@ -20,7 +20,7 @@ const Footer = () => {
             </p>
           </div>
 
-          {/* Platform Links (UPDATED WITH NEW PAGES) */}
+          {/* Platform Links */}
           <div>
             <h4 className="text-[var(--text-primary)] font-bold mb-6 text-lg transition-colors">Platform</h4>
             <ul className="space-y-3">
@@ -47,33 +47,38 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Company Links */}
+          {/* 🟢 Company Links (UPDATED WITH LEGAL PAGES) */}
           <div>
-            <h4 className="text-[var(--text-primary)] font-bold mb-6 text-lg transition-colors">Company</h4>
+            <h4 className="text-[var(--text-primary)] font-bold mb-6 text-lg transition-colors">Legal & Company</h4>
             <ul className="space-y-3">
               <li>
-                <Link to="#" className="text-slate-400 hover:text-indigo-500 hover:translate-x-1 inline-block transition-all font-medium">
-                  About Us
-                </Link>
-              </li>
-              <li>
-                <Link to="#" className="text-slate-400 hover:text-indigo-500 hover:translate-x-1 inline-block transition-all font-medium">
+                <Link to="/privacy-policy" className="text-slate-400 hover:text-indigo-500 hover:translate-x-1 inline-block transition-all font-medium">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link to="#" className="text-slate-400 hover:text-indigo-500 hover:translate-x-1 inline-block transition-all font-medium">
+                <Link to="/terms" className="text-slate-400 hover:text-indigo-500 hover:translate-x-1 inline-block transition-all font-medium">
                   Terms of Service
                 </Link>
               </li>
+              <li>
+                <Link to="/dmca" className="text-slate-400 hover:text-indigo-500 hover:translate-x-1 inline-block transition-all font-medium">
+                  DMCA / Report
+                </Link>
+              </li>
+              <li>
+                <a href="mailto:support@urlking.site" className="text-slate-400 hover:text-indigo-500 hover:translate-x-1 inline-block transition-all font-medium">
+                  Contact Us
+                </a>
+              </li>
             </ul>
           </div>
-          
+
         </div>
 
         {/* Copyright */}
         <div className="text-center pt-8 border-t border-[var(--glass-border)] text-slate-500 text-sm font-medium transition-colors">
-          &copy; 2026 URLKING. All rights reserved.
+          &copy; {new Date().getFullYear()} URLKING. All rights reserved.
         </div>
       </div>
     </footer>
