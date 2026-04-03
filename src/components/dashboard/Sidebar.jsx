@@ -12,9 +12,14 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
     { id: 'history', icon: 'fa-link', label: 'Links History' },
     { id: 'withdraw', icon: 'fa-wallet', label: 'Withdraw' },
     { id: 'referrals', icon: 'fa-users', label: 'Referrals' },
+  ];
+
+  // 🟢 NAYA CODE: Tools Section ke items alag kar diye taaki UI clean rahe
+  const toolItems = [
     { id: 'api', icon: 'fa-code', label: 'Developer API' },
     { id: 'quicklink', icon: 'fa-bolt', label: 'Quick Link' },
-    { id: 'profile', icon: 'fa-cog', label: 'Settings' },
+    { id: 'mass-shrinker', icon: 'fa-compress-arrows-alt', label: 'Mass Shrinker' }, // Naya Tool
+    { id: 'full-page', icon: 'fa-globe', label: 'Full Page Script' }, // Naya Tool
   ];
 
   const handleLogout = () => {
@@ -42,6 +47,24 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
               <i className={`fas ${item.icon} w-5 text-center ${activeSection === item.id ? 'text-indigo-500' : 'text-slate-500'}`}></i>{item.label}
             </button>
           ))}
+
+          {/* 🟢 NAYA CODE: Tools Menu Section */}
+          <p className="px-4 text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2 mt-6">Tools</p>
+          {toolItems.map((item) => (
+            <button key={item.id} onClick={() => { setActiveSection(item.id); setIsMobileOpen(false); }}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-left ${activeSection === item.id ? 'bg-indigo-500/10 text-indigo-500 border border-indigo-500/20' : 'text-slate-400 hover:bg-[var(--nav-hover)] hover:text-[var(--text-primary)]'}`}>
+              <i className={`fas ${item.icon} w-5 text-center ${activeSection === item.id ? 'text-indigo-500' : 'text-slate-500'}`}></i>{item.label}
+            </button>
+          ))}
+
+          {/* Settings Button */}
+          <div className="mt-4 border-t border-white/5 pt-4">
+            <button onClick={() => { setActiveSection('profile'); setIsMobileOpen(false); }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium text-left ${activeSection === 'profile' ? 'bg-indigo-500/10 text-indigo-500 border border-indigo-500/20' : 'text-slate-400 hover:bg-[var(--nav-hover)] hover:text-[var(--text-primary)]'}`}>
+                <i className={`fas fa-cog w-5 text-center ${activeSection === 'profile' ? 'text-indigo-500' : 'text-slate-500'}`}></i>Settings
+            </button>
+          </div>
+
           {isAdmin && (
             <>
               <p className="px-4 text-xs font-bold text-pink-500 uppercase tracking-wider mb-2 mt-6">Administration</p>
