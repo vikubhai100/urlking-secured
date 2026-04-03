@@ -22,7 +22,7 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
 
   const manageNav = [
     { id: 'files', label: 'All Files' },
-    { id: 'history', label: 'All Links' }, // Isko bhi thoda clean kar diya
+    { id: 'history', label: 'All Links' },
   ];
 
   const toolNav = [
@@ -43,9 +43,9 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
   return (
     <>
       {isMobileOpen && <div className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[70]" onClick={() => setIsMobileOpen(false)}></div>}
-      
+
       <aside className={`fixed top-0 left-0 h-full w-72 bg-[#0f172a] border-r border-slate-800 flex flex-col transition-transform duration-300 z-[80] shadow-2xl ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
-        
+
         <div className="p-6 flex items-center justify-between border-b border-slate-800">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white">
@@ -59,18 +59,16 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
         </div>
 
         <nav className="flex-1 overflow-y-auto p-4 scrollbar-hide">
-          
+
           {renderSingleButton('create', 'fa-home', 'Statistics')}
           {renderSingleButton('upload', 'fa-cloud-upload-alt', 'Upload File')}
 
-          {/* 🟢 UPDATED: "Manage Links" ko "Files & Links" kar diya */}
           <div className="mb-1">
             <button 
               onClick={() => setIsManageOpen(!isManageOpen)}
               className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all font-medium text-left ${isManageOpen ? 'bg-slate-800/50 text-white' : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'}`}
             >
               <div className="flex items-center gap-3">
-                {/* Icon bhi folder wala kar diya jo dono ko represent karta hai */}
                 <i className={`fas fa-folder-open w-5 text-center ${isManageOpen ? 'text-indigo-400' : 'text-slate-500'}`}></i> Files & Links
               </div>
               <i className={`fas fa-chevron-left text-xs transition-transform duration-300 ${isManageOpen ? '-rotate-90 text-slate-300' : 'text-slate-500'}`}></i>
@@ -132,6 +130,9 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
               </div>
             </div>
           </div>
+
+          {/* 🟢 SUPPORT CENTER YAHAN LAGA DIYA */}
+          {renderSingleButton('support', 'fa-life-ring', 'Support Center')}
 
           {isAdmin && (
             <div className="mt-6 border-t border-slate-800 pt-4">
