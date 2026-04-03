@@ -197,7 +197,7 @@ const Help = ({ user, isActive }) => {
           <div className="mt-8 pt-6 border-t border-white/5">
              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Direct Contact</h3>
              <div className="grid grid-cols-1 gap-3">
-              <a href="https://t.me/your_support_bot" target="_blank" rel="noreferrer" className="w-full bg-[#0088cc] hover:bg-[#0077b3] text-white py-3 rounded-xl text-sm font-bold flex justify-center items-center gap-2 transition-colors shadow-md">
+              <a href="https://t.me/vikubhai01" target="_blank" rel="noreferrer" className="w-full bg-[#0088cc] hover:bg-[#0077b3] text-white py-3 rounded-xl text-sm font-bold flex justify-center items-center gap-2 transition-colors shadow-md">
                 <i className="fab fa-telegram-plane text-lg"></i> Telegram Support
               </a>
               <a href="mailto:support@urlking.site" className="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl text-sm font-bold flex justify-center items-center gap-2 transition-colors shadow-md">
