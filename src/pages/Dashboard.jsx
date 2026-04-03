@@ -12,6 +12,7 @@ import QuickLink from '../components/dashboard/QuickLink';
 import MassShrinker from '../components/dashboard/MassShrinker'; 
 import FullPageScript from '../components/dashboard/FullPageScript'; 
 import ProfileSettings from '../components/dashboard/ProfileSettings';
+import Help from '../components/dashboard/Help'; // 🟢 NAYA IMPORT (Support Center)
 
 const Dashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -109,6 +110,12 @@ const Dashboard = () => {
         <div className={activeSection === 'profile' ? 'block fade-in' : 'hidden'}>
           {mountedTabs.includes('profile') && <ProfileSettings token={token} user={user} fetchUserProfile={fetchUserProfile} isActive={activeSection === 'profile'} />}
         </div>
+        
+        {/* 🟢 SUPPORT CENTER YAHAN ADD KIYA HAI */}
+        <div className={activeSection === 'support' ? 'block fade-in' : 'hidden'}>
+          {mountedTabs.includes('support') && <Help user={user} isActive={activeSection === 'support'} />}
+        </div>
+
         <div className={activeSection === 'admin-users' ? 'block fade-in' : 'hidden'}>
           {mountedTabs.includes('admin-users') && <div className="p-6 glass-panel rounded-2xl">Manage Users</div>}
         </div>
@@ -118,7 +125,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-[var(--bg-body)] text-[var(--text-primary)] transition-colors duration-300">
-      
+
       {/* 📱 MOBILE HEADER WITH QUICK ICONS */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-[60] bg-[var(--bg-body)] border-b border-[var(--glass-border)] p-4 flex items-center justify-between shadow-md">
         <button onClick={() => setIsMobileOpen(true)} className="text-2xl text-[var(--text-primary)] p-2">
@@ -130,7 +137,7 @@ const Dashboard = () => {
            </div>
            <h1 className="text-lg font-bold tracking-wide">URLKING</h1>
         </div>
-        
+
         {/* Quick Action Icons */}
         <div className="flex items-center gap-2 pr-1">
           <button 
@@ -149,10 +156,10 @@ const Dashboard = () => {
       </div>
 
       <Sidebar activeSection={activeSection} setActiveSection={setActiveSection} isMobileOpen={isMobileOpen} setIsMobileOpen={setIsMobileOpen} user={user} />
-      
+
       {/* 🟢 MAIN CONTENT AREA (Flex col setup to keep footer at the bottom) */}
       <main className="md:ml-72 p-4 md:p-10 pt-24 min-h-screen flex flex-col relative z-10 overflow-x-hidden">
-        
+
         <div className="flex-grow">
           {renderContent()}
         </div>
@@ -160,14 +167,14 @@ const Dashboard = () => {
         {/* 🟢 COMPACT FOOTER */}
         <footer className="mt-12 pt-6 pb-2 border-t border-[var(--glass-border)] flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-medium text-slate-500">
           <p>&copy; {new Date().getFullYear()} URLKING. All rights reserved.</p>
-          
+
           <div className="flex items-center gap-4">
             <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-400 transition-colors">Privacy Policy</a>
             <span className="w-1 h-1 rounded-full bg-slate-700"></span>
-            
+
             <a href="/dmca" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-400 transition-colors">DMCA</a>
             <span className="w-1 h-1 rounded-full bg-slate-700"></span>
-            
+
             <a href="/terms" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-400 transition-colors">Terms</a>
           </div>
         </footer>
