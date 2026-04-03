@@ -11,6 +11,12 @@ const Rates = lazy(() => import('./pages/Rates'));
 const PaymentProof = lazy(() => import('./pages/PaymentProof'));
 const Uploader = lazy(() => import('./pages/Uploader'));
 const Admin = lazy(() => import('./pages/Admin'));
+
+// 🟢 NAYE PAGES YAHAN IMPORT KIYE HAIN
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const DMCA = lazy(() => import('./pages/DMCA'));
+const Terms = lazy(() => import('./pages/Terms'));
+
 const InvalidLink = lazy(() => import('./pages/InvalidLink'));
 
 function App() {
@@ -49,6 +55,11 @@ function App() {
           <Route path="/rates" element={<Rates />} />
           <Route path="/payment-proof" element={<PaymentProof />} />
           <Route path="/uploader" element={<Uploader />} />
+
+          {/* 🟢 NAYE ROUTES YAHAN ADD KIYE HAIN */}
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/dmca" element={<DMCA />} />
+          <Route path="/terms" element={<Terms />} />
 
           {/* Admin Route */}
           <Route path="/admin" element={<Admin />} />
