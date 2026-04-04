@@ -12,11 +12,13 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
   useEffect(() => {
     if (['files', 'history'].includes(activeSection)) setIsManageOpen(true);
     if (['api', 'quicklink', 'mass-shrinker', 'full-page'].includes(activeSection)) setIsToolsOpen(true);
-    if (['profile'].includes(activeSection)) setIsSettingsOpen(true);
+    // 🟢 UPDATE: Added 'changepass' to keep Settings open
+    if (['profile', 'changepass'].includes(activeSection)) setIsSettingsOpen(true);
   }, [activeSection]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("refreshToken"); // Optional: if using refresh tokens
     navigate('/login');
   };
 
@@ -121,17 +123,22 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
               </div>
               <i className={`fas fa-chevron-left text-xs transition-transform duration-300 ${isSettingsOpen ? '-rotate-90 text-slate-300' : 'text-slate-500'}`}></i>
             </button>
-            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isSettingsOpen ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0'}`}>
+            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isSettingsOpen ? 'max-h-32 opacity-100' : 'max-h-0 opacity-0'}`}>
               <div className="flex flex-col py-1">
+                {/* Profile Button */}
                 <button onClick={() => { setActiveSection('profile'); setIsMobileOpen(false); }}
                   className={`w-full text-left pl-12 pr-4 py-2.5 text-sm font-medium transition-colors ${activeSection === 'profile' ? 'text-white' : 'text-slate-400 hover:text-slate-200'}`}>
                   Profile
+                </button>
+                {/* 🟢 NEW: Change Password Button */}
+                <button onClick={() => { setActiveSection('changepass'); setIsMobileOpen(false); }}
+                  className={`w-full text-left pl-12 pr-4 py-2.5 text-sm font-medium transition-colors ${activeSection === 'changepass' ? 'text-white' : 'text-slate-400 hover:text-slate-200'}`}>
+                  Change Password
                 </button>
               </div>
             </div>
           </div>
 
-          {/* 🟢 SUPPORT CENTER YAHAN LAGA DIYA */}
           {renderSingleButton('support', 'fa-life-ring', 'Support Center')}
 
           {isAdmin && (
