@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { showToast } from '../../toast'; 
 
 const UploadFile = ({ token, user }) => {
@@ -13,7 +13,23 @@ const UploadFile = ({ token, user }) => {
   const [uploadSpeed, setUploadSpeed] = useState('0 B/s');
   const [eta, setEta] = useState('Calculating...'); 
 
+  // 🟢 NAYA: XHR Request ko store karne ke liye taaki cancel kar sakein
+  const xhrRef = useRef(null);
+
   const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
+
+  // 🟢 NAYA: Page Close/Reload Protection Alert
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (isUploading) {
+        e.preventDefault();
+        e.returnValue = ''; // Standard way to trigger browser's exit warning
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isUploading]);
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
@@ -65,7 +81,9 @@ const UploadFile = ({ token, user }) => {
       formData.append('utype', 'reg');
       formData.append('file_0', file);
 
+      // XHR setup and saving to Ref
       const xhr = new XMLHttpRequest();
+      xhrRef.current = xhr; 
       xhr.open('POST', serverData.url, true);
 
       let startTime = Date.now();
@@ -133,6 +151,13 @@ const UploadFile = ({ token, user }) => {
         setIsUploading(false); 
       };
 
+      // 🟢 NAYA: Handle Abort event
+      xhr.onabort = () => {
+        showToast("Upload Cancelled!", "error");
+        setIsUploading(false);
+        resetUploader(); // Cancel hone par UI clear kar do
+      };
+
       xhr.send(formData);
 
     } catch (e) {
@@ -141,12 +166,18 @@ const UploadFile = ({ token, user }) => {
     }
   };
 
+  // 🟢 NAYA: Cancel Upload Function
+  const cancelUpload = () => {
+    if (xhrRef.current) {
+      xhrRef.current.abort(); // Ye request ko turant kill kar dega
+    }
+  };
+
   const handleCopy = () => {
     navigator.clipboard.writeText(resultLink);
     showToast("Link Copied Successfully!", "success");
   };
 
-  // 🟢 NAYA FUNCTION: Reset karne ke liye
   const resetUploader = () => {
     setFile(null);
     setResultLink('');
@@ -178,7 +209,6 @@ const UploadFile = ({ token, user }) => {
         <h2 className="text-2xl font-bold text-[var(--text-primary)]">Upload File</h2>
       </div>
 
-      {/* Bot Banner */}
       <div className="glass-panel p-6 rounded-3xl bg-gradient-to-r from-[#0088cc]/10 to-indigo-900/10 border border-[#0088cc]/30 relative overflow-hidden flex flex-col md:flex-row items-center gap-6 text-center md:text-left shadow-lg">
         <div className="w-16 h-16 rounded-full bg-[#0088cc]/20 flex items-center justify-center text-[#0088cc] text-3xl shrink-0 border border-[#0088cc]/30 shadow-[0_0_20px_rgba(0,136,204,0.3)] z-10">
           <i className="fab fa-telegram-plane"></i>
@@ -196,7 +226,6 @@ const UploadFile = ({ token, user }) => {
         <div className="relative z-10 p-6 md:p-10 glass-panel border-none rounded-[1.2rem]">
           <div className="space-y-8">
 
-            {/* Upload Area */}
             <div className={`relative border-2 border-dashed rounded-2xl p-10 text-center transition-all duration-300 ${
               file ? 'border-indigo-500 bg-indigo-500/5' : 'border-[var(--glass-border)] bg-[var(--nav-hover)] hover:border-indigo-500/50'
             }`}>
@@ -204,7 +233,7 @@ const UploadFile = ({ token, user }) => {
                 type="file" 
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
                 onChange={handleFileChange} 
-                disabled={isUploading || resultLink} // 🟢 Disable agar upload ho raha hai ya complete ho gaya
+                disabled={isUploading || resultLink} 
                 title="Select a file to upload"
               />
 
@@ -223,7 +252,6 @@ const UploadFile = ({ token, user }) => {
                   </div>
                   <p className="text-lg font-bold text-[var(--text-primary)] break-all px-4 mb-2">{file.name}</p>
                   
-                  {/* Status Indicator */}
                   {!resultLink ? (
                     <div className="inline-flex items-center gap-2 bg-emerald-500/10 px-4 py-1.5 rounded-full border border-emerald-500/30">
                       <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
@@ -239,9 +267,8 @@ const UploadFile = ({ token, user }) => {
               )}
             </div>
 
-            {/* Progress Bar */}
             {isUploading && (
-              <div className="space-y-2 p-4 md:p-5 glass-panel rounded-xl border border-indigo-500/20">
+              <div className="space-y-4 p-4 md:p-5 glass-panel rounded-xl border border-indigo-500/20">
                 <div className="flex justify-between items-center text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
                   <span className="flex items-center gap-2">
                     <i className="fas fa-spinner fa-spin text-indigo-500"></i> Uploading...
@@ -272,10 +299,17 @@ const UploadFile = ({ token, user }) => {
                     </span>
                   </div>
                 </div>
+                
+                {/* 🟢 NAYA: Cancel Button During Upload */}
+                <button 
+                  onClick={cancelUpload}
+                  className="w-full mt-4 py-2.5 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-white font-bold text-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+                >
+                  <i className="fas fa-times-circle"></i> Cancel Upload
+                </button>
               </div>
             )}
 
-            {/* 🟢 Result Link & Upload Another Button */}
             {resultLink && (
               <div className="fade-in space-y-4">
                 <div className="p-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 shadow-[0_10px_30px_rgba(16,185,129,0.1)]">
@@ -302,7 +336,6 @@ const UploadFile = ({ token, user }) => {
                   </div>
                 </div>
                 
-                {/* 🟢 Upload Another File Button */}
                 <button 
                   onClick={resetUploader} 
                   className="w-full py-4 rounded-2xl border-2 border-indigo-500 text-indigo-500 hover:bg-indigo-500 hover:text-white font-bold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2"
@@ -312,7 +345,6 @@ const UploadFile = ({ token, user }) => {
               </div>
             )}
 
-            {/* Start Upload Button */}
             {file && !isUploading && !resultLink && (
               <button 
                 onClick={startUpload} 
@@ -325,7 +357,6 @@ const UploadFile = ({ token, user }) => {
         </div>
       </div>
 
-      {/* 🟢 Upload Rules Section */}
       <div className="glass-panel p-6 rounded-2xl border-l-4 border-amber-500 mt-8">
         <h4 className="text-sm font-bold text-amber-500 uppercase tracking-wider mb-3 flex items-center gap-2">
           <i className="fas fa-exclamation-triangle"></i> Upload Rules & Guidelines
