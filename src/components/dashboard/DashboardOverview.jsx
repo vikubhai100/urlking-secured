@@ -18,7 +18,12 @@ const DashboardOverview = ({ token, user, isActive }) => {
   const [alias, setAlias] = useState('');
   const [expirationDate, setExpirationDate] = useState('');
   const [resultLink, setResultLink] = useState('');
-  const [stats, setStats] = useState({ total: 0, today: 0, daily: Array(30).fill(0) });
+  const [stats, setStats] = useState({ total: 0, today: 0, monthTotal: 0, daily: Array(30).fill(0) });
+
+  // 🟢 NAYE STATES: Month aur Year ke liye
+  const currentDate = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1); // 1-12
+  const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
 
   const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
 
@@ -26,17 +31,21 @@ const DashboardOverview = ({ token, user, isActive }) => {
     if (isActive !== false) { 
       fetchStats();
     }
-  }, [token, isActive]); 
+  }, [token, isActive, selectedMonth, selectedYear]); // Dependency me month/year add kiya
 
   const fetchStats = async () => {
     try {
-      const res = await fetch(`${API}/api/stats`, { headers: { Authorization: `Bearer ${token}` } });
+      // 🟢 API me query params bhej rahe hain
+      const res = await fetch(`${API}/api/stats?month=${selectedMonth}&year=${selectedYear}`, { 
+        headers: { Authorization: `Bearer ${token}` } 
+      });
       if (res.ok) {
         const data = await res.json();
         setStats({ 
           total: data.total || 0, 
           today: data.today || 0, 
-          daily: data.daily || Array(30).fill(0) 
+          monthTotal: data.monthTotal || 0,
+          daily: data.daily || [] // Ye backend se dynamic length ka aayega
         });
       }
     } catch (err) { 
@@ -80,6 +89,7 @@ const DashboardOverview = ({ token, user, isActive }) => {
     showToast("Link Copied Successfully!", "success"); 
   };
 
+  // 🟢 DYNAMIC CHART LABELS (1 se leke jitne bhi din daily array me hain)
   const chartData = {
     labels: Array.from({ length: stats.daily.length }, (_, i) => i + 1),
     datasets: [
@@ -112,7 +122,19 @@ const DashboardOverview = ({ token, user, isActive }) => {
     }
   };
 
-  const today = new Date().toISOString().slice(0, 16);
+  const todayIso = currentDate.toISOString().slice(0, 16);
+
+  // 🟢 Helper array for months
+  const months = [
+    { value: 1, label: 'January' }, { value: 2, label: 'February' }, { value: 3, label: 'March' },
+    { value: 4, label: 'April' }, { value: 5, label: 'May' }, { value: 6, label: 'June' },
+    { value: 7, label: 'July' }, { value: 8, label: 'August' }, { value: 9, label: 'September' },
+    { value: 10, label: 'October' }, { value: 11, label: 'November' }, { value: 12, label: 'December' }
+  ];
+
+  // Dynamically generate years (from platform launch year up to current)
+  const currentY = new Date().getFullYear();
+  const years = Array.from({ length: (currentY - 2024) + 1 }, (_, i) => 2024 + i);
 
   return (
     <div className="fade-in w-full max-w-5xl mx-auto space-y-6 px-1 md:px-0">
@@ -147,20 +169,17 @@ const DashboardOverview = ({ token, user, isActive }) => {
         </div>
       </div>
 
-      {/* 🟢 COMPACT & PERFECTLY SPACED SHORTEN BOX */}
+      {/* SHORTEN BOX */}
       <div className="border-animated p-1">
         <div className="relative z-10 p-5 md:p-6 glass-panel border-none rounded-[1.2rem]">
           <h3 className="text-lg font-bold flex items-center gap-2 text-[var(--text-primary)] mb-4">
             <i className="fas fa-magic text-indigo-500"></i> Shorten New URL
           </h3>
 
-          <div className="space-y-4"> {/* Reduced spacing here from space-y-6 to space-y-4 */}
-            
-            {/* 1. Main URL Input */}
+          <div className="space-y-4"> 
             <div>
               <div className="relative">
                 <i className="fas fa-link absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                {/* Changed py-4 to py-3 to make box slimmer */}
                 <input 
                   type="url" 
                   placeholder="Your URL Here (https://...)" 
@@ -171,11 +190,8 @@ const DashboardOverview = ({ token, user, isActive }) => {
               </div>
             </div>
 
-            {/* 2. Alias Input */}
             <div>
-              <label className="block text-sm font-bold text-[var(--text-primary)] mb-1.5 tracking-wide">
-                Alias
-              </label>
+              <label className="block text-sm font-bold text-[var(--text-primary)] mb-1.5 tracking-wide">Alias</label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">/</span>
                 <input 
@@ -188,24 +204,20 @@ const DashboardOverview = ({ token, user, isActive }) => {
               </div>
             </div>
 
-            {/* 3. Expiration Date Input */}
             <div>
-              <label className="block text-sm font-bold text-[var(--text-primary)] mb-1.5 tracking-wide">
-                Expiration date
-              </label>
+              <label className="block text-sm font-bold text-[var(--text-primary)] mb-1.5 tracking-wide">Expiration date</label>
               <div className="relative w-full md:w-1/2 lg:w-1/3">
                 <i className="fas fa-clock absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
                 <input 
                   type="datetime-local" 
                   className="input-premium w-full py-3 pl-11 pr-4 rounded-xl text-sm text-slate-400 focus:text-[var(--text-primary)]" 
                   value={expirationDate} 
-                  min={today}
+                  min={todayIso}
                   onChange={(e) => setExpirationDate(e.target.value)} 
                 />
               </div>
             </div>
 
-            {/* 4. Shorten Button (Bada aur bold!) */}
             <div className="pt-2">
               <button 
                 onClick={handleShorten} 
@@ -214,10 +226,8 @@ const DashboardOverview = ({ token, user, isActive }) => {
                 <span>Shorten</span> <i className="fas fa-bolt"></i>
               </button>
             </div>
-
           </div>
 
-          {/* Success Link Display */}
           {resultLink && (
             <div className="mt-6 p-4 rounded-xl flex flex-col md:flex-row items-center justify-between gap-3 bg-emerald-500/10 border border-emerald-500/30 shadow-inner fade-in">
               <div className="flex-1 min-w-0 w-full text-center md:text-left">
@@ -243,9 +253,9 @@ const DashboardOverview = ({ token, user, isActive }) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6 mt-6">
         <div className="glass-panel rounded-3xl p-6 relative overflow-hidden group hover:border-indigo-500/50 transition-colors">
           <div className="absolute -right-4 -top-4 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-            <i className="fas fa-mouse-pointer text-8xl text-[var(--text-primary)]"></i>
+            <i className="fas fa-chart-line text-8xl text-[var(--text-primary)]"></i>
           </div>
-          <p className="text-xs font-bold uppercase tracking-wider mb-2 text-slate-400">Total Clicks</p>
+          <p className="text-xs font-bold uppercase tracking-wider mb-2 text-slate-400">Total Lifetime Clicks</p>
           <p className="text-3xl md:text-4xl font-black tracking-tight text-[var(--text-primary)]">{stats.total.toLocaleString()}</p>
           <div className="h-1.5 w-12 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full mt-4"></div>
         </div>
@@ -264,11 +274,40 @@ const DashboardOverview = ({ token, user, isActive }) => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
 
         {/* Chart Column */}
-        <div className="lg:col-span-2 glass-panel rounded-3xl p-5 md:p-6">
-          <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-[var(--text-primary)]">
-            <i className="fas fa-chart-area text-indigo-500"></i> Daily Clicks Chart (30 Days)
-          </h3>
-          <div className="w-full h-[250px]">
+        <div className="lg:col-span-2 glass-panel rounded-3xl p-5 md:p-6 flex flex-col">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+            <h3 className="text-lg font-bold flex items-center gap-2 text-[var(--text-primary)]">
+              <i className="fas fa-chart-area text-indigo-500"></i> Monthly Analytics
+            </h3>
+
+            {/* 🟢 MONTH & YEAR SELECTOR UI */}
+            <div className="flex gap-2 w-full sm:w-auto">
+              <select 
+                value={selectedMonth} 
+                onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                className="input-premium py-2 px-3 rounded-lg text-sm font-bold bg-[var(--nav-hover)] border-[var(--glass-border)] cursor-pointer flex-1 sm:flex-none"
+              >
+                {months.map(m => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </select>
+              <select 
+                value={selectedYear} 
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="input-premium py-2 px-3 rounded-lg text-sm font-bold bg-[var(--nav-hover)] border-[var(--glass-border)] cursor-pointer"
+              >
+                {years.map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 mb-4 text-xs font-bold uppercase tracking-wider text-indigo-400">
+            <span>Selected Month Clicks: {stats.monthTotal.toLocaleString()}</span>
+          </div>
+
+          <div className="w-full h-[250px] flex-1">
             <Line data={chartData} options={chartOptions} />
           </div>
         </div>
