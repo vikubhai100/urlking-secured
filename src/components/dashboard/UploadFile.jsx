@@ -6,12 +6,12 @@ const UploadFile = ({ token, user }) => {
   const [progress, setProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [resultLink, setResultLink] = useState('');
-  
-  // 🟢 STATES: Speed, Size, aur Time (ETA) track karne ke liye
+
+  // STATES: Speed, Size, aur Time (ETA) track karne ke liye
   const [loadedSize, setLoadedSize] = useState('0 B');
   const [totalSize, setTotalSize] = useState('0 B');
   const [uploadSpeed, setUploadSpeed] = useState('0 B/s');
-  const [eta, setEta] = useState('Calculating...'); // NAYA ETA STATE
+  const [eta, setEta] = useState('Calculating...'); 
 
   const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
 
@@ -19,7 +19,6 @@ const UploadFile = ({ token, user }) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
       setResultLink('');
-      // Reset metrics on new file selection
       setProgress(0);
       setLoadedSize('0 B');
       setTotalSize('0 B');
@@ -28,7 +27,6 @@ const UploadFile = ({ token, user }) => {
     }
   };
 
-  // Helper function: Bytes ko MB/KB mein convert karne ke liye
   const formatBytes = (bytes) => {
     if (bytes === 0) return '0 B';
     const k = 1024;
@@ -37,7 +35,6 @@ const UploadFile = ({ token, user }) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  // 🟢 Helper function: Seconds ko minutes aur seconds me format karne ke liye
   const formatTime = (seconds) => {
     if (!Number.isFinite(seconds) || seconds < 0) return "Calculating...";
     if (seconds < 60) return Math.floor(seconds) + "s";
@@ -54,7 +51,6 @@ const UploadFile = ({ token, user }) => {
     setTotalSize(formatBytes(file.size));
 
     try {
-      // 1. Get Server
       const serverRes = await fetch(`${API}/api/dev/server`, { headers: { Authorization: `Bearer ${token}` } });
       const serverData = await serverRes.json();
 
@@ -64,17 +60,14 @@ const UploadFile = ({ token, user }) => {
         return;
       }
 
-      // 2. Prepare Form Data
       const formData = new FormData();
       formData.append('sess_id', serverData.sess_id);
       formData.append('utype', 'reg');
       formData.append('file_0', file);
 
-      // 3. XHR for High-Speed Progress Tracking
       const xhr = new XMLHttpRequest();
       xhr.open('POST', serverData.url, true);
 
-      // Speed & ETA calculation variables
       let startTime = Date.now();
       let lastLoaded = 0;
 
@@ -84,25 +77,21 @@ const UploadFile = ({ token, user }) => {
           setProgress(currentPercent);
           setLoadedSize(formatBytes(e.loaded));
 
-          // Calculate speed & ETA every 500ms for smooth UI update
           const now = Date.now();
-          const timeDiff = (now - startTime) / 1000; // in seconds
+          const timeDiff = (now - startTime) / 1000; 
 
           if (timeDiff >= 0.5 && currentPercent < 100) {
             const bytesPerSecond = (e.loaded - lastLoaded) / timeDiff;
             setUploadSpeed(formatBytes(bytesPerSecond) + '/s');
-            
-            // 🟢 Calculate ETA (Remaining bytes / Bytes per second)
+
             const bytesRemaining = e.total - e.loaded;
             const secondsRemaining = bytesPerSecond > 0 ? bytesRemaining / bytesPerSecond : 0;
             setEta(formatTime(secondsRemaining));
-            
-            // Reset for next interval
+
             startTime = now;
             lastLoaded = e.loaded;
           } 
-          
-          // Agar 100% ho gaya toh UI update kardo Server response ke wait ke liye
+
           if (currentPercent === 100) {
             setUploadSpeed('Finishing...');
             setEta('Processing...');
@@ -120,7 +109,6 @@ const UploadFile = ({ token, user }) => {
               ? (file.size / 1048576).toFixed(2) + " MB" 
               : (file.size / 1024).toFixed(2) + " KB";
 
-            // 4. Finalize Request
             const finalRes = await fetch(`${API}/api/dev/finalize`, {
               method: "POST",
               headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -156,6 +144,17 @@ const UploadFile = ({ token, user }) => {
   const handleCopy = () => {
     navigator.clipboard.writeText(resultLink);
     showToast("Link Copied Successfully!", "success");
+  };
+
+  // 🟢 NAYA FUNCTION: Reset karne ke liye
+  const resetUploader = () => {
+    setFile(null);
+    setResultLink('');
+    setProgress(0);
+    setLoadedSize('0 B');
+    setTotalSize('0 B');
+    setUploadSpeed('0 B/s');
+    setEta('Calculating...');
   };
 
   if (user?.can_upload !== 1) {
@@ -205,7 +204,7 @@ const UploadFile = ({ token, user }) => {
                 type="file" 
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
                 onChange={handleFileChange} 
-                disabled={isUploading} 
+                disabled={isUploading || resultLink} // 🟢 Disable agar upload ho raha hai ya complete ho gaya
                 title="Select a file to upload"
               />
 
@@ -223,15 +222,24 @@ const UploadFile = ({ token, user }) => {
                     <i className="fas fa-file-alt text-4xl text-white"></i>
                   </div>
                   <p className="text-lg font-bold text-[var(--text-primary)] break-all px-4 mb-2">{file.name}</p>
-                  <div className="inline-flex items-center gap-2 bg-emerald-500/10 px-4 py-1.5 rounded-full border border-emerald-500/30">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                    <span className="text-xs text-emerald-500 font-bold uppercase tracking-wider">Ready to upload</span>
-                  </div>
+                  
+                  {/* Status Indicator */}
+                  {!resultLink ? (
+                    <div className="inline-flex items-center gap-2 bg-emerald-500/10 px-4 py-1.5 rounded-full border border-emerald-500/30">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                      <span className="text-xs text-emerald-500 font-bold uppercase tracking-wider">Ready to upload</span>
+                    </div>
+                  ) : (
+                    <div className="inline-flex items-center gap-2 bg-indigo-500/10 px-4 py-1.5 rounded-full border border-indigo-500/30">
+                      <i className="fas fa-check text-indigo-500"></i>
+                      <span className="text-xs text-indigo-500 font-bold uppercase tracking-wider">Upload Finished</span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
 
-            {/* 🟢 ENHANCED Progress Bar with ETA, Speed & MB Display */}
+            {/* Progress Bar */}
             {isUploading && (
               <div className="space-y-2 p-4 md:p-5 glass-panel rounded-xl border border-indigo-500/20">
                 <div className="flex justify-between items-center text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
@@ -240,7 +248,7 @@ const UploadFile = ({ token, user }) => {
                   </span>
                   <span className="text-indigo-400 text-sm font-black">{progress}%</span>
                 </div>
-                
+
                 <div className="h-4 rounded-full overflow-hidden bg-slate-800 border border-slate-700/50 shadow-inner">
                   <div 
                     className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 transition-all duration-300 relative bg-[length:200%_100%] animate-[gradient_2s_linear_infinite]" 
@@ -254,7 +262,7 @@ const UploadFile = ({ token, user }) => {
                   <span className="bg-slate-800 px-2.5 py-1.5 rounded-md border border-slate-700 w-full md:w-auto text-center md:text-left">
                     <i className="fas fa-hdd text-slate-500 mr-1"></i> {loadedSize} / {totalSize}
                   </span>
-                  
+
                   <div className="flex gap-2 w-full md:w-auto justify-between md:justify-end">
                     <span className="bg-blue-500/10 text-blue-400 px-2.5 py-1.5 rounded-md border border-blue-500/20 flex-1 text-center md:flex-none">
                       <i className="fas fa-clock mr-1"></i> {eta}
@@ -267,30 +275,40 @@ const UploadFile = ({ token, user }) => {
               </div>
             )}
 
-            {/* Result Link */}
+            {/* 🟢 Result Link & Upload Another Button */}
             {resultLink && (
-              <div className="p-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 shadow-[0_10px_30px_rgba(16,185,129,0.1)]">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white">
-                    <i className="fas fa-check text-sm"></i>
+              <div className="fade-in space-y-4">
+                <div className="p-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 shadow-[0_10px_30px_rgba(16,185,129,0.1)]">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/30">
+                      <i className="fas fa-check text-sm"></i>
+                    </div>
+                    <p className="text-sm uppercase font-black text-emerald-500 tracking-wider">Upload & Shortening Complete!</p>
                   </div>
-                  <p className="text-sm uppercase font-black text-emerald-500 tracking-wider">Upload & Shortening Complete!</p>
-                </div>
 
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <input 
-                    type="text" 
-                    readOnly 
-                    value={resultLink} 
-                    className="flex-1 bg-[var(--bg-body)] border border-[var(--glass-border)] text-[var(--text-primary)] p-4 rounded-xl text-sm font-mono focus:outline-none" 
-                  />
-                  <button 
-                    onClick={handleCopy} 
-                    className="px-8 py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold text-sm shrink-0 transition-colors shadow-lg flex items-center justify-center gap-2"
-                  >
-                    <i className="far fa-copy"></i> Copy Link
-                  </button>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <input 
+                      type="text" 
+                      readOnly 
+                      value={resultLink} 
+                      className="flex-1 bg-[var(--bg-body)] border border-[var(--glass-border)] text-[var(--text-primary)] p-4 rounded-xl text-sm font-mono focus:outline-none focus:border-emerald-500/50 transition-colors" 
+                    />
+                    <button 
+                      onClick={handleCopy} 
+                      className="px-8 py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold text-sm shrink-0 transition-colors shadow-lg flex items-center justify-center gap-2"
+                    >
+                      <i className="far fa-copy"></i> Copy Link
+                    </button>
+                  </div>
                 </div>
+                
+                {/* 🟢 Upload Another File Button */}
+                <button 
+                  onClick={resetUploader} 
+                  className="w-full py-4 rounded-2xl border-2 border-indigo-500 text-indigo-500 hover:bg-indigo-500 hover:text-white font-bold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2"
+                >
+                  <i className="fas fa-plus-circle text-lg"></i> Upload Another File
+                </button>
               </div>
             )}
 
@@ -306,6 +324,20 @@ const UploadFile = ({ token, user }) => {
           </div>
         </div>
       </div>
+
+      {/* 🟢 Upload Rules Section */}
+      <div className="glass-panel p-6 rounded-2xl border-l-4 border-amber-500 mt-8">
+        <h4 className="text-sm font-bold text-amber-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+          <i className="fas fa-exclamation-triangle"></i> Upload Rules & Guidelines
+        </h4>
+        <ul className="space-y-2 text-xs md:text-sm text-slate-400">
+          <li className="flex gap-2 items-start"><i className="fas fa-check text-emerald-500 mt-1"></i> <span className="flex-1">Maximum allowed file size per upload is <strong>5GB</strong>.</span></li>
+          <li className="flex gap-2 items-start"><i className="fas fa-check text-emerald-500 mt-1"></i> <span className="flex-1">Your files are securely encrypted and stored on our high-speed servers.</span></li>
+          <li className="flex gap-2 items-start"><i className="fas fa-times text-red-500 mt-1"></i> <span className="flex-1">Pornography, Child Abuse material, or illegal content is <strong>strictly prohibited</strong>. Accounts violating this will be permanently banned.</span></li>
+          <li className="flex gap-2 items-start"><i className="fas fa-info-circle text-blue-400 mt-1"></i> <span className="flex-1">Inactive files (files with 0 downloads for 60 days) may be automatically deleted to free up server space.</span></li>
+        </ul>
+      </div>
+
     </div>
   );
 };
