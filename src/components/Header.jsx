@@ -23,8 +23,8 @@ const Header = () => {
     setIsMenuOpen(false);
   };
 
+  // 🟢 UPDATE: Comment ko return ke bahar kar diya taaki build fail na ho
   return (
-    {/* 🟢 UPDATE: Fixed top-0, w-full, aur dynamic glass effect jo dono theme me mast lagega */}
     <header className={`fixed top-0 left-0 w-full z-[100] transition-all duration-300 ${scrolled ? 'bg-[var(--bg-body)]/80 backdrop-blur-lg border-b border-[var(--glass-border)] shadow-sm' : 'bg-transparent border-b border-transparent'}`}>
       
       {/* 🟢 UPDATE: Inner container max-width ke sath */}
@@ -112,7 +112,7 @@ const Header = () => {
 
         </div>
 
-        {/* 🟢 UPDATE: Hamburger Menu Button ko clean kiya dono themes ke liye */}
+        {/* Mobile Toggle Button */}
         <button 
           className="lg:hidden w-10 h-10 rounded-lg text-2xl text-[var(--text-primary)] hover:bg-slate-500/10 focus:outline-none flex items-center justify-center transition-colors z-50" 
           onClick={() => setIsMenuOpen(!isMenuOpen)}
