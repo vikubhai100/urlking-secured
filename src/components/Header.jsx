@@ -8,13 +8,12 @@ const Header = () => {
   const location = useLocation();
   const currentPath = location.pathname;
 
-  // 🟢 1. Token Check: Yahan hum check kar rahe hain ki user logged in hai ya nahi
   const token = localStorage.getItem("token");
 
   // Scroll effect for navbar background shadow
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
+      setScrolled(window.scrollY > 10);
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
@@ -25,12 +24,15 @@ const Header = () => {
   };
 
   return (
-    <header className={`fixed top-4 md:top-5 left-1/2 -translate-x-1/2 w-[95%] max-w-7xl z-[100] transition-all duration-300 ${scrolled ? 'shadow-2xl' : ''}`}>
-      <nav className={`bg-[var(--nav-bg)] backdrop-blur-xl border border-[var(--glass-border)] rounded-2xl h-[80px] flex items-center justify-between px-6 md:px-8 w-full transition-all duration-300 ${scrolled ? 'bg-opacity-95 shadow-[0_10px_40px_rgba(0,0,0,0.1)]' : 'bg-opacity-80'}`}>
+    {/* 🟢 UPDATE: Fixed top-0, w-full, aur dynamic glass effect jo dono theme me mast lagega */}
+    <header className={`fixed top-0 left-0 w-full z-[100] transition-all duration-300 ${scrolled ? 'bg-[var(--bg-body)]/80 backdrop-blur-lg border-b border-[var(--glass-border)] shadow-sm' : 'bg-transparent border-b border-transparent'}`}>
+      
+      {/* 🟢 UPDATE: Inner container max-width ke sath */}
+      <nav className="max-w-7xl mx-auto h-[80px] flex items-center justify-between px-4 md:px-8 w-full">
 
-        {/* Logo - z-index high rakha hai taaki menu ke upar rahe */}
+        {/* Logo */}
         <Link to="/" onClick={closeMenu} className="text-2xl font-extrabold flex items-center gap-3 text-[var(--text-primary)] transition-transform hover:scale-105 z-50">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-pink-500 flex items-center justify-center text-white shadow-[0_0_20px_rgba(99,102,241,0.4)]">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-pink-500 flex items-center justify-center text-white shadow-md">
             <i className="fas fa-crown text-lg"></i>
           </div>
           <span className="tracking-tight">URLKING</span>
@@ -38,13 +40,13 @@ const Header = () => {
 
         {/* Desktop & Mobile Links Container */}
         <div className={`
-          absolute lg:static top-[90px] left-0 w-full lg:w-auto 
-          bg-[var(--bg-body)] lg:bg-transparent /* <-- Mobile me Solid Background */
+          absolute lg:static top-[80px] left-0 w-full lg:w-auto 
+          bg-[var(--bg-body)] lg:bg-transparent 
           flex flex-col lg:flex-row items-center gap-6 lg:gap-8 
-          p-8 lg:p-0 rounded-3xl lg:rounded-none
-          border border-[var(--glass-border)] lg:border-none
-          shadow-[0_30px_60px_rgba(0,0,0,0.5)] lg:shadow-none
-          transition-all duration-400 ease-out z-40
+          p-8 lg:p-0 
+          border-b border-[var(--glass-border)] lg:border-none
+          shadow-xl lg:shadow-none
+          transition-all duration-300 ease-in-out z-40
           ${isMenuOpen ? 'translate-y-0 opacity-100 visible' : '-translate-y-4 opacity-0 invisible lg:translate-y-0 lg:opacity-100 lg:visible'}
         `}>
 
@@ -78,19 +80,17 @@ const Header = () => {
           {/* Divider for Mobile */}
           <div className="w-full h-[1px] bg-[var(--glass-border)] lg:hidden my-2"></div>
 
-          {/* 🟢 2. AUTH BUTTONS LOGIC */}
+          {/* AUTH BUTTONS LOGIC */}
           <div className="flex flex-col lg:flex-row items-center gap-4 w-full lg:w-auto">
             {token ? (
-              // Agar User Logged In hai -> Sirf Dashboard Button dikhao
               <Link 
                 to="/dashboard" 
                 onClick={closeMenu} 
-                className="btn-action w-full lg:w-auto text-center px-8 py-3 rounded-full font-black text-white shadow-[0_10px_20px_rgba(99,102,241,0.3)] hover:-translate-y-1 transition-transform duration-300 flex items-center justify-center gap-2"
+                className="btn-action w-full lg:w-auto text-center px-8 py-3 rounded-full font-black text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/30 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2"
               >
                 Dashboard <i className="fas fa-rocket"></i>
               </Link>
             ) : (
-              // Agar User Guest hai -> Sign In / Sign Up dikhao
               <>
                 <Link 
                   to="/login" 
@@ -102,7 +102,7 @@ const Header = () => {
                 <Link 
                   to="/register" 
                   onClick={closeMenu} 
-                  className="btn-action w-full lg:w-auto text-center px-8 py-3 rounded-full font-black text-white shadow-[0_10px_20px_rgba(99,102,241,0.3)] hover:-translate-y-1 transition-transform duration-300"
+                  className="btn-action w-full lg:w-auto text-center px-8 py-3 rounded-full font-black text-white bg-pink-600 hover:bg-pink-700 shadow-lg shadow-pink-500/30 hover:-translate-y-1 transition-all duration-300"
                 >
                   Sign Up Free
                 </Link>
@@ -112,9 +112,9 @@ const Header = () => {
 
         </div>
 
-        {/* Mobile Toggle Button - z-index high rakha hai */}
+        {/* 🟢 UPDATE: Hamburger Menu Button ko clean kiya dono themes ke liye */}
         <button 
-          className="lg:hidden w-12 h-12 rounded-xl bg-[var(--nav-hover)] border border-[var(--glass-border)] text-xl text-[var(--text-primary)] focus:outline-none flex items-center justify-center transition-colors hover:text-indigo-500 z-50" 
+          className="lg:hidden w-10 h-10 rounded-lg text-2xl text-[var(--text-primary)] hover:bg-slate-500/10 focus:outline-none flex items-center justify-center transition-colors z-50" 
           onClick={() => setIsMenuOpen(!isMenuOpen)}
         >
           <i className={`fas ${isMenuOpen ? 'fa-times' : 'fa-bars'}`}></i>
