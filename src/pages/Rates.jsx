@@ -6,46 +6,46 @@ import Particles from '../components/Particles';
 const Rates = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Payout Rates Data (Minimum $5.00 Global)
+  // 🟢 Payout Rates Data (Optimized based on AdSense RPM)
   const ratesData = [
-    { code: 'us', name: 'United States', cpm: 10.00 },
-    { code: 'gb', name: 'United Kingdom', cpm: 9.00 },
-    { code: 'ca', name: 'Canada', cpm: 8.00 },
-    { code: 'au', name: 'Australia', cpm: 8.00 },
-    { code: 'de', name: 'Germany', cpm: 7.50 },
-    { code: 'ch', name: 'Switzerland', cpm: 7.50 },
-    { code: 'fr', name: 'France', cpm: 7.00 },
-    { code: 'se', name: 'Sweden', cpm: 7.00 },
-    { code: 'nl', name: 'Netherlands', cpm: 7.00 },
-    { code: 'no', name: 'Norway', cpm: 7.00 },
-    { code: 'dk', name: 'Denmark', cpm: 6.50 },
-    { code: 'fi', name: 'Finland', cpm: 6.50 },
-    { code: 'es', name: 'Spain', cpm: 6.00 },
-    { code: 'it', name: 'Italy', cpm: 6.00 },
-    { code: 'nz', name: 'New Zealand', cpm: 6.00 },
-    { code: 'ae', name: 'United Arab Emirates', cpm: 5.50 },
-    { code: 'sa', name: 'Saudi Arabia', cpm: 5.00 },
-    { code: 'sg', name: 'Singapore', cpm: 5.00 },
-    { code: 'za', name: 'South Africa', cpm: 5.00 },
-    { code: 'in', name: 'India', cpm: 5.00 },
-    { code: 'br', name: 'Brazil', cpm: 5.00 },
-    { code: 'mx', name: 'Mexico', cpm: 5.00 },
-    { code: 'id', name: 'Indonesia', cpm: 5.00 },
-    { code: 'pk', name: 'Pakistan', cpm: 5.00 },
-    { code: 'bd', name: 'Bangladesh', cpm: 5.00 },
-    { code: 'ph', name: 'Philippines', cpm: 5.00 },
-    { code: 'ng', name: 'Nigeria', cpm: 5.00 },
-    { code: 'tr', name: 'Turkey', cpm: 5.00 },
-    { code: 'eg', name: 'Egypt', cpm: 5.00 },
-    { code: 'vn', name: 'Vietnam', cpm: 5.00 },
-    { code: 'ru', name: 'Russia', cpm: 5.00 },
-    { code: 'th', name: 'Thailand', cpm: 5.00 },
-    { code: 'my', name: 'Malaysia', cpm: 5.00 },
-    { code: 'ar', name: 'Argentina', cpm: 5.00 },
-    { code: 'co', name: 'Colombia', cpm: 5.00 },
-    { code: 'pe', name: 'Peru', cpm: 5.00 },
-    { code: 've', name: 'Venezuela', cpm: 5.00 },
-    { code: 'cl', name: 'Chile', cpm: 5.00 }
+    { code: 'us', name: 'United States', cpm: 5.00, specialNote: true },
+    { code: 'gb', name: 'United Kingdom', cpm: 5.00, specialNote: true },
+    { code: 'ca', name: 'Canada', cpm: 5.00, specialNote: true },
+    { code: 'au', name: 'Australia', cpm: 5.00, specialNote: true },
+    { code: 'de', name: 'Germany', cpm: 4.00 },
+    { code: 'ch', name: 'Switzerland', cpm: 4.00 },
+    { code: 'fr', name: 'France', cpm: 3.50 },
+    { code: 'se', name: 'Sweden', cpm: 3.50 },
+    { code: 'nl', name: 'Netherlands', cpm: 3.00 },
+    { code: 'no', name: 'Norway', cpm: 3.00 },
+    { code: 'dk', name: 'Denmark', cpm: 3.00 },
+    { code: 'fi', name: 'Finland', cpm: 3.00 },
+    { code: 'es', name: 'Spain', cpm: 3.00 },
+    { code: 'it', name: 'Italy', cpm: 3.00 },
+    { code: 'nz', name: 'New Zealand', cpm: 3.00 },
+    { code: 'ae', name: 'United Arab Emirates', cpm: 3.00 },
+    { code: 'sa', name: 'Saudi Arabia', cpm: 3.00 },
+    { code: 'sg', name: 'Singapore', cpm: 3.00 },
+    { code: 'za', name: 'South Africa', cpm: 3.00 },
+    { code: 'in', name: 'India', cpm: 3.00 },
+    { code: 'br', name: 'Brazil', cpm: 3.00 },
+    { code: 'mx', name: 'Mexico', cpm: 3.00 },
+    { code: 'id', name: 'Indonesia', cpm: 3.00 },
+    { code: 'pk', name: 'Pakistan', cpm: 3.00 },
+    { code: 'bd', name: 'Bangladesh', cpm: 3.00 },
+    { code: 'ph', name: 'Philippines', cpm: 3.00 },
+    { code: 'ng', name: 'Nigeria', cpm: 3.00 },
+    { code: 'tr', name: 'Turkey', cpm: 3.00 },
+    { code: 'eg', name: 'Egypt', cpm: 3.00 },
+    { code: 'vn', name: 'Vietnam', cpm: 3.00 },
+    { code: 'ru', name: 'Russia', cpm: 3.00 },
+    { code: 'th', name: 'Thailand', cpm: 3.00 },
+    { code: 'my', name: 'Malaysia', cpm: 3.00 },
+    { code: 'ar', name: 'Argentina', cpm: 3.00 },
+    { code: 'co', name: 'Colombia', cpm: 3.00 },
+    { code: 'pe', name: 'Peru', cpm: 3.00 },
+    { code: 've', name: 'Venezuela', cpm: 3.00 },
+    { code: 'cl', name: 'Chile', cpm: 3.00 }
   ];
 
   // Search Filter Logic
@@ -55,7 +55,7 @@ const Rates = () => {
 
   return (
     <div className="relative min-h-screen flex flex-col bg-[var(--bg-body)] text-[var(--text-primary)] transition-colors duration-300">
-      
+
       {/* Ambient Particles */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <Particles />
@@ -67,7 +67,7 @@ const Rates = () => {
       </div>
 
       <main className="flex-1 w-full max-w-5xl mx-auto px-4 md:px-6 py-20 md:py-28 relative z-10 fade-in mt-16 lg:mt-0">
-        
+
         {/* Page Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl lg:text-[3.5rem] font-black mb-4 tracking-tight leading-tight">
@@ -76,6 +76,15 @@ const Rates = () => {
           <p className="text-lg text-slate-400 max-w-2xl mx-auto">
             Our rates are calculated per 1000 unique downloads. Quality traffic is rewarded with the industry's best CPM.
           </p>
+        </div>
+
+        {/* 🟢 SPECIAL NOTE FOR HIGH TIER COUNTRIES (USA, UK, etc.) */}
+        <div className="max-w-xl mx-auto mb-8 bg-blue-500/10 border border-blue-500/30 rounded-2xl p-4 flex gap-3 text-sm md:text-base">
+          <i className="fas fa-info-circle text-blue-400 mt-1"></i>
+          <div>
+            <strong className="text-blue-400 block mb-1">Notice for US, UK, CA, and AU Users:</strong>
+            <span className="text-slate-300">If your main traffic is from high-tier countries (marked with ★), please <a href="https://t.me/vikubhai01" target="_blank" rel="noreferrer" className="text-white font-bold underline hover:text-indigo-300 transition-colors">Contact Support</a> after creating your account to get your premium rates unlocked.</span>
+          </div>
         </div>
 
         {/* Search Bar */}
@@ -104,7 +113,7 @@ const Rates = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--glass-border)] text-sm">
-                
+
                 {/* Render Searched Countries */}
                 {filteredRates.length > 0 ? (
                   filteredRates.map((country) => (
@@ -115,7 +124,9 @@ const Rates = () => {
                           alt={`${country.name} flag`} 
                           className="w-8 rounded shadow-sm"
                         />
-                        {country.name}
+                        {country.name} 
+                        {/* Star icon for special note countries */}
+                        {country.specialNote && <i className="fas fa-star text-amber-400 text-xs ml-1" title="Special Premium Rate"></i>}
                       </td>
                       <td className="py-4 px-6 font-black text-indigo-500 text-lg">
                         ${country.cpm.toFixed(2)}
@@ -145,10 +156,10 @@ const Rates = () => {
                     Worldwide Deal (All Others)
                   </td>
                   <td className="py-5 px-6 font-black text-indigo-500 text-lg">
-                    $5.00
+                    $3.00
                   </td>
                   <td className="py-5 px-6 font-black text-indigo-500 text-lg">
-                    $5.00
+                    $3.00
                   </td>
                 </tr>
 
