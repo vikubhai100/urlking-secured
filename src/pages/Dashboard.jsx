@@ -27,7 +27,7 @@ const Dashboard = () => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 🟢 Optimized Keep-Alive: Sirf 'upload' ko track karenge
+  // optimized Keep-Alive: Sirf 'upload' ko track karenge
   const [isUploadMounted, setIsUploadMounted] = useState(false);
 
   useEffect(() => {
@@ -78,12 +78,12 @@ const Dashboard = () => {
     return (
       <div className="relative w-full">
         
-        {/* 🟢 UPLOAD TAB: Isko 'hidden' logic se manage karenge taaki background me chalta rahe */}
+        {/* UPLOAD TAB: Isko 'hidden' logic se manage karenge taaki background me chalta rahe */}
         <div className={activeSection === 'upload' ? 'block fade-in' : 'hidden'}>
           {isUploadMounted && <UploadFile token={token} user={user} isActive={activeSection === 'upload'} />}
         </div>
 
-        {/* 🟢 BAAKI TABS: Inko direct render karenge taaki switch karne par fresh reload ho jayein */}
+        {/* BAAKI TABS: Inko direct render karenge taaki switch karne par fresh reload ho jayein (state reset) */}
         {activeSection === 'create' && <DashboardOverview token={token} user={user} isActive={true} />}
         {activeSection === 'files' && <ManageFiles token={token} isActive={true} />}
         {activeSection === 'history' && <LinkHistory token={token} isActive={true} />}
@@ -105,13 +105,16 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-[var(--bg-body)] text-[var(--text-primary)] transition-colors duration-300">
       
-      {/* Mobile Header */}
+      {/* 📱 MOBILE HEADER WITH CROWN 👑 LOGO RESTORED */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-[60] bg-[var(--bg-body)] border-b border-[var(--glass-border)] p-4 flex items-center justify-between shadow-md">
         <button onClick={() => setIsMobileOpen(true)} className="text-2xl text-[var(--text-primary)] p-2">
           <i className="fas fa-bars"></i>
         </button>
         <div className="flex items-center gap-2">
-           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-pink-500 flex items-center justify-center text-white font-bold">K</div>
+           {/* 🟢 Crown Logo Wapas Laga Diya */}
+           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-pink-500 flex items-center justify-center text-white">
+             <i className="fas fa-crown text-sm"></i>
+           </div>
            <h1 className="text-lg font-bold tracking-wide">URLKING</h1>
         </div>
         <div className="flex items-center gap-2 pr-1">
