@@ -18,17 +18,20 @@ const DashboardOverview = ({ token, user, isActive }) => {
   const [alias, setAlias] = useState('');
   const [expirationDate, setExpirationDate] = useState('');
   const [resultLink, setResultLink] = useState('');
-  const [stats, setStats] = useState({ total: 0, today: 0, monthTotal: 0, daily: [] });
+  const [stats, setStats] = useState({ total: 0, today: 0, monthTotal: 0, daily: Array(30).fill(0) });
 
+  // 🟢 NAYE STATES: Month aur Year ke liye
   const currentDate = new Date();
-  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
+  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1); // 1-12
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
 
   const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
 
   useEffect(() => {
-    if (isActive !== false) fetchStats();
-  }, [token, isActive, selectedMonth, selectedYear]);
+    if (isActive !== false) { 
+      fetchStats();
+    }
+  }, [token, isActive, selectedMonth, selectedYear]); 
 
   const fetchStats = async () => {
     try {
@@ -41,16 +44,21 @@ const DashboardOverview = ({ token, user, isActive }) => {
           total: data.total || 0, 
           today: data.today || 0, 
           monthTotal: data.monthTotal || 0,
-          daily: data.daily || []
+          daily: data.daily || [] 
         });
       }
-    } catch (err) { console.error(err); }
+    } catch (err) { 
+      console.error("Error fetching stats", err); 
+    }
   };
 
   const handleShorten = async () => {
-    if (!url) return showToast("Please enter a URL", "error"); 
+    if (!url) return showToast("Please enter a valid URL to shorten.", "error"); 
+
     const payload = { url, alias };
-    if (expirationDate) payload.expires_at = expirationDate;
+    if (expirationDate) {
+      payload.expires_at = expirationDate;
+    }
 
     try {
       const res = await fetch(`${API}/api/create`, {
@@ -58,32 +66,41 @@ const DashboardOverview = ({ token, user, isActive }) => {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload)
       });
+
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed");
+
+      if (!res.ok) throw new Error(data.error || "Failed to create short link");
+
       setResultLink(`https://go.urlking.site/${data.id}`); 
-      setUrl(''); setAlias(''); setExpirationDate('');
-      fetchStats();
-      showToast("Link Shortened!", "success"); 
-    } catch (e) { showToast(e.message, "error"); }
+      setUrl('');
+      setAlias('');
+      setExpirationDate(''); 
+      fetchStats(); 
+
+      showToast("Link successfully shortened!", "success"); 
+    } catch (e) { 
+      showToast(e.message, "error"); 
+    }
   };
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(resultLink);
-    showToast("Copied!", "success"); 
+    showToast("Link Copied Successfully!", "success"); 
   };
 
   const chartData = {
     labels: Array.from({ length: stats.daily.length }, (_, i) => i + 1),
-    datasets: [{
-      fill: true,
-      data: stats.daily,
-      borderColor: '#818cf8',
-      backgroundColor: 'rgba(99, 102, 241, 0.1)', 
-      borderWidth: 2,
-      pointRadius: 3,
-      pointBackgroundColor: '#6366f1',
-      tension: 0.4
-    }]
+    datasets: [
+      {
+        fill: true,
+        data: stats.daily,
+        borderColor: '#818cf8',
+        backgroundColor: 'rgba(99, 102, 241, 0.2)', 
+        borderWidth: 2,
+        pointBackgroundColor: '#6366f1',
+        tension: 0.4
+      }
+    ]
   };
 
   const chartOptions = {
@@ -91,100 +108,244 @@ const DashboardOverview = ({ token, user, isActive }) => {
     maintainAspectRatio: false,
     plugins: { legend: { display: false } },
     scales: { 
-      x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 10 } } }, 
-      y: { grid: { color: 'rgba(148, 163, 184, 0.05)' }, ticks: { color: '#64748b', font: { size: 10 } }, beginAtZero: true } 
+      x: { 
+        grid: { display: false },
+        ticks: { color: '#94a3b8' } 
+      }, 
+      y: { 
+        grid: { color: 'rgba(148, 163, 184, 0.1)' }, 
+        ticks: { color: '#94a3b8' }, 
+        beginAtZero: true 
+      } 
     }
   };
 
+  const todayIso = currentDate.toISOString().slice(0, 16);
+
   const months = [
-    { v: 1, l: 'Jan' }, { v: 2, l: 'Feb' }, { v: 3, l: 'Mar' }, { v: 4, l: 'Apr' },
-    { v: 5, l: 'May' }, { v: 6, l: 'Jun' }, { v: 7, l: 'Jul' }, { v: 8, l: 'Aug' },
-    { v: 9, l: 'Sep' }, { v: 10, l: 'Oct' }, { v: 11, l: 'Nov' }, { v: 12, l: 'Dec' }
+    { value: 1, label: 'January' }, { value: 2, label: 'February' }, { value: 3, label: 'March' },
+    { value: 4, label: 'April' }, { value: 5, label: 'May' }, { value: 6, label: 'June' },
+    { value: 7, label: 'July' }, { value: 8, label: 'August' }, { value: 9, label: 'September' },
+    { value: 10, label: 'October' }, { value: 11, label: 'November' }, { value: 12, label: 'December' }
   ];
-  const years = Array.from({ length: (currentDate.getFullYear() - 2024) + 1 }, (_, i) => 2024 + i);
+
+  const currentY = new Date().getFullYear();
+  const years = Array.from({ length: (currentY - 2024) + 1 }, (_, i) => 2024 + i);
 
   return (
-    <div className="fade-in w-full max-w-5xl mx-auto space-y-6 px-2">
+    <div className="fade-in w-full max-w-5xl mx-auto space-y-6 px-1 md:px-0">
 
-      {/* Wallet Cards */}
-      <div className="flex flex-row gap-3">
-        <div className="glass-panel p-4 rounded-2xl border border-emerald-500/10 flex-1">
-          <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Wallet</p>
-          <span className="text-xl font-mono font-bold text-white">${Number(user?.balance || 0).toFixed(4)}</span>
+      {/* Header & Wallet Cards */}
+      <div className="flex flex-col md:flex-row justify-between items-center md:items-end gap-4">
+        <div className="w-full md:w-auto text-center md:text-left">
+          <h2 className="text-2xl md:text-3xl font-bold mb-1 text-[var(--text-primary)]">Dashboard</h2>
+          <p className="text-sm md:text-base text-slate-400">Track your performance.</p>
         </div>
-        <div className="glass-panel p-4 rounded-2xl border border-indigo-500/10 flex-1">
-          <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">CPM</p>
-          <span className="text-xl font-mono font-bold text-white">${Number(user?.cpm || 5).toFixed(2)}</span>
+
+        <div className="flex flex-row w-full md:w-auto gap-3">
+          <div className="glass-panel px-4 py-3 md:px-6 rounded-2xl border border-emerald-500/20 shadow-lg flex-1 transition-transform hover:-translate-y-1">
+            <div className="flex items-center gap-2 mb-1">
+              <i className="fas fa-wallet text-emerald-500"></i>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Wallet</span>
+            </div>
+            <span className="text-xl md:text-2xl font-mono font-bold text-[var(--text-primary)]">
+              ${Number(user?.balance || 0).toFixed(4)}
+            </span>
+          </div>
+
+          <div className="glass-panel px-4 py-3 md:px-6 rounded-2xl border border-indigo-500/20 shadow-lg flex-1 transition-transform hover:-translate-y-1">
+            <div className="flex items-center gap-2 mb-1">
+              <i className="fas fa-coins text-indigo-500"></i>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">CPM</span>
+            </div>
+            <span className="text-xl md:text-2xl font-mono font-bold text-[var(--text-primary)]">
+              ${Number(user?.cpm || 5.00).toFixed(2)}
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Shorten Box */}
-      <div className="glass-panel p-5 md:p-8 rounded-3xl border border-white/5 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
-        <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2"><i className="fas fa-magic text-indigo-500 text-sm"></i> Shorten URL</h3>
-        <div className="space-y-4">
-          <input type="url" placeholder="Your URL Here" className="input-premium w-full p-3.5 rounded-xl text-sm" value={url} onChange={e=>setUrl(e.target.value)} />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Alias</label>
-              <input type="text" placeholder="Custom name" className="input-premium w-full p-3 rounded-xl text-sm mt-1" value={alias} onChange={e=>setAlias(e.target.value)} />
-            </div>
-            <div>
-              <label className="text-[11px] font-bold text-slate-500 uppercase ml-1">Expires At</label>
-              <input type="datetime-local" className="input-premium w-full p-3 rounded-xl text-sm mt-1 text-slate-400" value={expirationDate} min={currentDate.toISOString().slice(0,16)} onChange={e=>setExpirationDate(e.target.value)} />
-            </div>
-          </div>
-          <button onClick={handleShorten} className="btn-action w-full py-3.5 rounded-xl text-white font-bold shadow-lg">Shorten Now ⚡</button>
-        </div>
-        {resultLink && (
-          <div className="mt-6 p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20 flex flex-col md:flex-row items-center gap-3">
-            <p className="flex-1 font-mono text-sm text-emerald-400 truncate w-full">{resultLink}</p>
-            <button onClick={copyToClipboard} className="w-full md:w-auto px-6 py-2 bg-emerald-500 text-white rounded-lg text-xs font-bold uppercase">Copy</button>
-          </div>
-        )}
-      </div>
-
-      {/* 🟢 FIXED ANALYTICS UI: No squashing */}
-      <div className="glass-panel p-5 md:p-6 rounded-3xl border border-white/5">
-        <div className="flex flex-row justify-between items-center mb-6">
-          <h3 className="text-sm md:text-base font-bold text-white flex items-center gap-2">
-            <i className="fas fa-chart-bar text-indigo-500"></i> Analytics
+      {/* COMPACT & PERFECTLY SPACED SHORTEN BOX (Restored) */}
+      <div className="border-animated p-1">
+        <div className="relative z-10 p-5 md:p-6 glass-panel border-none rounded-[1.2rem]">
+          <h3 className="text-lg font-bold flex items-center gap-2 text-[var(--text-primary)] mb-4">
+            <i className="fas fa-magic text-indigo-500"></i> Shorten New URL
           </h3>
-          
-          {/* Compact Selectors */}
-          <div className="flex gap-1.5">
-            <select value={selectedMonth} onChange={e=>setSelectedMonth(Number(e.target.value))} className="bg-slate-800 border-none text-white text-[11px] font-bold py-1 px-2 rounded-lg cursor-pointer outline-none">
-              {months.map(m => <option key={m.v} value={m.v}>{m.l}</option>)}
-            </select>
-            <select value={selectedYear} onChange={e=>setSelectedYear(Number(e.target.value))} className="bg-slate-800 border-none text-white text-[11px] font-bold py-1 px-2 rounded-lg cursor-pointer outline-none">
-              {years.map(y => <option key={y} value={y}>{y}</option>)}
-            </select>
-          </div>
-        </div>
 
-        {/* Stats Row */}
-        <div className="flex gap-4 mb-6">
-          <div className="flex-1">
-            <p className="text-[10px] text-slate-500 font-bold uppercase">Total Clicks</p>
-            <p className="text-lg font-bold text-white">{stats.total.toLocaleString()}</p>
-          </div>
-          <div className="flex-1 border-l border-white/5 pl-4">
-            <p className="text-[10px] text-indigo-400 font-bold uppercase">This Month</p>
-            <p className="text-lg font-bold text-white">{stats.monthTotal.toLocaleString()}</p>
-          </div>
-        </div>
+          <div className="space-y-4"> 
+            
+            {/* 1. Main URL Input */}
+            <div>
+              <div className="relative">
+                <i className="fas fa-link absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input 
+                  type="url" 
+                  placeholder="Your URL Here (https://...)" 
+                  className="input-premium w-full py-3 pl-11 pr-4 rounded-xl text-sm" 
+                  value={url} 
+                  onChange={(e) => setUrl(e.target.value)} 
+                />
+              </div>
+            </div>
 
-        {/* Chart Container - Fixed height to prevent "chapta" look */}
-        <div className="w-full h-[280px] md:h-[320px]">
-          <Line data={chartData} options={chartOptions} />
+            {/* 2. Alias Input */}
+            <div>
+              <label className="block text-sm font-bold text-[var(--text-primary)] mb-1.5 tracking-wide">
+                Alias
+              </label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">/</span>
+                <input 
+                  type="text" 
+                  placeholder="Alias (Optional)" 
+                  className="input-premium w-full py-3 pl-9 pr-4 rounded-xl text-sm" 
+                  value={alias} 
+                  onChange={(e) => setAlias(e.target.value)} 
+                />
+              </div>
+            </div>
+
+            {/* 3. Expiration Date Input */}
+            <div>
+              <label className="block text-sm font-bold text-[var(--text-primary)] mb-1.5 tracking-wide">
+                Expiration date
+              </label>
+              <div className="relative w-full md:w-1/2 lg:w-1/3">
+                <i className="fas fa-clock absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input 
+                  type="datetime-local" 
+                  className="input-premium w-full py-3 pl-11 pr-4 rounded-xl text-sm text-slate-400 focus:text-[var(--text-primary)]" 
+                  value={expirationDate} 
+                  min={todayIso}
+                  onChange={(e) => setExpirationDate(e.target.value)} 
+                />
+              </div>
+            </div>
+
+            {/* 4. Shorten Button (Bada aur bold!) */}
+            <div className="pt-2">
+              <button 
+                onClick={handleShorten} 
+                className="btn-action w-full md:w-auto px-10 py-3 rounded-xl text-white font-bold shadow-[0_5px_15px_rgba(99,102,241,0.3)] flex items-center justify-center gap-2 hover:-translate-y-1 transition-transform"
+              >
+                <span>Shorten</span> <i className="fas fa-bolt"></i>
+              </button>
+            </div>
+
+          </div>
+
+          {/* Success Link Display */}
+          {resultLink && (
+            <div className="mt-6 p-4 rounded-xl flex flex-col md:flex-row items-center justify-between gap-3 bg-emerald-500/10 border border-emerald-500/30 shadow-inner fade-in">
+              <div className="flex-1 min-w-0 w-full text-center md:text-left">
+                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider mb-1 flex items-center justify-center md:justify-start gap-1">
+                  <i className="fas fa-check-circle"></i> Success! Your Link:
+                </p>
+                <p className="font-mono truncate text-base font-bold text-[var(--text-primary)]">
+                  {resultLink}
+                </p>
+              </div>
+              <button 
+                onClick={copyToClipboard} 
+                className="w-full md:w-auto px-6 py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold shadow-md flex items-center justify-center gap-2 transition-colors"
+              >
+                <i className="far fa-copy"></i> Copy
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Footer Support Buttons */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        <a href="https://wa.me/919304266995" className="p-3 rounded-xl bg-green-600/10 border border-green-600/20 text-green-500 text-center text-xs font-bold"><i className="fab fa-whatsapp mr-1"></i> WhatsApp</a>
-        <a href="https://t.me/vikubhai01" className="p-3 rounded-xl bg-blue-600/10 border border-blue-600/20 text-blue-400 text-center text-xs font-bold"><i className="fab fa-telegram-plane mr-1"></i> Telegram</a>
-        <a href="mailto:support@urlking.site" className="col-span-2 md:col-span-1 p-3 rounded-xl bg-slate-800 border border-white/5 text-slate-400 text-center text-xs font-bold"><i className="fas fa-envelope mr-1"></i> Email</a>
+      {/* Stats Cards (Restored to original big size) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6 mt-6">
+        <div className="glass-panel rounded-3xl p-6 md:p-8 relative overflow-hidden group hover:border-indigo-500/50 transition-colors">
+          <div className="absolute -right-4 -top-4 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+            <i className="fas fa-mouse-pointer text-8xl text-[var(--text-primary)]"></i>
+          </div>
+          <p className="text-sm font-bold uppercase tracking-wider mb-2 text-slate-400">Total Clicks</p>
+          <p className="text-4xl md:text-5xl font-black tracking-tight text-[var(--text-primary)]">{stats.total.toLocaleString()}</p>
+          <div className="h-1.5 w-16 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full mt-6"></div>
+        </div>
+
+        <div className="glass-panel rounded-3xl p-6 md:p-8 relative overflow-hidden group hover:border-pink-500/50 transition-colors">
+          <div className="absolute -right-4 -top-4 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+            <i className="fas fa-calendar-day text-8xl text-[var(--text-primary)]"></i>
+          </div>
+          <p className="text-sm font-bold uppercase tracking-wider mb-2 text-slate-400">Today's Clicks</p>
+          <p className="text-4xl md:text-5xl font-black tracking-tight text-[var(--text-primary)]">{stats.today.toLocaleString()}</p>
+          <div className="h-1.5 w-16 bg-gradient-to-r from-pink-500 to-orange-500 rounded-full mt-6"></div>
+        </div>
+      </div>
+
+      {/* Analytics Chart & Support Block */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+
+        {/* 🟢 FIXED CHART COLUMN: Height locked to 300px so it won't squash */}
+        <div className="lg:col-span-2 glass-panel rounded-3xl p-5 md:p-8 flex flex-col">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+            <div>
+              <h3 className="text-xl font-bold flex items-center gap-2 text-[var(--text-primary)]">
+                <i className="fas fa-chart-area text-indigo-500"></i> Monthly Analytics
+              </h3>
+              <p className="text-xs text-indigo-400 font-bold uppercase tracking-wider mt-1">
+                Selected Month Clicks: {stats.monthTotal.toLocaleString()}
+              </p>
+            </div>
+
+            {/* Selector Dropdowns */}
+            <div className="flex gap-2 w-full sm:w-auto">
+              <select 
+                value={selectedMonth} 
+                onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                className="input-premium py-2 px-3 rounded-xl text-sm font-bold bg-[var(--nav-hover)] border-[var(--glass-border)] cursor-pointer flex-1 sm:flex-none"
+              >
+                {months.map(m => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </select>
+              <select 
+                value={selectedYear} 
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="input-premium py-2 px-3 rounded-xl text-sm font-bold bg-[var(--nav-hover)] border-[var(--glass-border)] cursor-pointer"
+              >
+                {years.map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Fixed height container for ChartJS to maintain proportion */}
+          <div className="w-full h-[300px] relative">
+            <Line data={chartData} options={chartOptions} />
+          </div>
+        </div>
+
+        {/* Support Column (Restored to original layout) */}
+        <div className="glass-panel rounded-3xl p-6 md:p-8 flex flex-col justify-between border-t-4 border-indigo-500">
+          <div>
+            <div className="w-14 h-14 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-500 mb-6 shadow-inner border border-indigo-500/20">
+              <i className="fas fa-headset text-2xl"></i>
+            </div>
+            <h3 className="text-xl font-bold mb-2 text-[var(--text-primary)]">Dedicated Support</h3>
+            <p className="text-sm text-slate-400 mb-6 leading-relaxed">
+              Need higher CPM, API integrations, or have queries? Contact our management team for priority assistance.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <a href="https://wa.me/919304266995" target="_blank" rel="noopener noreferrer" className="w-full py-3 px-4 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold text-sm flex items-center justify-center gap-2 transition-colors shadow-lg shadow-green-600/20">
+              <i className="fab fa-whatsapp text-xl"></i> WhatsApp Support
+            </a>
+            <a href="https://t.me/vikubhai01" target="_blank" rel="noopener noreferrer" className="w-full py-3 px-4 rounded-xl bg-[#0088cc] hover:bg-[#0077b5] text-white font-bold text-sm flex items-center justify-center gap-2 transition-colors shadow-lg shadow-[#0088cc]/20">
+              <i className="fab fa-telegram-plane text-lg"></i> Contact Manager
+            </a>
+            <a href="mailto:support@urlking.site" className="w-full py-3 px-4 rounded-xl bg-[var(--nav-hover)] border border-[var(--glass-border)] text-[var(--text-primary)] hover:border-indigo-500/50 font-bold text-sm flex items-center justify-center gap-2 transition-colors">
+              <i className="fas fa-envelope text-indigo-500"></i> Email Support
+            </a>
+          </div>
+        </div>
+
       </div>
 
     </div>
