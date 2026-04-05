@@ -4,6 +4,23 @@ import { showToast } from '../toast';
 const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
 
 // ============================================================================
+// 🛠️ HELPER FUNCTIONS
+// ============================================================================
+const getTodayClicks = (user) => {
+  // Agar backend se direct aa raha hai toh wo use karo
+  if (user.stats && typeof user.stats.today_clicks !== 'undefined' && user.stats.today_clicks !== null) {
+    return user.stats.today_clicks;
+  }
+  // Warna Earnings aur CPM se calculate kar lo
+  const todayEarnings = parseFloat(user.stats?.today_earnings || 0);
+  const cpm = parseFloat(user.cpm || 0.50);
+  if (cpm > 0) {
+    return Math.round((todayEarnings / cpm) * 1000);
+  }
+  return 0;
+};
+
+// ============================================================================
 // 🧩 SUB-COMPONENTS
 // ============================================================================
 
@@ -20,12 +37,12 @@ const TopPerformersTab = ({ users, openProfile }) => {
   const [timeframe, setTimeframe] = useState('today'); 
 
   const sortedUsers = [...users].filter(u => {
-    const clicks = timeframe === 'today' ? (u.stats?.today_clicks || 0) : (u.stats?.total || 0);
+    const clicks = timeframe === 'today' ? getTodayClicks(u) : (u.stats?.total || 0);
     const earnings = timeframe === 'today' ? parseFloat(u.stats?.today_earnings || 0) : parseFloat(u.stats?.earnings || 0);
     return clicks > 0 || earnings > 0;
   }).sort((a, b) => {
-    const aVal = timeframe === 'today' ? (a.stats?.today_clicks || parseFloat(a.stats?.today_earnings || 0)) : (a.stats?.total || 0);
-    const bVal = timeframe === 'today' ? (b.stats?.today_clicks || parseFloat(b.stats?.today_earnings || 0)) : (b.stats?.total || 0);
+    const aVal = timeframe === 'today' ? getTodayClicks(a) : (a.stats?.total || 0);
+    const bVal = timeframe === 'today' ? getTodayClicks(b) : (b.stats?.total || 0);
     return bVal - aVal;
   });
 
@@ -51,14 +68,14 @@ const TopPerformersTab = ({ users, openProfile }) => {
               <tr className="text-xs font-bold tracking-wider text-[var(--text-secondary)] uppercase border-b border-[var(--glass-border)] bg-[var(--nav-hover)]">
                 <th className="p-4 w-16 text-center">Rank</th>
                 <th className="p-4">User</th>
-                <th className="p-4 text-center">Clicks</th>
-                <th className="p-4 text-center">Earnings</th>
+                <th className="p-4 text-center">Clicks ({timeframe})</th>
+                <th className="p-4 text-center">Earnings ({timeframe})</th>
                 <th className="p-4 text-right">Action</th>
               </tr>
             </thead>
             <tbody className="text-sm divide-y divide-[var(--glass-border)]">
               {sortedUsers.length === 0 ? (
-                <tr><td colSpan="5" className="p-12 text-center text-[var(--text-secondary)] font-medium">No active users {timeframe === 'today' ? 'today' : 'yet'}.</td></tr>
+                <tr><td colSpan="5" className="p-12 text-center text-[var(--text-secondary)] font-medium">No active users {timeframe === 'today' ? 'today' : 'yet'}. (0 clicks hidden)</td></tr>
               ) : (
                 sortedUsers.map((u, idx) => (
                   <tr key={u.uid} className="hover:bg-[var(--nav-hover)] transition-colors">
@@ -70,7 +87,7 @@ const TopPerformersTab = ({ users, openProfile }) => {
                       <div className="text-xs text-[var(--text-secondary)]">{u.email}</div>
                     </td>
                     <td className="p-4 text-center font-bold text-blue-500 text-lg">
-                      {timeframe === 'today' ? (u.stats?.today_clicks || 0) : (u.stats?.total || 0)}
+                      {timeframe === 'today' ? getTodayClicks(u) : (u.stats?.total || 0)}
                     </td>
                     <td className="p-4 text-center font-bold text-green-500 font-mono">
                       ${timeframe === 'today' ? parseFloat(u.stats?.today_earnings || 0).toFixed(4) : parseFloat(u.stats?.earnings || 0).toFixed(2)}
@@ -129,7 +146,7 @@ const MailerTab = ({ adminToken }) => {
               {status.loading ? <><i className="fas fa-spinner fa-spin"></i> Broadcasting...</> : <><i className="fas fa-paper-plane"></i> Launch Broadcast</>}
             </button>
           </div>
-          {status.result && <div className={`mt-4 p-4 rounded-xl font-bold text-sm ${status.isError ? 'bg-red-500/10 text-red-500' : 'bg-blue-500/10 text-blue-500'}`}>{status.result}</div>}
+          {status.result && <div className={`mt-4 p-4 rounded-xl font-bold text-sm ${status.isError ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'bg-blue-500/10 text-blue-500 border border-blue-500/20'}`}>{status.result}</div>}
         </div>
       </div>
     </section>
@@ -273,10 +290,11 @@ const AdminConsole = () => {
 
   const handleSearch = (e) => { setSearchQuery(e.target.value); filterAndSetUsers(allUsers, activeTab, e.target.value); };
 
+  const toggleUserSelection = (uid) => setSelectedUsers(prev => prev.includes(uid) ? prev.filter(id => id !== uid) : [...prev, uid]);
+
   // --- ACTIONS ---
-  
-  // 🟢 FIXED: Profile Data Fetching (Instant base data show, background fetch)
   const openUserDetailsByUid = async (uid) => {
+    // 🔥 FIX: Use baseUser with exact known data so 'Loading' doesn't show randomly
     const baseUser = allUsers.find(u => u.uid === uid) || { uid, username: 'Unknown User' };
     
     setUserModal({ open: true, activeTab: 'profile', data: baseUser, loading: true });
@@ -372,7 +390,6 @@ const AdminConsole = () => {
 
   return (
     <div className="min-h-screen bg-[var(--bg-body)] text-[var(--text-primary)] font-['Plus_Jakarta_Sans',sans-serif] overflow-x-hidden flex">
-      {/* CUSTOM CSS FOR ADMIN */}
       <style>{`
         .custom-checkbox { appearance: none; width: 1.2rem; height: 1.2rem; border: 2px solid var(--text-secondary); border-radius: 0.35rem; cursor: pointer; position: relative; transition: all 0.2s; }
         .custom-checkbox:checked { background: #6366f1; border-color: #6366f1; }
@@ -640,7 +657,7 @@ const AdminConsole = () => {
                   </div>
                 </div>
 
-                <div className="bg-[var(--glass-panel)] p-6 md:p-8 rounded-2xl border border-[var(--glass-border)] shadow-sm">
+                <div className="bg-[var(--glass-panel)] p-6 md:p-8 rounded-2xl border border-[var(--glass-border)] shadow-sm bg-gradient-to-br from-purple-500/5 to-transparent">
                   <h4 className="text-xl font-bold text-[var(--text-primary)] mb-2 flex items-center gap-3"><div className="p-2 bg-purple-500/10 text-purple-500 rounded-lg"><i className="fas fa-cloud-upload-alt"></i></div> Mass Upload Permissions</h4>
                   <p className="text-[var(--text-secondary)] text-sm mb-6 pl-11">Unlock file upload capabilities for all registered accounts at once.</p>
                   <div className="pl-11">
@@ -662,8 +679,11 @@ const AdminConsole = () => {
                 
                 <div className="p-6 border-b border-[var(--glass-border)] flex justify-between items-center bg-[var(--nav-hover)]">
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-indigo-500/20 text-indigo-500 flex items-center justify-center font-bold text-lg">{(userModal.data.username || 'U').charAt(0).toUpperCase()}</div>
-                    <div><h3 className="text-xl font-bold text-[var(--text-primary)]">{userModal.data.username || 'User Profile'}</h3><p className="text-xs text-[var(--text-secondary)] font-mono">UID: {userModal.data.uid}</p></div>
+                    <div className="w-10 h-10 rounded-full bg-indigo-500/20 text-indigo-500 flex items-center justify-center font-bold text-lg">{(userModal.data.name || userModal.data.username || 'U').charAt(0).toUpperCase()}</div>
+                    <div>
+                      <h3 className="text-xl font-bold text-[var(--text-primary)]">{userModal.data.name || userModal.data.username || 'Unknown User'}</h3>
+                      <p className="text-xs text-[var(--text-secondary)] font-mono">UID: {userModal.data.uid}</p>
+                    </div>
                   </div>
                   <button onClick={() => setUserModal({ open: false, data: null, activeTab: 'profile', loading: false })} className="text-[var(--text-secondary)] hover:text-red-500 transition-colors"><i className="fas fa-times text-xl"></i></button>
                 </div>
@@ -688,6 +708,22 @@ const AdminConsole = () => {
                           <div><label className="text-[10px] text-[var(--text-secondary)] uppercase font-bold block mb-1">Joined</label><input type="text" readOnly value={userModal.data.created_at ? new Date(userModal.data.created_at).toLocaleString() : 'N/A'} className="w-full p-3 rounded-xl text-sm bg-[var(--bg-body)] border border-[var(--glass-border)] text-[var(--text-secondary)] outline-none" /></div>
                           <div><label className="text-[10px] text-[var(--text-secondary)] uppercase font-bold block mb-1">Full Name</label><input type="text" value={userModal.data.name || ''} onChange={e=>setUserModal({...userModal, data: {...userModal.data, name: e.target.value}})} className="w-full p-3 rounded-xl text-sm bg-[var(--bg-body)] border border-[var(--glass-border)] text-[var(--text-primary)] outline-none focus:border-indigo-500" /></div>
                           <div><label className="text-[10px] text-[var(--text-secondary)] uppercase font-bold block mb-1">Social Handle</label><input type="text" readOnly value={userModal.data.social || 'N/A'} className="w-full p-3 rounded-xl text-sm bg-[var(--bg-body)] border border-[var(--glass-border)] text-[var(--text-secondary)] outline-none" /></div>
+                          
+                          {/* 🟢 TELEGRAM & YOUTUBE FIELD FIX */}
+                          <div>
+                            <label className="text-[10px] text-[var(--text-secondary)] uppercase font-bold block mb-1">Telegram Link</label>
+                            <div className="flex gap-2">
+                              <input type="text" readOnly value={userModal.data.telegram || 'N/A'} className="flex-1 p-3 rounded-xl text-sm bg-[var(--bg-body)] border border-[var(--glass-border)] text-[var(--text-secondary)] outline-none" />
+                              {userModal.data.telegram && <a href={userModal.data.telegram} target="_blank" rel="noreferrer" className="flex items-center justify-center px-4 bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white border border-blue-500/20 rounded-xl transition-colors"><i className="fab fa-telegram-plane"></i></a>}
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-[var(--text-secondary)] uppercase font-bold block mb-1">YouTube Channel</label>
+                            <div className="flex gap-2">
+                              <input type="text" readOnly value={userModal.data.youtube || 'N/A'} className="flex-1 p-3 rounded-xl text-sm bg-[var(--bg-body)] border border-[var(--glass-border)] text-[var(--text-secondary)] outline-none" />
+                              {userModal.data.youtube && <a href={userModal.data.youtube} target="_blank" rel="noreferrer" className="flex items-center justify-center px-4 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-500/20 rounded-xl transition-colors"><i className="fab fa-youtube"></i></a>}
+                            </div>
+                          </div>
                         </div>
                       )}
 
@@ -713,9 +749,11 @@ const AdminConsole = () => {
 
                       {userModal.activeTab === 'stats' && (
                         <div className="space-y-5 fade-in">
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
                             <div className="bg-[var(--bg-body)] border border-[var(--glass-border)] p-4 rounded-xl text-center"><i className="fas fa-link text-[var(--text-secondary)] mb-2 text-lg"></i><div className="text-xl font-bold text-[var(--text-primary)]">{userModal.data.links_count || 0}</div><div className="text-[10px] uppercase text-[var(--text-secondary)]">Total Links</div></div>
-                            <div className="bg-blue-500/5 border border-blue-500/10 p-4 rounded-xl text-center"><i className="fas fa-mouse-pointer text-blue-500 mb-2 text-lg"></i><div className="text-xl font-bold text-blue-500">{userModal.data.stats?.total || 0}</div><div className="text-[10px] uppercase text-blue-500">Total Clicks</div></div>
+                            <div className="bg-[var(--bg-body)] border border-[var(--glass-border)] p-4 rounded-xl text-center"><i className="fas fa-mouse-pointer text-indigo-500 mb-2 text-lg"></i><div className="text-xl font-bold text-indigo-500">{userModal.data.stats?.total || 0}</div><div className="text-[10px] uppercase text-indigo-500">Total Clicks</div></div>
+                            {/* 🟢 FIXED: Today Clicks displayed here */}
+                            <div className="bg-blue-500/5 border border-blue-500/10 p-4 rounded-xl text-center"><i className="fas fa-bullseye text-blue-500 mb-2 text-lg"></i><div className="text-xl font-bold text-blue-500">{getTodayClicks(userModal.data)}</div><div className="text-[10px] uppercase text-blue-500">Today Clicks</div></div>
                             <div className="bg-green-500/5 border border-green-500/10 p-4 rounded-xl text-center"><i className="fas fa-sack-dollar text-green-500 mb-2 text-lg"></i><div className="text-xl font-bold text-green-500">${userModal.data.stats?.earnings || '0.00'}</div><div className="text-[10px] uppercase text-green-500">Total Income</div></div>
                             <div className="bg-yellow-500/5 border border-yellow-500/10 p-4 rounded-xl text-center"><i className="fas fa-coins text-yellow-500 mb-2 text-lg"></i><div className="text-xl font-bold text-yellow-500">${userModal.data.stats?.today_earnings || '0.00'}</div><div className="text-[10px] uppercase text-yellow-500">Earned Today</div></div>
                           </div>
