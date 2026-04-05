@@ -1,16 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { showToast } from '../../toast'; // Premium Toast
+import { showToast } from '../../toast'; 
 
 const ManageFiles = ({ token }) => {
   const [files, setFiles] = useState([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [isProcessing, setIsProcessing] = useState(false); // For modal buttons
+  const [isProcessing, setIsProcessing] = useState(false); 
 
   const [renameModal, setRenameModal] = useState({ open: false, id: '', name: '' });
   const [deleteModal, setDeleteModal] = useState({ open: false, id: '' });
 
-  // Use Env Variables if available, else fallback to hardcoded
   const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
   const AD_BASE = import.meta.env.VITE_AD_BASE || "https://go.urlking.site/";
 
@@ -21,6 +20,7 @@ const ManageFiles = ({ token }) => {
         headers: { Authorization: `Bearer ${token}` } 
       });
       const data = await res.json();
+      // Backend ab { data: [...] } format me bhej raha hai
       setFiles(Array.isArray(data) ? data : (data.data || []));
     } catch (e) { 
       console.error(e);
@@ -36,7 +36,7 @@ const ManageFiles = ({ token }) => {
 
   const handleRename = async () => {
     if (!renameModal.name.trim()) return showToast("Name cannot be empty", "error");
-    
+
     setIsProcessing(true);
     try {
       const res = await fetch(`${API}/api/dev/rename-file`, {
@@ -44,7 +44,7 @@ const ManageFiles = ({ token }) => {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ short_id: renameModal.id, new_name: renameModal.name })
       });
-      
+
       if (res.ok) { 
         showToast("Renamed Successfully!", "success"); 
         setRenameModal({ open: false, id: '', name: '' }); 
@@ -67,9 +67,9 @@ const ManageFiles = ({ token }) => {
         method: "DELETE", 
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       if (res.ok) { 
-        showToast("Deleted!", "success"); 
+        showToast("File Removed!", "success"); 
         setDeleteModal({ open: false, id: '' }); 
         loadFiles(page); 
       } else { 
@@ -88,7 +88,7 @@ const ManageFiles = ({ token }) => {
     showToast("Copied!", "success");
   };
 
-  // SAFETY LOCK: Backend API pagination fallback
+  // Backend API pagination fallback logic
   const isApiPaginated = files.length <= 5;
   const displayFiles = isApiPaginated ? files : files.slice((page - 1) * 5, page * 5);
   const disableNext = isApiPaginated ? files.length < 5 : files.length <= page * 5;
@@ -105,6 +105,7 @@ const ManageFiles = ({ token }) => {
                 <th className="p-4 pl-6">File Name</th>
                 <th className="p-4">Size</th>
                 <th className="p-4">Link</th>
+                <th className="p-4">Downloads</th> {/* 🟢 NAYA COLUMN */}
                 <th className="p-4">Date</th>
                 <th className="p-4 text-right pr-6">Actions</th>
               </tr>
@@ -112,17 +113,19 @@ const ManageFiles = ({ token }) => {
             <tbody className="divide-y divide-[var(--glass-border)] text-sm text-[var(--text-primary)]">
               {loading ? (
                 <tr>
-                  <td colSpan="5" className="p-6 text-center text-slate-500">
+                  <td colSpan="6" className="p-6 text-center text-slate-500">
                     <i className="fas fa-circle-notch fa-spin text-2xl mb-2 text-indigo-500"></i><br/>Loading...
                   </td>
                 </tr>
               ) : displayFiles.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="p-6 text-center text-slate-500">No active files uploaded yet.</td>
+                  <td colSpan="6" className="p-6 text-center text-slate-500">No active files uploaded yet.</td>
                 </tr>
               ) : (
                 displayFiles.map(f => {
                   const shortUrl = AD_BASE + f.short_id;
+                  const downloadCount = f.downloads || 0; // 🟢 Backend se count aayega
+
                   return (
                     <tr key={f.short_id} className="hover:bg-[var(--nav-hover)] transition-colors">
                       <td className="p-4 pl-6 font-medium">
@@ -136,15 +139,23 @@ const ManageFiles = ({ token }) => {
                           <i className="fas fa-external-link-alt"></i> Link
                         </a>
                       </td>
+                      
+                      {/* 🟢 DOWNLOADS DATA CELL */}
+                      <td className="p-4 text-xs font-black text-emerald-500">
+                        <div className="bg-emerald-500/10 inline-block px-3 py-1 rounded-full border border-emerald-500/20">
+                          <i className="fas fa-download mr-1"></i> {downloadCount}
+                        </div>
+                      </td>
+
                       <td className="p-4 text-xs text-slate-400">{new Date(f.created_at).toLocaleDateString()}</td>
                       <td className="p-4 pr-6 text-right">
-                        <button onClick={() => setRenameModal({ open: true, id: f.short_id, name: f.file_name })} className="p-2 rounded-lg bg-indigo-500/10 hover:bg-indigo-600 text-indigo-500 hover:text-white transition-all text-xs mr-2">
+                        <button onClick={() => setRenameModal({ open: true, id: f.short_id, name: f.file_name })} className="p-2 rounded-lg bg-indigo-500/10 hover:bg-indigo-600 text-indigo-500 hover:text-white transition-all text-xs mr-2" title="Rename">
                           <i className="fas fa-pencil-alt"></i>
                         </button>
-                        <button onClick={() => setDeleteModal({ open: true, id: f.short_id })} className="p-2 rounded-lg bg-red-500/10 hover:bg-red-600 text-red-500 hover:text-white transition-all text-xs mr-2">
+                        <button onClick={() => setDeleteModal({ open: true, id: f.short_id })} className="p-2 rounded-lg bg-red-500/10 hover:bg-red-600 text-red-500 hover:text-white transition-all text-xs mr-2" title="Delete">
                           <i className="fas fa-trash-alt"></i>
                         </button>
-                        <button onClick={() => copyLink(shortUrl)} className="p-2 rounded-lg bg-green-500/10 hover:bg-green-600 text-green-500 hover:text-white transition-all text-xs">
+                        <button onClick={() => copyLink(shortUrl)} className="p-2 rounded-lg bg-green-500/10 hover:bg-green-600 text-green-500 hover:text-white transition-all text-xs" title="Copy Link">
                           <i className="fas fa-copy"></i>
                         </button>
                       </td>
@@ -201,13 +212,13 @@ const ManageFiles = ({ token }) => {
         </div>
       )}
 
-      {/* DELETE MODAL */}
+      {/* DELETE MODAL (🟢 UPDATED MESSAGE FOR SOFT DELETE) */}
       {deleteModal.open && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
           <div className="glass-panel p-6 rounded-2xl w-full max-w-sm text-center">
             <i className="fas fa-trash-alt text-4xl text-red-500 mb-4"></i>
-            <h3 className="text-xl font-bold mb-2 text-[var(--text-primary)]">Delete Permanently?</h3>
-            <p className="text-sm text-slate-400 mb-6">This will break existing links.</p>
+            <h3 className="text-xl font-bold mb-2 text-[var(--text-primary)]">Remove File?</h3>
+            <p className="text-sm text-slate-400 mb-6">This file will be removed from your dashboard. <br/><span className="text-emerald-500 font-bold">Your clicks & earnings are safe!</span></p>
             <div className="flex justify-center gap-3">
               <button 
                 onClick={() => setDeleteModal({ open: false, id: '' })} 
@@ -222,7 +233,7 @@ const ManageFiles = ({ token }) => {
                 disabled={isProcessing}
               >
                 {isProcessing ? <i className="fas fa-spinner fa-spin"></i> : null}
-                Yes, Delete
+                Yes, Remove
               </button>
             </div>
           </div>
