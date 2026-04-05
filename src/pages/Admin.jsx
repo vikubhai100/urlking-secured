@@ -4,10 +4,9 @@ import { showToast } from '../toast';
 const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
 
 // ============================================================================
-// 🧩 SUB-COMPONENTS (SECTION WISE)
+// 🧩 SUB-COMPONENTS
 // ============================================================================
 
-// 1. STATS CARD COMPONENT
 const StatCard = ({ icon, title, value, colorClass, borderClass }) => (
   <div className={`p-5 md:p-6 rounded-2xl relative overflow-hidden group bg-[var(--glass-panel)] border ${borderClass} shadow-sm transition-transform hover:-translate-y-1`}>
     <div className={`absolute right-0 top-0 p-4 opacity-10 group-hover:scale-110 transition-transform ${colorClass}`}><i className={`fas ${icon} text-6xl`}></i></div>
@@ -17,11 +16,9 @@ const StatCard = ({ icon, title, value, colorClass, borderClass }) => (
   </div>
 );
 
-// 2. TOP PERFORMERS (NEW TAB)
 const TopPerformersTab = ({ users, openProfile }) => {
   const [timeframe, setTimeframe] = useState('today'); 
 
-  // Filter 0 clicks and sort descending
   const sortedUsers = [...users].filter(u => {
     const clicks = timeframe === 'today' ? (u.stats?.today_clicks || 0) : (u.stats?.total || 0);
     const earnings = timeframe === 'today' ? parseFloat(u.stats?.today_earnings || 0) : parseFloat(u.stats?.earnings || 0);
@@ -40,7 +37,7 @@ const TopPerformersTab = ({ users, openProfile }) => {
         </h3>
         <select 
           value={timeframe} onChange={(e) => setTimeframe(e.target.value)}
-          className="bg-[var(--nav-hover)] border border-[var(--glass-border)] text-[var(--text-primary)] px-4 py-2 rounded-xl font-bold outline-none"
+          className="bg-[var(--nav-hover)] border border-[var(--glass-border)] text-[var(--text-primary)] px-4 py-2 rounded-xl font-bold outline-none cursor-pointer"
         >
           <option value="today">Today's Performance</option>
           <option value="total">All-Time Performance</option>
@@ -54,14 +51,14 @@ const TopPerformersTab = ({ users, openProfile }) => {
               <tr className="text-xs font-bold tracking-wider text-[var(--text-secondary)] uppercase border-b border-[var(--glass-border)] bg-[var(--nav-hover)]">
                 <th className="p-4 w-16 text-center">Rank</th>
                 <th className="p-4">User</th>
-                <th className="p-4 text-center">Clicks ({timeframe})</th>
-                <th className="p-4 text-center">Earnings ({timeframe})</th>
+                <th className="p-4 text-center">Clicks</th>
+                <th className="p-4 text-center">Earnings</th>
                 <th className="p-4 text-right">Action</th>
               </tr>
             </thead>
             <tbody className="text-sm divide-y divide-[var(--glass-border)]">
               {sortedUsers.length === 0 ? (
-                <tr><td colSpan="5" className="p-12 text-center text-[var(--text-secondary)] font-medium">No active users {timeframe === 'today' ? 'today' : 'yet'}. (0 clicks hidden)</td></tr>
+                <tr><td colSpan="5" className="p-12 text-center text-[var(--text-secondary)] font-medium">No active users {timeframe === 'today' ? 'today' : 'yet'}.</td></tr>
               ) : (
                 sortedUsers.map((u, idx) => (
                   <tr key={u.uid} className="hover:bg-[var(--nav-hover)] transition-colors">
@@ -94,7 +91,6 @@ const TopPerformersTab = ({ users, openProfile }) => {
   );
 };
 
-// 3. BULK MAILER COMPONENT
 const MailerTab = ({ adminToken }) => {
   const [mailerForm, setMailerForm] = useState({ adminKey: '', subject: '', title: '', message: '' });
   const [status, setStatus] = useState({ loading: false, result: null, isError: false });
@@ -133,7 +129,7 @@ const MailerTab = ({ adminToken }) => {
               {status.loading ? <><i className="fas fa-spinner fa-spin"></i> Broadcasting...</> : <><i className="fas fa-paper-plane"></i> Launch Broadcast</>}
             </button>
           </div>
-          {status.result && <div className={`mt-4 p-4 rounded-xl font-bold text-sm ${status.isError ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'bg-blue-500/10 text-blue-500 border border-blue-500/20'}`}>{status.result}</div>}
+          {status.result && <div className={`mt-4 p-4 rounded-xl font-bold text-sm ${status.isError ? 'bg-red-500/10 text-red-500' : 'bg-blue-500/10 text-blue-500'}`}>{status.result}</div>}
         </div>
       </div>
     </section>
@@ -171,8 +167,6 @@ const AdminConsole = () => {
   const [ticketModal, setTicketModal] = useState({ open: false, data: null });
 
   const [globalCpm, setGlobalCpm] = useState('0.50');
-
-  const canvasRef = useRef(null);
 
   // --- INIT & AUTH ---
   useEffect(() => {
@@ -280,17 +274,24 @@ const AdminConsole = () => {
   const handleSearch = (e) => { setSearchQuery(e.target.value); filterAndSetUsers(allUsers, activeTab, e.target.value); };
 
   // --- ACTIONS ---
+  
+  // 🟢 FIXED: Profile Data Fetching (Instant base data show, background fetch)
   const openUserDetailsByUid = async (uid) => {
-    setUserModal({ open: true, activeTab: 'profile', data: { uid }, loading: true });
+    const baseUser = allUsers.find(u => u.uid === uid) || { uid, username: 'Unknown User' };
+    
+    setUserModal({ open: true, activeTab: 'profile', data: baseUser, loading: true });
+    
     try {
       const res = await fetch(`${API}/api/admin/users/${uid}`, { headers: { 'x-admin-token': adminToken } });
       if (res.ok) {
         const fullData = await res.json();
-        setUserModal({ open: true, activeTab: 'profile', data: fullData, loading: false });
-      } else { throw new Error("Fetch failed"); }
+        setUserModal({ open: true, activeTab: 'profile', data: { ...baseUser, ...fullData }, loading: false });
+      } else { 
+        setUserModal(prev => ({ ...prev, loading: false })); 
+      }
     } catch (error) {
-      showToast("Could not load user details", "error");
-      setUserModal(prev => ({ ...prev, open: false }));
+      showToast("Could not fetch advanced details", "error");
+      setUserModal(prev => ({ ...prev, loading: false }));
     }
   };
 
@@ -389,7 +390,7 @@ const AdminConsole = () => {
         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-[var(--bg-body)] backdrop-blur-md p-4">
           <div className="bg-[var(--glass-panel)] border border-[var(--glass-border)] w-full max-w-md rounded-2xl p-8 text-center shadow-xl">
             <div className="w-16 h-16 mx-auto bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20"><i className="fas fa-fingerprint text-3xl text-red-500"></i></div>
-            <h2 className="text-2xl font-bold mb-2">Admin Security</h2>
+            <h2 className="text-2xl font-bold mb-2 text-[var(--text-primary)]">Admin Security</h2>
             <p className="text-xs text-[var(--text-secondary)] mb-6">Enter protocol password to proceed</p>
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && doLogin()} className="w-full bg-[var(--bg-body)] border border-[var(--glass-border)] text-[var(--text-primary)] text-center p-4 rounded-xl mb-4 font-bold outline-none focus:border-red-500" placeholder="••••••••" />
             <button onClick={doLogin} className="w-full py-4 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold shadow-lg">Unlock Console</button>
@@ -403,13 +404,13 @@ const AdminConsole = () => {
           {/* Mobile Header */}
           <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-[var(--glass-panel)] border-b border-[var(--glass-border)] p-4 flex items-center justify-between">
             <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-[var(--text-primary)] p-2 rounded-lg bg-[var(--nav-hover)]"><i className="fas fa-bars"></i></button>
-            <h1 className="text-lg font-bold tracking-wide">ADMIN<span className="text-red-500">PANEL</span></h1>
+            <h1 className="text-lg font-bold tracking-wide text-[var(--text-primary)]">ADMIN<span className="text-red-500">PANEL</span></h1>
           </div>
 
           {/* Sidebar */}
           <aside className={`fixed inset-y-0 left-0 w-72 bg-[var(--glass-panel)] border-r border-[var(--glass-border)] transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 transition-transform duration-300 z-[60] flex flex-col`}>
             <div className="p-8 border-b border-[var(--glass-border)] flex justify-between items-center">
-              <h1 className="text-2xl font-bold flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center border border-red-500/30"><i className="fas fa-shield-alt text-red-500"></i></div><span>ADMIN<span className="text-red-500">PANEL</span></span></h1>
+              <h1 className="text-2xl font-bold text-[var(--text-primary)] flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center border border-red-500/30"><i className="fas fa-shield-alt text-red-500"></i></div><span>ADMIN<span className="text-red-500">PANEL</span></span></h1>
               <button onClick={() => setSidebarOpen(false)} className="md:hidden text-[var(--text-secondary)]"><i className="fas fa-times text-xl"></i></button>
             </div>
             <nav className="flex-1 p-6 space-y-2 overflow-y-auto">
@@ -441,7 +442,7 @@ const AdminConsole = () => {
           <main className="flex-1 md:ml-72 p-4 md:p-8 pt-24 md:pt-8 w-full overflow-x-hidden min-h-screen">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b border-[var(--glass-border)] pb-6">
               <div>
-                <h2 className="text-3xl font-bold capitalize">{activeTab.replace('-', ' ')}</h2>
+                <h2 className="text-3xl font-bold capitalize text-[var(--text-primary)]">{activeTab.replace('-', ' ')}</h2>
                 <p className="text-[var(--text-secondary)] text-sm mt-1">Overview and management controls.</p>
               </div>
             </div>
@@ -484,16 +485,16 @@ const AdminConsole = () => {
                            <tr><td colSpan="7" className="p-12 text-center text-[var(--text-secondary)] font-medium">No users found.</td></tr>
                         ) : (
                           currentUsers.map(u => (
-                            <tr key={u.uid} onClick={() => isSelectionMode && toggleUserSelection(u.uid)} className={`hover:bg-[var(--nav-hover)] transition-colors ${selectedUsers.includes(u.uid) ? 'bg-red-500/5' : ''} ${isSelectionMode ? 'cursor-pointer' : ''}`}>
-                              {isSelectionMode && <td className="p-4 text-center"><input type="checkbox" checked={selectedUsers.includes(u.uid)} readOnly className="custom-checkbox" /></td>}
-                              <td className="p-4">
+                            <tr key={u.uid} className="hover:bg-[var(--nav-hover)] transition-colors">
+                              {isSelectionMode && <td className="p-4 text-center"><input type="checkbox" checked={selectedUsers.includes(u.uid)} onChange={()=>toggleUserSelection(u.uid)} className="custom-checkbox" /></td>}
+                              <td className="p-4 cursor-pointer" onClick={() => openUserDetailsByUid(u.uid)}>
                                 <div className="flex items-center gap-3">
                                   <div className="w-9 h-9 rounded-full bg-indigo-500/20 text-indigo-500 flex items-center justify-center font-bold">{(u.username || 'U').charAt(0).toUpperCase()}</div>
-                                  <div><div className="font-bold">{u.username || 'Unknown'}</div><div className="text-xs text-[var(--text-secondary)]">{u.email}</div></div>
+                                  <div><div className="font-bold text-[var(--text-primary)] hover:text-indigo-500 transition-colors">{u.username || 'Unknown'}</div><div className="text-xs text-[var(--text-secondary)]">{u.email}</div></div>
                                 </div>
                               </td>
                               <td className="p-4 text-center">{u.links_count || 0}</td>
-                              <td className="p-4 text-center font-bold">{u.stats?.total || 0}</td>
+                              <td className="p-4 text-center font-bold text-[var(--text-primary)]">{u.stats?.total || 0}</td>
                               <td className="p-4 text-center text-green-500 font-bold">${u.stats?.earnings || '0.00'}</td>
                               <td className="p-4 text-center text-xs uppercase font-bold text-[var(--text-secondary)]">{u.role}</td>
                               <td className="p-4 text-right">
@@ -538,7 +539,7 @@ const AdminConsole = () => {
                   <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                       <thead>
-                        <tr className="text-xs font-bold tracking-wider text-[var(--text-secondary)] uppercase border-b border-[var(--glass-border)] bg-[var(--nav-hover)]">
+                        <tr className="text-xs font-bold tracking-wider text-[var(--text-secondary)] uppercase bg-[var(--nav-hover)] border-b border-[var(--glass-border)]">
                           <th className="p-4 w-20">ID</th><th className="p-4">User</th><th className="p-4 text-right">Amount</th><th className="p-4">Method Details</th><th className="p-4 text-center">Status</th><th className="p-4 text-right">Action</th>
                         </tr>
                       </thead>
@@ -600,7 +601,10 @@ const AdminConsole = () => {
                           tickets.map(t => (
                             <tr key={t.id} className="hover:bg-[var(--nav-hover)] transition-colors cursor-pointer" onClick={() => setTicketModal({ open: true, data: t })}>
                               <td className="p-4 font-mono text-[var(--text-secondary)] text-xs">#{t.id}</td>
-                              <td className="p-4"><div className="font-bold text-[var(--text-primary)] text-sm">{t.name}</div><div className="text-[10px] text-[var(--text-secondary)] truncate w-40">{t.email}</div></td>
+                              <td className="p-4 cursor-pointer" onClick={(e) => { e.stopPropagation(); openUserDetailsByUid(t.uid); }}>
+                                <div className="font-bold text-[var(--text-primary)] hover:text-indigo-500 transition-colors text-sm">{t.name} <i className="fas fa-external-link-alt text-[10px] text-[var(--text-secondary)]"></i></div>
+                                <div className="text-[10px] text-[var(--text-secondary)] truncate w-40">{t.email}</div>
+                              </td>
                               <td className="p-4"><div className="font-bold text-indigo-400 text-xs truncate w-48">{t.subject}</div><div className="text-[10px] uppercase text-[var(--text-secondary)] mt-1">{t.category}</div></td>
                               <td className="p-4 text-center text-[10px] font-bold uppercase">
                                 {t.priority === 'Urgent' ? <span className="text-red-500">Urgent</span> : t.priority === 'High' ? <span className="text-orange-500">High</span> : <span className="text-blue-500">Normal</span>}
@@ -624,7 +628,7 @@ const AdminConsole = () => {
             {/* TAB: MAILER */}
             {activeTab === 'mailer' && <MailerTab adminToken={adminToken} />}
 
-            {/* TAB: SETTINGS */}
+            {/* TAB: SETTINGS (Fixed Layout) */}
             {activeTab === 'settings' && (
               <section className="fade-in max-w-3xl mx-auto space-y-6">
                 <div className="bg-[var(--glass-panel)] p-6 md:p-8 rounded-2xl border border-[var(--glass-border)] shadow-sm">
@@ -632,15 +636,15 @@ const AdminConsole = () => {
                   <p className="text-[var(--text-secondary)] text-sm mb-6 pl-11">Update the CPM for EVERY user instantly.</p>
                   <div className="flex gap-4 pl-11">
                     <input type="number" step="0.01" value={globalCpm} onChange={(e) => setGlobalCpm(e.target.value)} className="bg-[var(--bg-body)] border border-[var(--glass-border)] text-[var(--text-primary)] text-center p-3 rounded-lg font-bold text-xl w-32 outline-none focus:border-indigo-500" />
-                    <button onClick={() => openConfirmModal('global_cpm', globalCpm)} className="bg-green-600 hover:bg-green-500 text-white px-8 rounded-xl font-bold shadow-md">Apply to All</button>
+                    <button onClick={() => openConfirmModal('global_cpm', globalCpm)} className="bg-green-600 hover:bg-green-500 text-white px-8 rounded-xl font-bold shadow-md transition-colors">Apply to All</button>
                   </div>
                 </div>
 
-                <div className="bg-[var(--glass-panel)] p-6 md:p-8 rounded-2xl border border-[var(--glass-border)] shadow-sm bg-gradient-to-br from-purple-500/5 to-transparent">
+                <div className="bg-[var(--glass-panel)] p-6 md:p-8 rounded-2xl border border-[var(--glass-border)] shadow-sm">
                   <h4 className="text-xl font-bold text-[var(--text-primary)] mb-2 flex items-center gap-3"><div className="p-2 bg-purple-500/10 text-purple-500 rounded-lg"><i className="fas fa-cloud-upload-alt"></i></div> Mass Upload Permissions</h4>
                   <p className="text-[var(--text-secondary)] text-sm mb-6 pl-11">Unlock file upload capabilities for all registered accounts at once.</p>
                   <div className="pl-11">
-                    <button onClick={() => openConfirmModal('allow_all_uploads', null)} className="bg-purple-600 hover:bg-purple-500 text-white py-3.5 px-8 rounded-xl font-bold flex items-center justify-center gap-2 shadow-md">
+                    <button onClick={() => openConfirmModal('allow_all_uploads', null)} className="bg-purple-600 hover:bg-purple-500 text-white py-3.5 px-8 rounded-xl font-bold flex items-center justify-center gap-2 shadow-md transition-colors">
                       <i className="fas fa-unlock-alt"></i> Authorize Uploads for ALL Users
                     </button>
                   </div>
@@ -659,9 +663,9 @@ const AdminConsole = () => {
                 <div className="p-6 border-b border-[var(--glass-border)] flex justify-between items-center bg-[var(--nav-hover)]">
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full bg-indigo-500/20 text-indigo-500 flex items-center justify-center font-bold text-lg">{(userModal.data.username || 'U').charAt(0).toUpperCase()}</div>
-                    <div><h3 className="text-xl font-bold text-[var(--text-primary)]">{userModal.data.username || 'Loading...'}</h3><p className="text-xs text-[var(--text-secondary)] font-mono">UID: {userModal.data.uid}</p></div>
+                    <div><h3 className="text-xl font-bold text-[var(--text-primary)]">{userModal.data.username || 'User Profile'}</h3><p className="text-xs text-[var(--text-secondary)] font-mono">UID: {userModal.data.uid}</p></div>
                   </div>
-                  <button onClick={() => setUserModal({ open: false, data: null, activeTab: 'profile', loading: false })} className="text-[var(--text-secondary)] hover:text-red-500"><i className="fas fa-times text-xl"></i></button>
+                  <button onClick={() => setUserModal({ open: false, data: null, activeTab: 'profile', loading: false })} className="text-[var(--text-secondary)] hover:text-red-500 transition-colors"><i className="fas fa-times text-xl"></i></button>
                 </div>
                 
                 <div className="flex px-6 bg-[var(--nav-hover)] gap-6 border-b border-[var(--glass-border)] overflow-x-auto">
@@ -674,7 +678,7 @@ const AdminConsole = () => {
                   {userModal.loading ? (
                     <div className="flex flex-col items-center justify-center h-48 space-y-4">
                       <div className="w-10 h-10 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
-                      <p className="text-[var(--text-secondary)] text-sm font-bold uppercase">Fetching Data...</p>
+                      <p className="text-[var(--text-secondary)] text-sm font-bold uppercase">Fetching Deep Data...</p>
                     </div>
                   ) : (
                     <>
@@ -689,7 +693,7 @@ const AdminConsole = () => {
 
                       {userModal.activeTab === 'payment' && (
                         <div className="space-y-5 fade-in">
-                          <div className="bg-yellow-500/10 border border-yellow-500/20 p-3 rounded-xl flex gap-3 text-[var(--text-primary)]">
+                          <div className="bg-yellow-500/5 border border-yellow-500/20 p-3 rounded-xl flex gap-3 text-[var(--text-primary)]">
                             <i className="fas fa-info-circle text-yellow-500 mt-0.5"></i>
                             <p className="text-xs leading-relaxed">Payment details are strictly read-only for admin. Use this info to process user withdrawals.</p>
                           </div>
@@ -762,11 +766,14 @@ const AdminConsole = () => {
               <div className="relative z-10 w-full max-w-lg bg-[var(--glass-panel)] border border-[var(--glass-border)] rounded-2xl shadow-2xl flex flex-col fade-in">
                 <div className="flex justify-between items-center p-6 border-b border-[var(--glass-border)] bg-[var(--nav-hover)] rounded-t-2xl">
                   <div><h3 className="text-xl font-bold text-[var(--text-primary)]"><i className="fas fa-envelope-open-text text-indigo-500 mr-2"></i> Ticket #{ticketModal.data.id}</h3><p className="text-xs text-[var(--text-secondary)] mt-1">{new Date(ticketModal.data.created_at).toLocaleString()}</p></div>
-                  <button onClick={() => setTicketModal({ open: false, data: null })} className="text-[var(--text-secondary)] hover:text-red-500"><i className="fas fa-times text-xl"></i></button>
+                  <button onClick={() => setTicketModal({ open: false, data: null })} className="text-[var(--text-secondary)] hover:text-red-500 transition-colors"><i className="fas fa-times text-xl"></i></button>
                 </div>
                 <div className="p-6 space-y-4">
                   <div className="bg-[var(--bg-body)] p-4 rounded-xl border border-[var(--glass-border)] flex justify-between items-start">
-                    <div><p className="text-sm font-bold text-[var(--text-primary)]">{ticketModal.data.name}</p><p className="text-xs text-[var(--text-secondary)]">{ticketModal.data.email}</p></div>
+                    <div className="cursor-pointer group" onClick={() => openUserDetailsByUid(ticketModal.data.uid)}>
+                      <p className="text-sm font-bold text-[var(--text-primary)] group-hover:text-indigo-500 transition-colors">{ticketModal.data.name} <i className="fas fa-external-link-alt text-[10px] text-[var(--text-secondary)]"></i></p>
+                      <p className="text-xs text-[var(--text-secondary)]">{ticketModal.data.email}</p>
+                    </div>
                     <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${ticketModal.data.priority === 'Urgent' ? 'bg-red-500/10 text-red-500' : ticketModal.data.priority === 'High' ? 'bg-orange-500/10 text-orange-500' : 'bg-blue-500/10 text-blue-500'}`}>{ticketModal.data.priority}</span>
                   </div>
                   <div><h4 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1">Subject</h4><p className="text-sm font-bold text-indigo-400">{ticketModal.data.subject} <span className="text-[var(--text-secondary)] font-normal">({ticketModal.data.category})</span></p></div>
