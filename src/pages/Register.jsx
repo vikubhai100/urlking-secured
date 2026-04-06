@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Particles from '../components/Particles';
-import { showToast } from '../toast'; // ✅ Premium Toast Added
+import { showToast } from '../toast'; // ✅ Premium Toast
 
 const Register = () => {
   const [username, setUsername] = useState('');
@@ -17,14 +17,24 @@ const Register = () => {
   const currentRef = searchParams.get('ref') || localStorage.getItem('saved_ref_code');
 
   useEffect(() => {
+    // Save referral code if present
     if (currentRef) {
       localStorage.setItem('saved_ref_code', currentRef);
     }
+
+    // 🚀 BACKGROUND PREFETCH MAGIC 🚀
+    // Jab user Register page dekh raha hoga, piche se hum Login page ka JS load kar lenge 
+    // kyunki Register hone ke baad usko directly login pe bhejenge.
+    const prefetchLogin = setTimeout(() => {
+      import('./Login').catch(() => console.log('Prefetch skipped'));
+    }, 1500);
+
+    return () => clearTimeout(prefetchLogin);
   }, [currentRef]);
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    
+
     // 🟢 BUG FIX: Data Sanitization (Space hatana aur chote akshar me karna)
     const cleanUsername = username.trim().toLowerCase();
     const cleanEmail = email.trim().toLowerCase();
@@ -32,7 +42,7 @@ const Register = () => {
     if (!cleanUsername || !cleanEmail || !password || !confirmPass) {
       return showToast("Please fill in all fields.", "error");
     }
-    
+
     // Username me space allow nahi karna hai
     if (cleanUsername.includes(" ")) {
       return showToast("Username cannot contain spaces.", "error");
@@ -43,7 +53,7 @@ const Register = () => {
 
     setIsLoading(true);
     try {
-      // 🟢 Firebase nahi, sirf Backend API call jayegi
+      // API call to create user
       const res = await fetch(`${API}/api/register`, {
         method: "POST", 
         headers: { "Content-Type": "application/json" },
@@ -56,18 +66,19 @@ const Register = () => {
       });
 
       const data = await res.json();
-      
-      // Agar backend se error aayi (jaise Username already taken) toh yahan rok dega
+
+      // Handle backend errors (e.g., Username taken)
       if (!res.ok) {
         throw new Error(data.error || "Registration failed");
       }
 
       showToast("Account created successfully! Redirecting...", "success");
       localStorage.removeItem('saved_ref_code');
-      setTimeout(() => navigate('/login'), 1500);
       
+      // Navigate to Login instantly (kyunki wo pehle se background me preload ho chuka hai)
+      setTimeout(() => navigate('/login'), 1500);
+
     } catch (e) { 
-      // User ko directly screen par dikhega ki exact error kya hai
       showToast(e.message, "error");
     } finally {
       setIsLoading(false);
@@ -75,88 +86,140 @@ const Register = () => {
   };
 
   return (
-    <>
+    <div className="min-h-screen bg-[var(--bg-body)] text-[var(--text-primary)] flex flex-col justify-center items-center relative overflow-hidden transition-colors duration-300">
       <Particles />
-      {/* Navbar */}
-      <nav className="w-full p-6 flex justify-between items-center z-50 fixed top-0 left-0">
-        <Link to="/" className="flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-md shadow-lg transition-all hover:scale-105" style={{background: 'var(--fab-bg)', border: '1px solid var(--input-border)'}}>
-          <i className="fas fa-arrow-left text-sm"></i> <span className="font-medium text-sm">Home</span>
-        </Link>
-        <Link to="/login" className="group flex items-center gap-2 px-5 py-2 rounded-full bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 hover:bg-indigo-600 hover:text-white transition-all backdrop-blur-md">
-          <span className="font-medium text-sm">Sign In</span>
-          <i className="fas fa-arrow-right text-xs group-hover:translate-x-0.5 transition-transform"></i>
-        </Link>
-      </nav>
+
+      {/* Header Navigation Elements */}
+      <Link to="/" className="absolute top-8 left-8 text-slate-400 hover:text-indigo-500 font-medium flex items-center gap-2 transition-colors z-20 bg-[var(--glass-panel)] border border-[var(--glass-border)] px-5 py-2.5 rounded-full backdrop-blur-md shadow-sm hover:shadow-md hover:-translate-y-0.5">
+        <i className="fas fa-arrow-left text-sm"></i> <span className="text-sm font-bold">Home</span>
+      </Link>
+
+      <Link to="/login" className="absolute top-8 right-8 group flex items-center gap-2 px-6 py-2.5 rounded-full bg-indigo-600/10 border border-indigo-500/30 text-indigo-500 hover:bg-indigo-600 hover:text-white transition-all backdrop-blur-md shadow-sm z-20">
+        <span className="font-bold text-sm">Sign In</span>
+        <i className="fas fa-arrow-right text-xs group-hover:translate-x-1 transition-transform"></i>
+      </Link>
 
       {/* Main Registration Area */}
-      <div className="flex-1 flex flex-col items-center justify-center p-4 min-h-screen relative z-10 w-full pt-24 pb-12">
-
-        {/* Registration Card */}
-        <div className="border-animated w-full max-w-[400px] mb-6 shadow-2xl">
-          <div className="relative z-20 p-8 md:p-10 bg-slate-900 rounded-2xl">
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl border border-slate-700/30 mb-4 bg-slate-800 shadow-xl">
-                <i className="fas fa-crown text-indigo-500 text-2xl"></i>
-              </div>
-              <h1 className="text-3xl font-bold tracking-tight text-white">URL<span className="text-indigo-500">KING</span></h1>
-              <p className="text-sm mt-2 text-slate-400">Create an account today.</p>
-              {currentRef && <p className="text-xs mt-2 text-purple-400 font-bold px-3 py-1 bg-purple-500/10 inline-block rounded-full border border-purple-500/20"><i className="fas fa-gift mr-1"></i> Referred by a friend ✨</p>}
-            </div>
-
-            <form onSubmit={handleRegister} className="space-y-5">
-              <div className="relative">
-                <input type="text" placeholder="Username" className="input-premium w-full p-4 pl-12 rounded-xl text-white bg-slate-800/50 border border-white/5 focus:border-indigo-500/50" value={username} onChange={(e) => setUsername(e.target.value)} required />
-                <i className="fas fa-user absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
-              </div>
-              <div className="relative">
-                <input type="email" placeholder="Email Address" className="input-premium w-full p-4 pl-12 rounded-xl text-white bg-slate-800/50 border border-white/5 focus:border-indigo-500/50" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                <i className="fas fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
-              </div>
-              <div className="relative">
-                <input type="password" placeholder="Create Password" className="input-premium w-full p-4 pl-12 rounded-xl text-white bg-slate-800/50 border border-white/5 focus:border-indigo-500/50" value={password} onChange={(e) => setPassword(e.target.value)} required />
-                <i className="fas fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
-              </div>
-              <div className="relative">
-                <input type="password" placeholder="Confirm Password" className="input-premium w-full p-4 pl-12 rounded-xl text-white bg-slate-800/50 border border-white/5 focus:border-indigo-500/50" value={confirmPass} onChange={(e) => setConfirmPass(e.target.value)} required />
-                <i className="fas fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
-              </div>
-
-              <button type="submit" disabled={isLoading} className="w-full py-4 rounded-xl font-bold text-white shadow-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
-                {isLoading ? <><i className="fas fa-spinner fa-spin"></i> Creating...</> : <><i className="fas fa-user-plus"></i> Create Account</>}
-              </button>
-
-              <p className="text-center text-sm mt-4 text-slate-400">
-                Already a member? <Link to="/login" className="text-indigo-500 font-bold hover:text-indigo-400 transition-colors">Sign in here</Link>
-              </p>
-            </form>
+      <div className="w-full max-w-md p-8 relative z-10 fade-in mt-16 md:mt-0">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl border border-[var(--glass-border)] mb-4 shadow-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/10">
+            <i className="fas fa-crown text-indigo-500 text-3xl drop-shadow-[0_0_15px_rgba(99,102,241,0.5)]"></i>
           </div>
+          <h1 className="text-3xl font-bold tracking-tight text-[var(--text-primary)] mb-2">
+            URL<span className="text-indigo-500">KING</span>
+          </h1>
+          <p className="text-sm text-[var(--text-secondary)] font-medium">Create your account today.</p>
+          
+          {currentRef && (
+            <div className="mt-3">
+              <span className="text-xs font-bold px-3 py-1 bg-purple-500/10 text-purple-500 border border-purple-500/20 rounded-full inline-flex items-center shadow-sm">
+                <i className="fas fa-gift mr-1.5"></i> Referred by a friend ✨
+              </span>
+            </div>
+          )}
         </div>
 
-        {/* ✅ Info & Features Box Below Login */}
-        <div className="w-full max-w-[400px] bg-slate-900/60 backdrop-blur-xl border border-white/5 p-6 rounded-2xl text-center shadow-2xl">
-          <div className="flex justify-center gap-6 mb-4">
-            <div className="flex flex-col items-center gap-1 group">
-              <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20 group-hover:bg-blue-500/20 transition-colors"><i className="fas fa-link text-blue-400"></i></div>
-              <span className="text-[10px] uppercase font-bold text-slate-500">Shorten</span>
+        {/* Registration Form */}
+        <div className="bg-[var(--glass-panel)] border border-[var(--glass-border)] rounded-3xl p-6 shadow-2xl backdrop-blur-md mb-6">
+          <form onSubmit={handleRegister} className="space-y-4">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[var(--text-secondary)] opacity-70">
+                <i className="fas fa-user"></i>
+              </div>
+              <input 
+                type="text" 
+                placeholder="Username" 
+                value={username} 
+                onChange={(e) => setUsername(e.target.value)} 
+                required 
+                className="w-full pl-11 pr-4 py-3.5 bg-[var(--bg-body)] border border-[var(--glass-border)] rounded-xl text-sm font-medium outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all text-[var(--text-primary)]" 
+              />
             </div>
-            <div className="flex flex-col items-center gap-1 group">
-              <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center border border-green-500/20 group-hover:bg-green-500/20 transition-colors"><i className="fas fa-sack-dollar text-green-400"></i></div>
-              <span className="text-[10px] uppercase font-bold text-slate-500">Earn</span>
+
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[var(--text-secondary)] opacity-70">
+                <i className="fas fa-envelope"></i>
+              </div>
+              <input 
+                type="email" 
+                placeholder="Email Address" 
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)} 
+                required 
+                className="w-full pl-11 pr-4 py-3.5 bg-[var(--bg-body)] border border-[var(--glass-border)] rounded-xl text-sm font-medium outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all text-[var(--text-primary)]" 
+              />
             </div>
-            <div className="flex flex-col items-center gap-1 group">
-              <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20 group-hover:bg-purple-500/20 transition-colors"><i className="fas fa-cloud-upload-alt text-purple-400"></i></div>
-              <span className="text-[10px] uppercase font-bold text-slate-500">Upload</span>
+
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[var(--text-secondary)] opacity-70">
+                <i className="fas fa-lock"></i>
+              </div>
+              <input 
+                type="password" 
+                placeholder="Create Password" 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+                required 
+                className="w-full pl-11 pr-4 py-3.5 bg-[var(--bg-body)] border border-[var(--glass-border)] rounded-xl text-sm font-medium outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all text-[var(--text-primary)]" 
+              />
+            </div>
+
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[var(--text-secondary)] opacity-70">
+                <i className="fas fa-lock"></i>
+              </div>
+              <input 
+                type="password" 
+                placeholder="Confirm Password" 
+                value={confirmPass} 
+                onChange={(e) => setConfirmPass(e.target.value)} 
+                required 
+                className="w-full pl-11 pr-4 py-3.5 bg-[var(--bg-body)] border border-[var(--glass-border)] rounded-xl text-sm font-medium outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all text-[var(--text-primary)]" 
+              />
+            </div>
+
+            <button 
+              type="submit" 
+              disabled={isLoading} 
+              className="w-full mt-2 py-4 rounded-xl font-bold text-white tracking-wide shadow-lg bg-indigo-600 hover:bg-indigo-500 transform active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {isLoading ? <><i className="fas fa-circle-notch fa-spin text-lg"></i> Creating Account...</> : <><i className="fas fa-user-plus"></i> Join URLKING</>}
+            </button>
+
+            <p className="text-center text-sm mt-4 text-[var(--text-secondary)] font-medium">
+              Already a member? 
+              <Link to="/login" className="text-indigo-500 font-bold hover:text-indigo-600 transition-colors ml-1.5 underline-offset-4 hover:underline">
+                Sign in here
+              </Link>
+            </p>
+          </form>
+        </div>
+
+        {/* ✅ Info & Features Box Below Register */}
+        <div className="w-full max-w-[400px] bg-[var(--glass-panel)] backdrop-blur-xl border border-[var(--glass-border)] p-6 rounded-2xl text-center shadow-lg fade-in">
+          <div className="flex justify-center gap-6 mb-5">
+            <div className="flex flex-col items-center gap-1.5 group cursor-default">
+              <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20 group-hover:bg-blue-500/20 transition-colors shadow-sm"><i className="fas fa-link text-blue-500"></i></div>
+              <span className="text-[10px] uppercase font-bold text-[var(--text-secondary)] tracking-wider">Shorten</span>
+            </div>
+            <div className="flex flex-col items-center gap-1.5 group cursor-default">
+              <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center border border-green-500/20 group-hover:bg-green-500/20 transition-colors shadow-sm"><i className="fas fa-sack-dollar text-green-500"></i></div>
+              <span className="text-[10px] uppercase font-bold text-[var(--text-secondary)] tracking-wider">Earn</span>
+            </div>
+            <div className="flex flex-col items-center gap-1.5 group cursor-default">
+              <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20 group-hover:bg-purple-500/20 transition-colors shadow-sm"><i className="fas fa-cloud-upload-alt text-purple-500"></i></div>
+              <span className="text-[10px] uppercase font-bold text-[var(--text-secondary)] tracking-wider">Upload</span>
             </div>
           </div>
 
-          <h3 className="text-sm font-bold text-white mb-2">Why Join URLKING?</h3>
-          <p className="text-xs text-slate-400 leading-relaxed">
-            Shorten URLs, bypass file limits with our Telegram Bot, and earn up to <strong className="text-green-400">$5.00 CPM</strong> using our ultra-fast 2-page flow system.
+          <h3 className="text-sm font-bold text-[var(--text-primary)] mb-2">Why Join URLKING?</h3>
+          <p className="text-xs text-[var(--text-secondary)] leading-relaxed font-medium">
+            Shorten URLs, bypass file limits with our Telegram Bot, and earn up to <strong className="text-green-500 font-bold">$5.00 CPM</strong> using our ultra-fast 2-page flow system.
           </p>
         </div>
 
       </div>
-    </>
+    </div>
   );
 };
 
