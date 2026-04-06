@@ -1,4 +1,10 @@
 User-agent: *
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /login
+Disallow: /register
+Disallow: /uploader
+Disallow: /file_*
 Allow: /
 
 Sitemap: https://urlking.site/sitemap.xml
