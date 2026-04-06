@@ -44,5 +44,5 @@ export const showToast = (message, type = 'success') => {
 
     // Remove from DOM cleanly
     setTimeout(() => toast.remove(), 400); 
-  }, 3000);
+  }, 2000);
 };
