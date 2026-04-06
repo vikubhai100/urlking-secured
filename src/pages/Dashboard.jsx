@@ -24,10 +24,15 @@ const Dashboard = () => {
   };
 
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  
+  // 🚀 PREFETCH MAGIC: Pehle cache check karo taaki initial state blank na ho
+  const cachedProfile = sessionStorage.getItem('urlking_profile_cache');
+  const [user, setUser] = useState(cachedProfile ? JSON.parse(cachedProfile) : null);
+  
+  // Agar cache me data hai, toh loading screen nahi dikhegi!
+  const [isLoading, setIsLoading] = useState(!cachedProfile);
 
-  // optimized Keep-Alive: Sirf 'upload' ko track karenge
+  // Optimized Keep-Alive: Sirf 'upload' ko track karenge
   const [isUploadMounted, setIsUploadMounted] = useState(false);
 
   useEffect(() => {
@@ -41,35 +46,65 @@ const Dashboard = () => {
   const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
 
   useEffect(() => {
-    if (!token) { navigate('/login'); return; }
+    if (!token) { 
+      navigate('/login'); 
+      return; 
+    }
+    // Hamesha background me fresh data mangwao
     fetchUserProfile();
   }, [token]);
 
   const fetchUserProfile = async () => {
     try {
-      const res = await fetch(`${API}/api/me`, { headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' } });
+      // 1. Fetch Profile Data
+      const res = await fetch(`${API}/api/me`, { 
+        headers: { 
+          'Authorization': `Bearer ${token}`, 
+          'Accept': 'application/json' 
+        } 
+      });
+      
       if (!res.ok) {
-        if (res.status === 401) { localStorage.clear(); navigate('/login'); }
+        if (res.status === 401) { 
+          localStorage.clear(); 
+          sessionStorage.clear();
+          navigate('/login'); 
+        }
         throw new Error("Failed to fetch profile");
       }
+      
       const data = await res.json();
 
+      // 2. Fetch Balance Data
       let balance = 0;
       try {
-        const bRes = await fetch(`${API}/api/wallet/balance`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const bRes = await fetch(`${API}/api/wallet/balance`, { 
+          headers: { 'Authorization': `Bearer ${token}` } 
+        });
         const bData = await bRes.json();
         balance = bData.balance || 0;
-      } catch (e) { }
+      } catch (e) {
+        console.error("Balance fetch error:", e);
+      }
 
-      setUser({ ...data, balance });
-      setIsLoading(false);
-    } catch (err) { setIsLoading(false); }
+      // Combine Data
+      const finalUserData = { ...data, balance };
+      
+      // 🚀 Save to State & Cache
+      setUser(finalUserData);
+      sessionStorage.setItem('urlking_profile_cache', JSON.stringify(finalUserData));
+      
+    } catch (err) { 
+      console.error(err);
+    } finally {
+      setIsLoading(false); // Spinner off
+    }
   };
 
   const renderContent = () => {
-    if (isLoading || !user) {
+    if (isLoading && !user) {
       return (
-        <div className="flex items-center justify-center h-[60vh]">
+        <div className="flex items-center justify-center h-[60vh] fade-in">
           <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
         </div>
       );
@@ -77,13 +112,13 @@ const Dashboard = () => {
 
     return (
       <div className="relative w-full">
-        
+
         {/* UPLOAD TAB: Isko 'hidden' logic se manage karenge taaki background me chalta rahe */}
         <div className={activeSection === 'upload' ? 'block fade-in' : 'hidden'}>
           {isUploadMounted && <UploadFile token={token} user={user} isActive={activeSection === 'upload'} />}
         </div>
 
-        {/* BAAKI TABS: Inko direct render karenge taaki switch karne par fresh reload ho jayein (state reset) */}
+        {/* BAAKI TABS: Inko direct render karenge taaki switch karne par fresh reload ho jayein */}
         {activeSection === 'create' && <DashboardOverview token={token} user={user} isActive={true} />}
         {activeSection === 'files' && <ManageFiles token={token} isActive={true} />}
         {activeSection === 'history' && <LinkHistory token={token} isActive={true} />}
@@ -97,47 +132,76 @@ const Dashboard = () => {
         {activeSection === 'changepass' && <Changepass token={token} isActive={true} />}
         {activeSection === 'support' && <Help user={user} isActive={true} />}
 
-        {activeSection === 'admin-users' && <div className="p-6 glass-panel rounded-2xl text-white font-bold">Admin: Manage Users (Coming Soon)</div>}
+        {activeSection === 'admin-users' && (
+          <div className="p-6 bg-[var(--glass-panel)] border border-[var(--glass-border)] rounded-2xl text-[var(--text-primary)] font-bold text-center">
+            Admin Area is now in the main Admin Console app.
+          </div>
+        )}
       </div>
     );
   };
 
   return (
     <div className="min-h-screen bg-[var(--bg-body)] text-[var(--text-primary)] transition-colors duration-300">
-      
+
       {/* 📱 MOBILE HEADER WITH CROWN 👑 LOGO RESTORED */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-[60] bg-[var(--bg-body)] border-b border-[var(--glass-border)] p-4 flex items-center justify-between shadow-md">
-        <button onClick={() => setIsMobileOpen(true)} className="text-2xl text-[var(--text-primary)] p-2">
+        
+        <button onClick={() => setIsMobileOpen(true)} className="text-xl text-[var(--text-primary)] w-10 h-10 flex items-center justify-center rounded-lg bg-[var(--nav-hover)] hover:bg-[var(--glass-panel)] transition-colors">
           <i className="fas fa-bars"></i>
         </button>
+
         <div className="flex items-center gap-2">
-           {/* 🟢 Crown Logo Wapas Laga Diya */}
-           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-pink-500 flex items-center justify-center text-white">
+           {/* 🟢 Crown Logo */}
+           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-[0_0_10px_rgba(99,102,241,0.4)]">
              <i className="fas fa-crown text-sm"></i>
            </div>
-           <h1 className="text-lg font-bold tracking-wide">URLKING</h1>
+           <h1 className="text-lg font-bold tracking-wide text-[var(--text-primary)]">URLKING</h1>
         </div>
+
         <div className="flex items-center gap-2 pr-1">
-          <button onClick={() => setActiveSection('create')} className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${activeSection === 'create' ? 'bg-indigo-500 text-white shadow-md' : 'bg-indigo-500/10 text-indigo-500'}`}><i className="fas fa-link text-sm"></i></button>
-          <button onClick={() => setActiveSection('upload')} className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${activeSection === 'upload' ? 'bg-pink-500 text-white shadow-md' : 'bg-pink-500/10 text-pink-500'}`}><i className="fas fa-cloud-upload-alt text-sm"></i></button>
+          <button 
+            onClick={() => setActiveSection('create')} 
+            className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${activeSection === 'create' ? 'bg-indigo-600 text-white shadow-md' : 'bg-indigo-500/10 text-indigo-500'}`}
+          >
+            <i className="fas fa-link text-sm"></i>
+          </button>
+          
+          {user?.can_upload ? (
+            <button 
+              onClick={() => setActiveSection('upload')} 
+              className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${activeSection === 'upload' ? 'bg-purple-600 text-white shadow-md' : 'bg-purple-500/10 text-purple-500'}`}
+            >
+              <i className="fas fa-cloud-upload-alt text-sm"></i>
+            </button>
+          ) : null}
         </div>
       </div>
 
-      <Sidebar activeSection={activeSection} setActiveSection={setActiveSection} isMobileOpen={isMobileOpen} setIsMobileOpen={setIsMobileOpen} user={user} />
+      {/* SIDEBAR COMPONENT */}
+      <Sidebar 
+        activeSection={activeSection} 
+        setActiveSection={setActiveSection} 
+        isMobileOpen={isMobileOpen} 
+        setIsMobileOpen={setIsMobileOpen} 
+        user={user} 
+      />
 
-      <main className="md:ml-72 p-4 md:p-10 pt-24 min-h-screen flex flex-col relative z-10 overflow-x-hidden">
+      {/* MAIN CONTENT */}
+      <main className="md:ml-72 p-4 md:p-8 pt-24 min-h-screen flex flex-col relative z-10 overflow-x-hidden">
         <div className="flex-grow">
           {renderContent()}
         </div>
 
-        <footer className="mt-12 pt-6 pb-2 border-t border-[var(--glass-border)] flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-medium text-slate-500">
+        {/* FOOTER */}
+        <footer className="mt-12 pt-6 pb-2 border-t border-[var(--glass-border)] flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-medium text-[var(--text-secondary)]">
           <p>&copy; {new Date().getFullYear()} URLKING. All rights reserved.</p>
           <div className="flex items-center gap-4">
-            <a href="/privacy-policy" className="hover:text-indigo-400">Privacy Policy</a>
-            <span className="w-1 h-1 rounded-full bg-slate-700"></span>
-            <a href="/dmca" className="hover:text-indigo-400">DMCA</a>
-            <span className="w-1 h-1 rounded-full bg-slate-700"></span>
-            <a href="/terms" className="hover:text-indigo-400">Terms</a>
+            <a href="/privacy-policy" className="hover:text-indigo-500 transition-colors">Privacy Policy</a>
+            <span className="w-1 h-1 rounded-full bg-[var(--text-secondary)] opacity-50"></span>
+            <a href="/dmca" className="hover:text-indigo-500 transition-colors">DMCA</a>
+            <span className="w-1 h-1 rounded-full bg-[var(--text-secondary)] opacity-50"></span>
+            <a href="/terms" className="hover:text-indigo-500 transition-colors">Terms</a>
           </div>
         </footer>
       </main>
