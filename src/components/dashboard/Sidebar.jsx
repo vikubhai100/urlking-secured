@@ -9,17 +9,64 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
   const [isToolsOpen, setIsToolsOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
+  const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
+  const token = localStorage.getItem("token");
+
   useEffect(() => {
     if (['files', 'history'].includes(activeSection)) setIsManageOpen(true);
     if (['api', 'quicklink', 'mass-shrinker', 'full-page'].includes(activeSection)) setIsToolsOpen(true);
-    // 🟢 UPDATE: Added 'changepass' to keep Settings open
     if (['profile', 'changepass'].includes(activeSection)) setIsSettingsOpen(true);
   }, [activeSection]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
-    localStorage.removeItem("refreshToken"); // Optional: if using refresh tokens
+    localStorage.removeItem("refreshToken"); 
+    sessionStorage.clear(); // Clear all prefetch caches on logout
     navigate('/login');
+  };
+
+  // 🚀 HOVER PREFETCH LOGIC 🚀
+  // Jab user menu par mouse layega, piche se data fetch ho jayega
+  const handlePrefetch = (sectionId) => {
+    if (!token) return;
+
+    // Har section ke liye alag API call
+    let endpoint = "";
+    let cacheKey = "";
+
+    switch (sectionId) {
+      case 'files':
+        endpoint = "/api/user/files";
+        cacheKey = "urlking_files_cache";
+        break;
+      case 'history':
+        endpoint = "/api/user/links";
+        cacheKey = "urlking_history_cache";
+        break;
+      case 'withdraw':
+        endpoint = "/api/withdraw/history";
+        cacheKey = "urlking_withdraw_cache";
+        break;
+      case 'referrals':
+        endpoint = "/api/user/referrals";
+        cacheKey = "urlking_ref_cache";
+        break;
+      default:
+        return; // Jis tab ka data API se nahi aata, usko skip karo
+    }
+
+    // Agar cache pehle se hai toh dobara API mat maro
+    if (sessionStorage.getItem(cacheKey)) return;
+
+    // Silent background API call
+    fetch(`${API}${endpoint}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        sessionStorage.setItem(cacheKey, JSON.stringify(data));
+      })
+      .catch(err => console.log("Prefetch failed quietly:", err));
   };
 
   const manageNav = [
@@ -35,7 +82,10 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
   ];
 
   const renderSingleButton = (id, icon, label) => (
-    <button key={id} onClick={() => { setActiveSection(id); setIsMobileOpen(false); }}
+    <button 
+      key={id} 
+      onClick={() => { setActiveSection(id); setIsMobileOpen(false); }}
+      onMouseEnter={() => handlePrefetch(id)} // 🟢 HOVER PREFETCH
       className={`w-full flex items-center gap-3 px-4 py-3 mb-1 rounded-xl transition-all font-medium text-left ${activeSection === id ? 'bg-indigo-600/10 text-indigo-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'}`}>
       <i className={`fas ${icon} w-5 text-center ${activeSection === id ? 'text-indigo-500' : 'text-slate-500'}`}></i>
       <span>{label}</span>
@@ -63,7 +113,9 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
         <nav className="flex-1 overflow-y-auto p-4 scrollbar-hide">
 
           {renderSingleButton('create', 'fa-home', 'Statistics')}
-          {renderSingleButton('upload', 'fa-cloud-upload-alt', 'Upload File')}
+          
+          {/* Upload Button */}
+          {user?.can_upload ? renderSingleButton('upload', 'fa-cloud-upload-alt', 'Upload File') : null}
 
           <div className="mb-1">
             <button 
@@ -78,7 +130,9 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
             <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isManageOpen ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
               <div className="flex flex-col py-1">
                 {manageNav.map(item => (
-                  <button key={item.id} onClick={() => { setActiveSection(item.id); setIsMobileOpen(false); }}
+                  <button key={item.id} 
+                    onClick={() => { setActiveSection(item.id); setIsMobileOpen(false); }}
+                    onMouseEnter={() => handlePrefetch(item.id)} // 🟢 HOVER PREFETCH
                     className={`w-full text-left pl-12 pr-4 py-2.5 text-sm font-medium transition-colors ${activeSection === item.id ? 'text-white' : 'text-slate-400 hover:text-slate-200'}`}>
                     {item.label}
                   </button>
@@ -130,7 +184,7 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
                   className={`w-full text-left pl-12 pr-4 py-2.5 text-sm font-medium transition-colors ${activeSection === 'profile' ? 'text-white' : 'text-slate-400 hover:text-slate-200'}`}>
                   Profile
                 </button>
-                {/* 🟢 NEW: Change Password Button */}
+                {/* Change Password Button */}
                 <button onClick={() => { setActiveSection('changepass'); setIsMobileOpen(false); }}
                   className={`w-full text-left pl-12 pr-4 py-2.5 text-sm font-medium transition-colors ${activeSection === 'changepass' ? 'text-white' : 'text-slate-400 hover:text-slate-200'}`}>
                   Change Password
@@ -143,10 +197,12 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
 
           {isAdmin && (
             <div className="mt-6 border-t border-slate-800 pt-4">
-              <p className="px-4 text-[10px] font-bold text-pink-500 uppercase tracking-widest mb-3">Admin Panel</p>
-              {renderSingleButton('admin-users', 'fa-user-shield', 'Manage Users')}
-              {renderSingleButton('admin-links', 'fa-globe', 'All Links')}
-              {renderSingleButton('admin-withdraws', 'fa-money-check-alt', 'Withdrawals')}
+              <p className="px-4 text-[10px] font-bold text-pink-500 uppercase tracking-widest mb-3">Admin Config</p>
+              {/* Note: Admin section is now a separate page, redirecting there instead of opening a tab */}
+              <button onClick={() => navigate('/admin')} className="w-full flex items-center gap-3 px-4 py-3 mb-1 rounded-xl transition-all font-medium text-left text-slate-400 hover:bg-slate-800/50 hover:text-white">
+                <i className="fas fa-shield-alt w-5 text-center text-pink-500"></i>
+                <span>Open Admin Panel</span>
+              </button>
             </div>
           )}
         </nav>
