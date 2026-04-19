@@ -38,7 +38,7 @@ const Withdraw = ({ token, user }) => {
     const amt = parseFloat(amount);
     const availableBalance = parseFloat(user?.balance || 0);
 
-    // FIX: Front-end Validations block properly terminated
+    // Front-end Validations
     if (!amt || isNaN(amt)) {
       showToast("Please enter a valid amount", "error");
       return;
@@ -79,6 +79,43 @@ const Withdraw = ({ token, user }) => {
   return (
     <div className="fade-in w-full max-w-4xl mx-auto space-y-6">
       <h2 className="text-2xl font-bold mb-4 text-[var(--text-primary)]">Withdraw Funds</h2>
+
+      {/* NOTICE BOARD SECTION */}
+      <div className="glass-panel rounded-2xl p-6 bg-gradient-to-r from-blue-900/10 to-indigo-900/10 border-blue-500/30">
+        <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-blue-400">
+          <i className="fas fa-bullhorn"></i> Important Notice
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-800/40 border border-slate-700/50">
+            <i className="fas fa-exchange-alt mt-1 text-emerald-400"></i>
+            <div>
+              <p className="text-sm font-bold text-white">Fixed Exchange Rate</p>
+              <p className="text-xs text-slate-400 mt-0.5">$1 is equivalent to ₹83.</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-800/40 border border-slate-700/50">
+            <i className="fas fa-bolt mt-1 text-yellow-400"></i>
+            <div>
+              <p className="text-sm font-bold text-white">Instant Withdrawals</p>
+              <p className="text-xs text-slate-400 mt-0.5">Experience lightning-fast payouts directly to your account.</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-800/40 border border-slate-700/50">
+            <i className="fas fa-headset mt-1 text-blue-400"></i>
+            <div>
+              <p className="text-sm font-bold text-white">24/7 Support Team</p>
+              <p className="text-xs text-slate-400 mt-0.5">Our team is always available to help you anytime, any day.</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-800/40 border border-slate-700/50">
+            <i className="fas fa-ticket-alt mt-1 text-red-400"></i>
+            <div>
+              <p className="text-sm font-bold text-white">Payment Delayed?</p>
+              <p className="text-xs text-slate-400 mt-0.5">If your payment is delayed, please go to the Help tab and create a ticket.</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* BALANCE PANEL */}
       <div className="glass-panel rounded-2xl p-6 bg-gradient-to-br from-emerald-900/10 to-slate-900/10 border-emerald-500/30">
