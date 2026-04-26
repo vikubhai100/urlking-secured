@@ -76,7 +76,15 @@ const UploadFile = ({ token, user }) => {
   // ==========================================
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+      const selectedFile = e.target.files[0];
+      
+      // Strict 2GB Size Validation check before uploading
+      if (selectedFile.size > 2 * 1024 * 1024 * 1024) {
+        showToast("Maximum file size allowed is 2GB.", "error");
+        return;
+      }
+
+      setFile(selectedFile);
       setResultLink('');
       setProgress(0);
       setLoadedSize('0 B');
@@ -88,6 +96,12 @@ const UploadFile = ({ token, user }) => {
 
   const startUpload = async () => {
     if (!file) return showToast("Please select a file to upload.", "error");
+    
+    // Double check 2GB limit just in case
+    if (file.size > 2 * 1024 * 1024 * 1024) {
+        return showToast("File exceeds 2GB limit.", "error");
+    }
+
     setIsUploading(true);
     setProgress(0);
     setTotalSize(formatBytes(file.size));
@@ -106,8 +120,11 @@ const UploadFile = ({ token, user }) => {
       xhrRef.current = xhr; 
       xhr.open('POST', serverData.url, true);
 
+      // Advanced Time & Speed Management (Moving Average Algorithm)
       let startTime = Date.now();
+      let lastTime = startTime;
       let lastLoaded = 0;
+      let speedBuffer = []; // Smooths out ETA jumping
 
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) {
@@ -116,14 +133,22 @@ const UploadFile = ({ token, user }) => {
           setLoadedSize(formatBytes(e.loaded));
 
           const now = Date.now();
-          const timeDiff = (now - startTime) / 1000; 
+          const timeDiff = (now - lastTime) / 1000; 
 
           if (timeDiff >= 0.5 && currentPercent < 100) {
-            const bytesPerSecond = (e.loaded - lastLoaded) / timeDiff;
-            setUploadSpeed(formatBytes(bytesPerSecond) + '/s');
-            const secondsRemaining = bytesPerSecond > 0 ? (e.total - e.loaded) / bytesPerSecond : 0;
+            const currentSpeed = (e.loaded - lastLoaded) / timeDiff;
+            
+            // Keep the last 4 speed calculations to average them out
+            speedBuffer.push(currentSpeed);
+            if (speedBuffer.length > 4) speedBuffer.shift();
+            
+            const avgSpeed = speedBuffer.reduce((a, b) => a + b, 0) / speedBuffer.length;
+
+            setUploadSpeed(formatBytes(avgSpeed) + '/s');
+            const secondsRemaining = avgSpeed > 0 ? (e.total - e.loaded) / avgSpeed : 0;
             setEta(formatTime(secondsRemaining));
-            startTime = now;
+            
+            lastTime = now;
             lastLoaded = e.loaded;
           } 
           if (currentPercent === 100) { setUploadSpeed('Finishing...'); setEta('Processing...'); }
@@ -280,7 +305,7 @@ const UploadFile = ({ token, user }) => {
                   <div>
                     <div className="w-16 h-16 mx-auto bg-indigo-500/10 rounded-full flex items-center justify-center mb-4 border border-indigo-500/20"><i className="fas fa-cloud-upload-alt text-3xl text-indigo-500"></i></div>
                     <p className="text-xl font-bold text-[var(--text-primary)]">Select Local File</p>
-                    <p className="text-xs text-slate-500 mt-2 font-medium">Click or Drag & Drop (Max 5GB)</p>
+                    <p className="text-xs text-slate-500 mt-2 font-medium">Click or Drag & Drop (Max 2GB)</p>
                   </div>
                 ) : (
                   <div>
@@ -295,20 +320,20 @@ const UploadFile = ({ token, user }) => {
               {isUploading && (
                 <div className="p-5 glass-panel rounded-xl border border-indigo-500/30 bg-gradient-to-b from-[var(--bg-body)] to-indigo-900/10 shadow-[0_10px_30px_rgba(99,102,241,0.15)] relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-indigo-500 to-transparent opacity-50"></div>
-                  
+
                   <div className="flex justify-between items-center mb-3">
                     <span className="text-sm font-black text-[var(--text-primary)] flex items-center gap-2">
                       <i className="fas fa-spinner fa-spin text-indigo-500"></i> Uploading...
                     </span>
                     <span className="text-xl font-black text-indigo-400 drop-shadow-[0_0_8px_rgba(99,102,241,0.8)]">{progress}%</span>
                   </div>
-                  
+
                   <div className="h-3 rounded-full bg-slate-800 border border-slate-700 overflow-hidden mb-4 p-[1px]">
                     <div className="h-full rounded-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 transition-all duration-300 relative" style={{ width: `${progress}%` }}>
                       <div className="absolute inset-0 bg-white/20 animate-[pulse_1s_infinite]"></div>
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
                     <div className="bg-[var(--nav-hover)] border border-[var(--glass-border)] rounded-lg p-2.5 text-center flex flex-col justify-center">
                       <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Uploaded</span>
@@ -343,7 +368,7 @@ const UploadFile = ({ token, user }) => {
           ============================================== */}
           {uploadMode === 'remote' && (
             <div className="space-y-6 fade-in">
-              
+
               {!resultLink && remoteStatus !== 'processing' && (
                 <div className="space-y-4 relative">
                   <label className="block text-sm font-bold text-[var(--text-primary)]">Enter Remote Link</label>
@@ -366,7 +391,7 @@ const UploadFile = ({ token, user }) => {
                       {remoteStatus === 'fetching' ? <><i className="fas fa-spinner fa-spin"></i> Fetching</> : <><i className="fas fa-search"></i> Fetch Info</>}
                     </button>
                   </div>
-                  
+
                   {/* Remote Upload Guide */}
                   <div className="mt-2 bg-[var(--nav-hover)] border border-[var(--glass-border)] rounded-lg p-3 flex gap-3 text-xs text-slate-400">
                     <i className="fas fa-info-circle text-blue-400 mt-0.5"></i>
@@ -382,7 +407,7 @@ const UploadFile = ({ token, user }) => {
                   <div className="absolute top-0 right-0 px-3 py-1 bg-emerald-500/20 text-emerald-400 text-[10px] font-black rounded-bl-lg uppercase tracking-widest">
                     {remoteInfo.type === 'devuploads' || remoteInfo.type === 'urlking' ? '⚡ Instant Clone' : '🐢 Standard Download'}
                   </div>
-                  
+
                   <div className="flex items-center gap-4 pt-2">
                     <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-500 text-xl"><i className="fas fa-file-archive"></i></div>
                     <div className="flex-1 min-w-0">
@@ -411,7 +436,7 @@ const UploadFile = ({ token, user }) => {
               {remoteStatus === 'processing' && (
                 <div className="p-8 text-center glass-panel rounded-2xl border border-emerald-500/30 fade-in relative overflow-hidden bg-gradient-to-b from-[var(--bg-body)] to-emerald-900/10">
                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-500 to-transparent animate-[pulse_2s_infinite]"></div>
-                  
+
                   <div className="relative w-24 h-24 mx-auto mb-6">
                     <div className="absolute inset-0 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div>
                     <div className="absolute inset-2 border-4 border-blue-500/20 border-b-blue-500 rounded-full animate-[spin_1.5s_linear_infinite_reverse]"></div>
@@ -419,9 +444,9 @@ const UploadFile = ({ token, user }) => {
                       <i className="fas fa-cloud-download-alt text-emerald-400 animate-bounce"></i>
                     </div>
                   </div>
-                  
+
                   <h3 className="text-xl font-black text-[var(--text-primary)] mb-2 tracking-wide">Processing File...</h3>
-                  
+
                   <div className="inline-flex items-center justify-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-4 py-1.5 mb-4">
                     <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
                     <span className="font-mono text-emerald-400 font-bold text-sm">{formatTimer(processTimer)}</span>
@@ -450,7 +475,7 @@ const UploadFile = ({ token, user }) => {
                 </div>
                 <h3 className="text-xl font-black text-[var(--text-primary)] mb-1">File Ready to Share!</h3>
                 <p className="text-sm text-slate-400 mb-6">Your file has been successfully uploaded and securely shortened.</p>
-                
+
                 <div className="flex flex-col sm:flex-row gap-3">
                   <input type="text" readOnly value={resultLink} className="flex-1 bg-[var(--bg-body)] border border-[var(--glass-border)] text-emerald-400 p-4 rounded-xl text-sm font-mono font-bold text-center sm:text-left focus:outline-none" />
                   <button onClick={handleCopy} className="px-8 py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold transition-colors flex items-center justify-center gap-2 shadow-lg">
@@ -475,7 +500,7 @@ const UploadFile = ({ token, user }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs md:text-sm text-slate-400 font-medium">
           <div className="flex gap-3 items-start bg-[var(--nav-hover)] p-3 rounded-lg border border-[var(--glass-border)]">
             <i className="fas fa-hdd text-indigo-400 text-lg mt-0.5"></i>
-            <p>Maximum allowed file size per upload is <strong className="text-[var(--text-primary)]">5GB</strong>. Larger files will be rejected.</p>
+            <p>Maximum allowed file size per upload is <strong className="text-[var(--text-primary)]">2GB</strong>. Larger files will be rejected.</p>
           </div>
           <div className="flex gap-3 items-start bg-[var(--nav-hover)] p-3 rounded-lg border border-[var(--glass-border)]">
             <i className="fas fa-user-shield text-emerald-400 text-lg mt-0.5"></i>
@@ -487,7 +512,7 @@ const UploadFile = ({ token, user }) => {
           </div>
           <div className="flex gap-3 items-start bg-[var(--nav-hover)] p-3 rounded-lg border border-[var(--glass-border)]">
             <i className="fas fa-trash-alt text-amber-400 text-lg mt-0.5"></i>
-            <p>Inactive files (0 downloads for 60 days) may be automatically deleted to save space.</p>
+            <p><strong className="text-amber-500">Strictly:</strong> If a file receives 0 clicks/downloads for <strong>10 days</strong>, it will be automatically deleted to save space.</p>
           </div>
         </div>
       </div>
