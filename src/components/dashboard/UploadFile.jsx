@@ -104,25 +104,29 @@ const UploadFile = ({ token, user }) => {
     setTotalSize(formatBytes(file.size));
 
     try {
-      // 🚀 1. Send Size and Name to backend for Hybrid Routing
+      // ⚡ FIX: File type nikal liya
+      const fileType = file.type || 'application/octet-stream';
+
+      // 🚀 1. Send Size, Name AND Type to backend for Hybrid Routing
       const serverRes = await fetch(
-        `${API}/api/dev/server?size=${file.size}&name=${encodeURIComponent(file.name)}`, 
+        `${API}/api/dev/server?size=${file.size}&name=${encodeURIComponent(file.name)}&type=${encodeURIComponent(fileType)}`, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const serverData = await serverRes.json();
-      
+
       if (serverData.error) throw new Error(serverData.error);
       if (!serverData.url) throw new Error("Could not connect to upload server");
 
       const xhr = new XMLHttpRequest();
       xhrRef.current = xhr; 
-      
+
       const isR2Upload = serverData.upload_type === 'r2';
 
       // 🚀 2. Open XHR connection based on type
       if (isR2Upload) {
         xhr.open('PUT', serverData.url, true);
-        xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+        // ⚡ FIX: Exact same Content-Type bhejenge taaki Cloudflare reject na kare
+        xhr.setRequestHeader('Content-Type', fileType);
       } else {
         xhr.open('POST', serverData.url, true);
       }
@@ -148,7 +152,7 @@ const UploadFile = ({ token, user }) => {
 
             const avgSpeed = speedBuffer.reduce((a, b) => a + b, 0) / speedBuffer.length;
             setUploadSpeed(formatBytes(avgSpeed) + '/s');
-            
+
             const secondsRemaining = avgSpeed > 0 ? (e.total - e.loaded) / avgSpeed : 0;
             setEta(formatTime(secondsRemaining));
 
@@ -164,7 +168,7 @@ const UploadFile = ({ token, user }) => {
         if (xhr.status >= 200 && xhr.status < 300) {
           try {
             let fileCode = "";
-            
+
             // 🚀 3. Extract File Code based on upload type
             if (isR2Upload) {
               fileCode = serverData.file_code; // Get code directly from our node backend pre-signed response
@@ -198,7 +202,7 @@ const UploadFile = ({ token, user }) => {
 
       xhr.onerror = () => { showToast("Upload network error.", "error"); setIsUploading(false); };
       xhr.onabort = () => { showToast("Upload Cancelled!", "error"); setIsUploading(false); };
-      
+
       // 🚀 5. Send raw file for R2, FormData for Telegram
       if (isR2Upload) {
         xhr.send(file);
