@@ -20,7 +20,7 @@ const UploadFile = ({ token, user }) => {
   const [remoteStatus, setRemoteStatus] = useState('idle'); 
   const [remoteInfo, setRemoteInfo] = useState(null);
   const [newRemoteName, setNewRemoteName] = useState('');
-  const [processTimer, setProcessTimer] = useState(0); // Live timer for remote processing
+  const [processTimer, setProcessTimer] = useState(0); 
 
   const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
 
@@ -36,7 +36,6 @@ const UploadFile = ({ token, user }) => {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isUploading, remoteStatus]);
 
-  // Live timer logic for Remote Processing
   useEffect(() => {
     let interval;
     if (remoteStatus === 'processing') {
@@ -77,8 +76,7 @@ const UploadFile = ({ token, user }) => {
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
-      
-      // Strict 2GB Size Validation check before uploading
+
       if (selectedFile.size > 2 * 1024 * 1024 * 1024) {
         showToast("Maximum file size allowed is 2GB.", "error");
         return;
@@ -96,8 +94,7 @@ const UploadFile = ({ token, user }) => {
 
   const startUpload = async () => {
     if (!file) return showToast("Please select a file to upload.", "error");
-    
-    // Double check 2GB limit just in case
+
     if (file.size > 2 * 1024 * 1024 * 1024) {
         return showToast("File exceeds 2GB limit.", "error");
     }
@@ -107,24 +104,33 @@ const UploadFile = ({ token, user }) => {
     setTotalSize(formatBytes(file.size));
 
     try {
-      const serverRes = await fetch(`${API}/api/dev/server`, { headers: { Authorization: `Bearer ${token}` } });
+      // 🚀 1. Send Size and Name to backend for Hybrid Routing
+      const serverRes = await fetch(
+        `${API}/api/dev/server?size=${file.size}&name=${encodeURIComponent(file.name)}`, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       const serverData = await serverRes.json();
+      
+      if (serverData.error) throw new Error(serverData.error);
       if (!serverData.url) throw new Error("Could not connect to upload server");
-
-      const formData = new FormData();
-      formData.append('sess_id', serverData.sess_id);
-      formData.append('utype', 'reg');
-      formData.append('file_0', file);
 
       const xhr = new XMLHttpRequest();
       xhrRef.current = xhr; 
-      xhr.open('POST', serverData.url, true);
+      
+      const isR2Upload = serverData.upload_type === 'r2';
 
-      // Advanced Time & Speed Management (Moving Average Algorithm)
+      // 🚀 2. Open XHR connection based on type
+      if (isR2Upload) {
+        xhr.open('PUT', serverData.url, true);
+        xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+      } else {
+        xhr.open('POST', serverData.url, true);
+      }
+
       let startTime = Date.now();
       let lastTime = startTime;
       let lastLoaded = 0;
-      let speedBuffer = []; // Smooths out ETA jumping
+      let speedBuffer = []; 
 
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) {
@@ -137,17 +143,15 @@ const UploadFile = ({ token, user }) => {
 
           if (timeDiff >= 0.5 && currentPercent < 100) {
             const currentSpeed = (e.loaded - lastLoaded) / timeDiff;
-            
-            // Keep the last 4 speed calculations to average them out
             speedBuffer.push(currentSpeed);
             if (speedBuffer.length > 4) speedBuffer.shift();
-            
-            const avgSpeed = speedBuffer.reduce((a, b) => a + b, 0) / speedBuffer.length;
 
+            const avgSpeed = speedBuffer.reduce((a, b) => a + b, 0) / speedBuffer.length;
             setUploadSpeed(formatBytes(avgSpeed) + '/s');
+            
             const secondsRemaining = avgSpeed > 0 ? (e.total - e.loaded) / avgSpeed : 0;
             setEta(formatTime(secondsRemaining));
-            
+
             lastTime = now;
             lastLoaded = e.loaded;
           } 
@@ -156,27 +160,55 @@ const UploadFile = ({ token, user }) => {
       };
 
       xhr.onload = async () => {
-        if (xhr.status === 200) {
+        // R2 successful upload returns 200, but some S3 variants might return 204
+        if (xhr.status >= 200 && xhr.status < 300) {
           try {
-            const response = JSON.parse(xhr.responseText);
-            let fileCode = Array.isArray(response) && response[0] ? response[0].file_code : response.file_code;
+            let fileCode = "";
+            
+            // 🚀 3. Extract File Code based on upload type
+            if (isR2Upload) {
+              fileCode = serverData.file_code; // Get code directly from our node backend pre-signed response
+            } else {
+              const response = JSON.parse(xhr.responseText);
+              fileCode = Array.isArray(response) && response[0] ? response[0].file_code : response.file_code;
+            }
+
             let fileSizeStr = file.size >= 1048576 ? (file.size / 1048576).toFixed(2) + " MB" : (file.size / 1024).toFixed(2) + " KB";
+
+            // 🚀 4. Finalize with all hybrid info
+            const payload = { 
+              file_code: fileCode, 
+              file_name: file.name, 
+              file_size: fileSizeStr,
+              upload_type: serverData.upload_type,
+              r2_key: serverData.r2_key || null
+            };
 
             const finalRes = await fetch(`${API}/api/dev/finalize`, {
               method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-              body: JSON.stringify({ file_code: fileCode, file_name: file.name, file_size: fileSizeStr })
+              body: JSON.stringify(payload)
             });
             const finalData = await finalRes.json();
             setResultLink(`https://go.urlking.site/${finalData.short_id}`);
-            showToast("File uploaded & shortened successfully!", "success");
+            showToast("File uploaded securely!", "success");
           } catch(e) { showToast("Error finalizing: " + e.message, "error"); }
-        } else { showToast("Upload failed.", "error"); }
+        } else { showToast("Upload failed by server.", "error"); }
         setIsUploading(false);
       };
 
       xhr.onerror = () => { showToast("Upload network error.", "error"); setIsUploading(false); };
       xhr.onabort = () => { showToast("Upload Cancelled!", "error"); setIsUploading(false); };
-      xhr.send(formData);
+      
+      // 🚀 5. Send raw file for R2, FormData for Telegram
+      if (isR2Upload) {
+        xhr.send(file);
+      } else {
+        const formData = new FormData();
+        formData.append('sess_id', serverData.sess_id);
+        formData.append('utype', 'reg');
+        formData.append('file_0', file);
+        xhr.send(formData);
+      }
 
     } catch (e) {
       showToast(e.message || "An error occurred", "error");
@@ -238,9 +270,6 @@ const UploadFile = ({ token, user }) => {
     }
   };
 
-  // ==========================================
-  // UTILS
-  // ==========================================
   const handleCopy = () => { navigator.clipboard.writeText(resultLink); showToast("Link Copied!", "success"); };
 
   const resetAll = () => {
@@ -260,7 +289,6 @@ const UploadFile = ({ token, user }) => {
   return (
     <div className="fade-in w-full max-w-4xl mx-auto space-y-6">
 
-      {/* 🤖 TELEGRAM BOT BANNER */}
       <div className="glass-panel p-6 rounded-3xl bg-gradient-to-r from-[#0088cc]/10 to-indigo-900/10 border border-[#0088cc]/30 relative overflow-hidden flex flex-col md:flex-row items-center gap-6 text-center md:text-left shadow-lg mb-2">
         <div className="absolute top-0 right-0 w-32 h-32 bg-[#0088cc] blur-[80px] opacity-20 rounded-full pointer-events-none"></div>
         <div className="w-16 h-16 rounded-full bg-[#0088cc]/20 flex items-center justify-center text-[#0088cc] text-3xl shrink-0 border border-[#0088cc]/30 shadow-[0_0_20px_rgba(0,136,204,0.3)] z-10">
@@ -275,7 +303,6 @@ const UploadFile = ({ token, user }) => {
         </a>
       </div>
 
-      {/* 🔴 TAB CHANGER UI (NO RESET ON CLICK) */}
       <div className="flex bg-[var(--nav-hover)] p-1.5 rounded-xl border border-[var(--glass-border)] shadow-inner">
         <button 
           onClick={() => setUploadMode('local')}
@@ -294,9 +321,6 @@ const UploadFile = ({ token, user }) => {
       <div className="border-animated p-1 mt-4">
         <div className="relative z-10 p-6 md:p-10 glass-panel border-none rounded-[1.2rem]">
 
-          {/* ==============================================
-              💻 LOCAL FILE MODE
-          ============================================== */}
           {uploadMode === 'local' && (
             <div className="space-y-6 fade-in">
               <div className={`relative border-2 border-dashed rounded-2xl p-10 text-center transition-all duration-300 ${file ? 'border-indigo-500 bg-indigo-500/5 shadow-[0_0_20px_rgba(99,102,241,0.1)]' : 'border-[var(--glass-border)] hover:border-indigo-500/50'}`}>
@@ -316,7 +340,6 @@ const UploadFile = ({ token, user }) => {
                 )}
               </div>
 
-              {/* ✨ TADRA UPLOAD PROGRESS UI ✨ */}
               {isUploading && (
                 <div className="p-5 glass-panel rounded-xl border border-indigo-500/30 bg-gradient-to-b from-[var(--bg-body)] to-indigo-900/10 shadow-[0_10px_30px_rgba(99,102,241,0.15)] relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-indigo-500 to-transparent opacity-50"></div>
@@ -363,9 +386,6 @@ const UploadFile = ({ token, user }) => {
             </div>
           )}
 
-          {/* ==============================================
-              🌐 REMOTE URL MODE
-          ============================================== */}
           {uploadMode === 'remote' && (
             <div className="space-y-6 fade-in">
 
@@ -392,7 +412,6 @@ const UploadFile = ({ token, user }) => {
                     </button>
                   </div>
 
-                  {/* Remote Upload Guide */}
                   <div className="mt-2 bg-[var(--nav-hover)] border border-[var(--glass-border)] rounded-lg p-3 flex gap-3 text-xs text-slate-400">
                     <i className="fas fa-info-circle text-blue-400 mt-0.5"></i>
                     <div>
@@ -432,7 +451,6 @@ const UploadFile = ({ token, user }) => {
                 </div>
               )}
 
-              {/* ⏳ MEDIAFIRE / REMOTE PROCESSING ANIMATION */}
               {remoteStatus === 'processing' && (
                 <div className="p-8 text-center glass-panel rounded-2xl border border-emerald-500/30 fade-in relative overflow-hidden bg-gradient-to-b from-[var(--bg-body)] to-emerald-900/10">
                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-500 to-transparent animate-[pulse_2s_infinite]"></div>
@@ -464,9 +482,6 @@ const UploadFile = ({ token, user }) => {
             </div>
           )}
 
-          {/* ==============================================
-              🎉 COMMON RESULT CARD
-          ============================================== */}
           {resultLink && (
             <div className="fade-in mt-2 space-y-4">
               <div className="p-6 rounded-2xl border-2 border-emerald-500 bg-emerald-500/10 shadow-[0_0_30px_rgba(16,185,129,0.2)] text-center">
@@ -492,7 +507,6 @@ const UploadFile = ({ token, user }) => {
         </div>
       </div>
 
-      {/* ⚠️ IMPORTANT NOTICE */}
       <div className="glass-panel p-6 rounded-2xl border-l-4 border-amber-500 mt-8 shadow-lg">
         <h4 className="text-sm font-black text-amber-500 uppercase tracking-widest mb-4 flex items-center gap-2">
           <i className="fas fa-shield-alt text-lg"></i> Important Notice & Rules
@@ -512,7 +526,7 @@ const UploadFile = ({ token, user }) => {
           </div>
           <div className="flex gap-3 items-start bg-[var(--nav-hover)] p-3 rounded-lg border border-[var(--glass-border)]">
             <i className="fas fa-trash-alt text-amber-400 text-lg mt-0.5"></i>
-            <p><strong className="text-amber-500">Strictly:</strong> If a file receives 0 clicks/downloads for <strong>10 days</strong>, it will be automatically deleted to save space.</p>
+            <p><strong className="text-amber-500">Strictly:</strong> If a file receives 0 clicks/downloads for <strong>5 days</strong>, it will be automatically deleted to save space.</p>
           </div>
         </div>
       </div>
