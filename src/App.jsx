@@ -1,10 +1,27 @@
 import React, { useEffect, useState, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
-// 🟢 PUBLIC CORE PAGES (0 Delay - Turant khulenge)
+// 🟢 PUBLIC CORE PAGES (0 Delay)
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+
+// 🚀 FIX: AdminLayout aur Overview ko DIRECT IMPORT kiya hai.
+// Isse /admin hit hote hi bina kisi delay ya chunk error ke turant khulega.
+// ⚠️ DHYAN DEIN: Apna folder check karna. Agar AdminLayout 'pages' me rakha hai, to path us hisab se dalna.
+import AdminLayout from './components/admin/AdminLayout'; 
+import Overview from './pages/admin/Overview';
+
+// --- 🟣 ADMIN PAGES (Lazy Load - Par inka hit hona safe hai) ---
+const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
+const UsersPage = lazy(() => import('./pages/admin/UsersPage'));
+const TopPerformers = lazy(() => import('./pages/admin/TopPerformers'));
+const WithdrawalsPage = lazy(() => import('./pages/admin/WithdrawalsPage'));
+const SupportTickets = lazy(() => import('./pages/admin/SupportTickets'));
+const MailerPage = lazy(() => import('./pages/admin/MailerPage'));
+const ManagersPage = lazy(() => import('./pages/admin/ManagersPage'));
+const RecyclePage = lazy(() => import('./pages/admin/RecyclePage'));
+const SettingsPage = lazy(() => import('./pages/admin/SettingsPage'));
 
 // --- 🟡 PUBLIC HEAVY PAGES (Lazy Load) ---
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -17,20 +34,6 @@ const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const DMCA = lazy(() => import('./pages/DMCA'));
 const Terms = lazy(() => import('./pages/Terms'));
 const InvalidLink = lazy(() => import('./pages/InvalidLink'));
-
-// --- 🟣 ADMIN PANEL (Strict Lazy Load) ---
-// YEH TAB TAK LOAD NAHI HONGE JAB TAK KOI /admin PAR NAHI JATA
-const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
-const AdminLayout = lazy(() => import('./components/admin/AdminLayout')); // ✅ Path correct
-const Overview = lazy(() => import('./pages/admin/Overview'));
-const UsersPage = lazy(() => import('./pages/admin/UsersPage'));
-const TopPerformers = lazy(() => import('./pages/admin/TopPerformers'));
-const WithdrawalsPage = lazy(() => import('./pages/admin/WithdrawalsPage'));
-const SupportTickets = lazy(() => import('./pages/admin/SupportTickets'));
-const MailerPage = lazy(() => import('./pages/admin/MailerPage'));
-const ManagersPage = lazy(() => import('./pages/admin/ManagersPage'));
-const RecyclePage = lazy(() => import('./pages/admin/RecyclePage'));
-const SettingsPage = lazy(() => import('./pages/admin/SettingsPage'));
 
 // 🟢 Anti-Flash Loader
 const PageLoader = () => {
@@ -60,10 +63,7 @@ function App() {
     }
   }, []);
 
-  // 🚀 BACKGROUND PRELOAD MAGIC (Sirf public pages ke liye)
   useEffect(() => {
-    // Admin ko preload se HATA diya hai. 
-    // Normal users ka data bachane ke liye sirf public dashboard preload hoga.
     const preloadTimeout = setTimeout(() => {
       import('./pages/Dashboard');
       import('./pages/Uploader');
@@ -84,12 +84,10 @@ function App() {
     <Router>
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          {/* Main Routes */}
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
-          {/* Public Lazy Routes */}
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/rates" element={<Rates />} />
@@ -100,7 +98,6 @@ function App() {
           <Route path="/dmca" element={<DMCA />} />
           <Route path="/terms" element={<Terms />} />
 
-          {/* 🔒 Admin Login (Ghost Mode Guard) */}
           <Route path="/admin/login" element={<AdminLogin />} />
 
           {/* 🟣 SaaS Admin Panel Nested Routes */}
@@ -116,7 +113,6 @@ function App() {
             <Route path="settings" element={<SettingsPage />} />
           </Route>
 
-          {/* 404 Fallback */}
           <Route path="*" element={<InvalidLink />} />
         </Routes>
       </Suspense>
