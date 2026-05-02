@@ -19,6 +19,7 @@ const Terms = lazy(() => import('./pages/Terms'));
 const InvalidLink = lazy(() => import('./pages/InvalidLink'));
 
 // --- 🟣 NEW: SaaS Admin Panel Routes (Lazy Load) ---
+const AdminLogin = lazy(() => import('./pages/admin/AdminLogin')); // 🔒 Admin Login Route
 const AdminLayout = lazy(() => import('./components/admin/AdminLayout'));
 const Overview = lazy(() => import('./pages/admin/Overview'));
 const UsersPage = lazy(() => import('./pages/admin/UsersPage'));
@@ -29,7 +30,6 @@ const MailerPage = lazy(() => import('./pages/admin/MailerPage'));
 const ManagersPage = lazy(() => import('./pages/admin/ManagersPage'));
 const RecyclePage = lazy(() => import('./pages/admin/RecyclePage'));
 const SettingsPage = lazy(() => import('./pages/admin/SettingsPage'));
-
 
 // 🟢 FIX 2: Anti-Flash Loader (Spinner sirf tab dikhega jab sach me net slow ho)
 const PageLoader = () => {
@@ -71,8 +71,9 @@ function App() {
       import('./pages/Uploader');
       import('./pages/Rates');
       import('./pages/PaymentProof');
-      
+
       // Admin shell preload (taaki admin ke login karte hi dashboard turant khule)
+      import('./pages/admin/AdminLogin');
       import('./components/admin/AdminLayout');
       import('./pages/admin/Overview');
     }, 2000); 
@@ -107,7 +108,10 @@ function App() {
           <Route path="/dmca" element={<DMCA />} />
           <Route path="/terms" element={<Terms />} />
 
-          {/* 🟣 NEW: SaaS Admin Panel Nested Routes */}
+          {/* 🔒 Admin Login (Ghost Mode Guard) - Ispe Sidebar nahi aayega */}
+          <Route path="/admin/login" element={<AdminLogin />} />
+
+          {/* 🟣 NEW: SaaS Admin Panel Nested Routes (Locked under AdminLayout) */}
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Overview />} />
             <Route path="users" element={<UsersPage />} />
