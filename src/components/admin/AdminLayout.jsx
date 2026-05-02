@@ -1,136 +1,93 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import React, { useState } from 'react';
+import { NavLink, Outlet, useNavigate, Navigate } from 'react-router-dom';
 
-const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
+const NAV = [
+  { path: '/admin', icon: 'fa-chart-pie', label: 'Overview', end: true },
+  { path: '/admin/users', icon: 'fa-users', label: 'Users' },
+  { path: '/admin/top', icon: 'fa-trophy', label: 'Leaderboard' },
+  { path: '/admin/withdrawals', icon: 'fa-wallet', label: 'Withdrawals' },
+  { path: '/admin/support', icon: 'fa-headset', label: 'Support' },
+  { path: '/admin/mailer', icon: 'fa-paper-plane', label: 'Mailer' },
+  { path: '/admin/managers', icon: 'fa-user-shield', label: 'Managers' },
+  { path: '/admin/recycle', icon: 'fa-trash', label: 'Recycle' },
+  { path: '/admin/settings', icon: 'fa-sliders-h', label: 'Settings' },
+];
 
-export default function AdminLogin() {
-  const [pass, setPass] = useState('');
-  const [isSetup, setIsSetup] = useState(false);
-  const [state, setState] = useState('loading'); 
+export default function AdminLayout() {
+  const [sidebar, setSidebar] = useState(false);
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
 
-  useEffect(() => {
-    // 🔒 URL se '?secure=' token uthao
-    const secureToken = searchParams.get('secure');
-    const adminToken = localStorage.getItem('admin_token');
+  // 🔒 GATEKEEPER LOCK
+  const token = localStorage.getItem('admin_token');
+  if (!token) {
+    return <Navigate to="/admin/login" replace />;
+  }
 
-    const verifyAccess = async () => {
-      try {
-        // Step 1: Agar URL mein 'secure' token hai, toh backend se verify karo
-        if (secureToken) {
-          const res = await fetch(`${API}/api/admin/access`, { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ key: secureToken }) // Backend 'key' expect karta hai
-          });
-          const d = await res.json();
-          
-          if (d.valid) {
-            // Token sahi hai, check karo system setup hai ya nahi
-            const sys = await fetch(`${API}/api/admin/status`);
-            const sd = await sys.json();
-            setIsSetup(!sd.is_setup);
-            setState('login');
-          } else {
-            setState('ghost'); // Galat token pe Ghost Mode
-          }
-        } 
-        // Step 2: Agar token nahi hai par pehle se logged in (admin_token) hai
-        else if (adminToken) {
-          const sys = await fetch(`${API}/api/admin/status`);
-          const sd = await sys.json();
-          if (sd.is_setup) {
-            navigate('/admin'); // Seedha dashboard bhejo
-          } else {
-            setState('login');
-          }
-        } 
-        // Step 3: Kuch bhi nahi hai, toh 404 dikhao (Kisi ko login page mat dikhao)
-        else {
-          setState('ghost');
-        }
-      } catch {
-        setState('ghost');
-      }
-    };
-
-    verifyAccess();
-  }, [navigate, searchParams]);
-
-  const doLogin = async () => {
-    if (!pass) return;
-    try {
-      const ep = isSetup ? '/api/admin/setup' : '/api/admin/login';
-      const res = await fetch(`${API}${ep}`, { 
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ password: pass }) 
-      });
-      const d = await res.json();
-      
-      if (d.token) { 
-        localStorage.setItem('admin_token', d.token); 
-        navigate('/admin'); 
-      } else {
-        alert(d.error || 'Wrong password');
-      }
-    } catch { 
-      alert('Connection error'); 
-    }
+  const handleLogout = () => {
+    localStorage.removeItem('admin_token');
+    navigate('/admin/login');
   };
 
-  // 👻 GHOST MODE: Yeh screen kisi aam user ko admin panel dhoondhne se rokegi
-  if (state === 'ghost') {
-    return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-7xl font-bold text-slate-800 mb-2">404</p>
-          <p className="text-slate-600 text-sm font-medium tracking-widest uppercase">Page Not Found</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (state === 'loading') {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-[3px] rounded-full border-slate-200 border-t-violet-500 animate-spin" />
-      </div>
-    );
-  }
-
-  // 🔒 SECURE LOGIN UI (Sirf tabhi dikhega jab URL me sahi secure token ho)
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-violet-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-8 animate-fadeIn">
-        <div className="w-16 h-16 bg-violet-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-          <i className="fas fa-fingerprint text-violet-600 text-3xl" />
+    <div className="min-h-screen bg-slate-50 flex font-sans">
+      {sidebar && <div className="fixed inset-0 z-30 bg-black/30 md:hidden backdrop-blur-sm" onClick={() => setSidebar(false)} />}
+
+      {/* SIDEBAR */}
+      <aside className={`fixed inset-y-0 left-0 z-40 w-60 bg-white border-r border-slate-100 flex flex-col transition-transform duration-200 ${sidebar ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 md:sticky md:top-0 md:h-screen`}>
+        <div className="p-5 border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-violet-600 rounded-xl flex items-center justify-center shadow-sm">
+              <i className="fas fa-shield-halved text-white text-sm" />
+            </div>
+            <div>
+              <p className="font-bold text-slate-800 text-sm tracking-wide">AdminPanel</p>
+              <p className="text-[10px] text-slate-400 font-semibold tracking-wider uppercase">URLKING SaaS</p>
+            </div>
+          </div>
         </div>
-        <h2 className="text-2xl font-bold text-slate-800 text-center mb-1">
-          {isSetup ? 'Initialize SaaS' : 'Identity Verify'}
-        </h2>
-        <p className="text-xs text-slate-400 text-center mb-8 uppercase tracking-widest font-semibold">
-          URLKING Admin Gateway
-        </p>
-        
-        <div className="space-y-4">
-          <input 
-            type="password" 
-            value={pass} 
-            onChange={e => setPass(e.target.value)} 
-            onKeyDown={e => e.key === 'Enter' && doLogin()}
-            placeholder="ENTER ADMIN KEY" 
-            className="w-full px-4 py-4 rounded-2xl border border-slate-100 text-slate-800 outline-none focus:border-violet-400 text-center font-mono font-bold bg-slate-50 transition-all placeholder:text-slate-300" 
-          />
-          <button 
-            onClick={doLogin} 
-            className="w-full py-4 bg-violet-600 hover:bg-violet-700 text-white rounded-2xl font-bold transition-all shadow-lg shadow-violet-500/20 active:scale-95"
-          >
-            {isSetup ? 'COMPLETE SETUP' : 'ACCESS DASHBOARD'}
+
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto custom-scrollbar">
+          {NAV.map(n => (
+            <NavLink key={n.path} to={n.path} end={n.end} onClick={() => setSidebar(false)}
+              className={({ isActive }) => `w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${isActive ? 'bg-violet-50 text-violet-700 font-bold shadow-sm border border-violet-100/50' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700 font-medium'}`}>
+              <i className={`fas ${n.icon} w-5 text-center ${n.path === window.location.pathname ? 'text-violet-600' : 'text-slate-400'}`} />
+              {n.label}
+            </NavLink>
+          ))}
+        </nav>
+
+        <div className="p-4 border-t border-slate-100 bg-slate-50/50">
+          <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-sm text-red-600 bg-red-50 hover:bg-red-100 border border-red-100 font-bold transition-colors">
+            <i className="fas fa-sign-out-alt" /> Sign Out
           </button>
         </div>
+      </aside>
+
+      {/* MAIN CONTENT AREA */}
+      <div className="flex-1 flex flex-col min-w-0">
+        <div className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-slate-100 sticky top-0 z-20 shadow-sm">
+          <button onClick={() => setSidebar(true)} className="w-9 h-9 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-100 flex items-center justify-center text-slate-600 transition-colors">
+            <i className="fas fa-bars text-sm" />
+          </button>
+          <span className="font-bold text-slate-800 text-sm tracking-wide">URLKING</span>
+          <div className="w-9 h-9 rounded-xl bg-violet-50 flex items-center justify-center">
+            <i className="fas fa-user-shield text-violet-600 text-xs" />
+          </div>
+        </div>
+
+        <main className="flex-1 p-4 md:p-6 max-w-7xl w-full mx-auto animate-fadeIn">
+          {/* YAHAN BAAKI PAGES RENDER HONGE */}
+          <Outlet /> 
+        </main>
       </div>
+      
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .animate-fadeIn { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+      `}</style>
     </div>
   );
 }
