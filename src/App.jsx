@@ -2,7 +2,7 @@ import React, { useEffect, useState, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 // ✅ FIXED: Sirf index.css import kiya hai kyunki tere paas App.css nahi hai
-import './index.css'; 
+//import './index.css'; 
 
 // 🟢 PUBLIC CORE PAGES (Direct Import - 0 Delay)
 import Home from './pages/Home';
