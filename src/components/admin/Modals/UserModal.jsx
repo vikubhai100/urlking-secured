@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
-import { showToast } from '../../toast'; // 👈 Path check kar lena (src/toast.js)
+import { showToast } from '../../../toast';  // 👈 Path check kar lena (src/toast.js)
 // import { apiFetch } from '../../../utils/api'; // Aapne bola tha yaha hai
 
 const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
