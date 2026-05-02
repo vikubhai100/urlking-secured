@@ -1,56 +1,129 @@
-import React, { useState, useEffect } from 'react';
-import Modal from './Modal';
-import { showToast } from '../../../toast';  // 👈 Path check kar lena (src/toast.js)
-// import { apiFetch } from '../../../utils/api'; // Aapne bola tha yaha hai
+import React, { useState, useEffect, useCallback } from 'react';
+import { showToast } from '../toast';
 
 const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
 
-// Helper Components
-const Spinner = ({ sm }) => <div className={`${sm ? 'w-4 h-4 border-2' : 'w-8 h-8 border-[3px]'} rounded-full border-slate-200 border-t-violet-500 animate-spin`} />;
+// ─────────────────────────────────────────────
+// FETCH HELPER
+// ─────────────────────────────────────────────
+async function apiFetch(url, opts = {}, retries = 2) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12000);
+  try {
+    const res = await fetch(url, { ...opts, signal: controller.signal });
+    clearTimeout(timeout);
+    if (res.status === 401) { localStorage.removeItem('admin_token'); window.location.reload(); }
+    return res;
+  } catch (err) {
+    clearTimeout(timeout);
+    if (retries > 0 && err.name !== 'AbortError') {
+      await new Promise(r => setTimeout(r, 800));
+      return apiFetch(url, opts, retries - 1);
+    }
+    throw err;
+  }
+}
+
+// ─────────────────────────────────────────────
+// TINY HELPERS
+// ─────────────────────────────────────────────
 const fmt$ = (n, d = 2) => `$${parseFloat(n || 0).toFixed(d)}`;
 const fmtN = (n) => Number(n || 0).toLocaleString();
-const getTodayClicks = (u) => {
+
+function getTodayClicks(u) {
   if (u.stats?.today_clicks != null) return u.stats.today_clicks;
   const e = parseFloat(u.stats?.today_earnings || 0);
   const c = parseFloat(u.cpm || 0.5);
   return c > 0 ? Math.round((e / c) * 1000) : 0;
-};
+}
 
-export default function UserModal({ user, allUsers, adminToken, onClose, onSaved, apiFetch }) {
+function Avatar({ name, size = 8 }) {
+  const ch = (name || '?')[0].toUpperCase();
+  const colors = ['bg-violet-500','bg-cyan-500','bg-rose-500','bg-amber-500','bg-emerald-500','bg-sky-500'];
+  const color = colors[ch.charCodeAt(0) % colors.length];
+  return (
+    <div className={`w-${size} h-${size} rounded-full ${color} flex items-center justify-center text-white font-bold text-sm shrink-0`}>
+      {ch}
+    </div>
+  );
+}
+
+function Badge({ children, color = 'slate' }) {
+  const map = { green: 'bg-emerald-50 text-emerald-700 border-emerald-200', red: 'bg-red-50 text-red-600 border-red-200', yellow: 'bg-amber-50 text-amber-700 border-amber-200', blue: 'bg-sky-50 text-sky-700 border-sky-200', slate: 'bg-slate-100 text-slate-600 border-slate-200', purple: 'bg-violet-50 text-violet-700 border-violet-200' };
+  return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border ${map[color]}`}>{children}</span>;
+}
+
+function Spinner({ sm }) {
+  return <div className={`${sm ? 'w-4 h-4 border-2' : 'w-8 h-8 border-[3px]'} rounded-full border-slate-200 border-t-violet-500 animate-spin`} />;
+}
+
+// ─────────────────────────────────────────────
+// MODAL WRAPPER
+// ─────────────────────────────────────────────
+function Modal({ open, onClose, title, subtitle, children, footer, wide }) {
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    if (open) document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [open, onClose]);
+
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} />
+      <div className={`relative w-full ${wide ? 'max-w-3xl' : 'max-w-md'} bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] animate-fadeIn`}>
+        <div className="flex items-center justify-between p-5 border-b border-slate-100">
+          <div>
+            <h3 className="font-bold text-slate-800 text-lg">{title}</h3>
+            {subtitle && <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>}
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors">
+            <i className="fas fa-times" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-5">{children}</div>
+        {footer && <div className="border-t border-slate-100 p-4 bg-slate-50 rounded-b-2xl">{footer}</div>}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// USER MODAL (With Finance Section)
+// ─────────────────────────────────────────────
+function UserModal({ user, allUsers, adminToken, onClose, onSaved }) {
   const [tab, setTab] = useState('info');
   const [data, setData] = useState(user);
   const [saving, setSaving] = useState(false);
   
-  // 💰 Finance Tab Logic
+  // 🟢 Finance History State
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
   const set = (k, v) => setData(p => ({ ...p, [k]: v }));
 
-  // 🚀 Fetch Finance History (Silent)
+  // 🚀 Fetch specific user's withdrawal history
   useEffect(() => {
     if (tab === 'finance') {
       const getHistory = async () => {
         setLoadingHistory(true);
         try {
-          // Note: adminToken use karke fetch ho raha hai
           const res = await apiFetch(`${API}/api/withdraw/admin/requests`, {
             headers: { 'x-admin-token': adminToken }
           });
-          // Sirf is user ka history filter ho raha hai
-          const userHistory = res.filter(w => w.uid === data.uid);
-          setHistory(userHistory);
-        } catch (err) { 
-          console.error(err); 
-        } finally { 
-          setLoadingHistory(false); 
-        }
+          const json = await res.json();
+          if (Array.isArray(json)) {
+            // 🎯 MAIN FILTER: Sirf is user ka history dikhao
+            setHistory(json.filter(w => w.uid === data.uid));
+          }
+        } catch (err) { console.error(err); }
+        finally { setLoadingHistory(false); }
       };
       getHistory();
     }
-  }, [tab, data.uid, adminToken, apiFetch]);
+  }, [tab, data.uid, adminToken]);
 
-  // Financial Calculations
+  // Financial Stats
   const earnings = parseFloat(data.stats?.earnings || 0);
   const withdrawn = parseFloat(data.stats?.withdrawn || 0);
   const pending = parseFloat(data.stats?.pending || 0);
@@ -59,31 +132,19 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
   const save = async () => {
     setSaving(true);
     try {
-      await apiFetch(`${API}/api/admin/user`, { 
-        method: 'PUT', 
-        headers: { 'Content-Type': 'application/json', 'x-admin-token': adminToken }, 
-        body: JSON.stringify({ uid: data.uid, role: data.role, cpm: data.cpm, name: data.name, click_percentage: data.click_percentage ?? 100 }) 
-      });
-      await apiFetch(`${API}/api/dev/toggle-permission`, { 
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ uid: data.uid, can_upload: data.can_upload ? 1 : 0 }) 
-      }).catch(() => {});
-      
+      await apiFetch(`${API}/api/admin/user`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'x-admin-token': adminToken }, body: JSON.stringify({ uid: data.uid, role: data.role, cpm: data.cpm, name: data.name, click_percentage: data.click_percentage ?? 100 }) });
+      await apiFetch(`${API}/api/dev/toggle-permission`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ uid: data.uid, can_upload: data.can_upload ? 1 : 0 }) }).catch(() => {});
       showToast('Saved!', 'success');
       onSaved();
-    } catch { 
-      showToast('Save failed', 'error'); 
-    } finally { 
-      setSaving(false); 
-    }
+    } catch { showToast('Save failed', 'error'); }
+    finally { setSaving(false); }
   };
 
   const tabs = [
     { id: 'info', label: 'Info' }, 
     { id: 'payment', label: 'Payment' }, 
     { id: 'stats', label: 'Stats' }, 
-    { id: 'finance', label: 'Finance' }, // 👈 Section Added
+    { id: 'finance', label: 'Finance' }, // 🟢 Added
     { id: 'config', label: 'Config' }
   ];
 
@@ -100,7 +161,6 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
         </div>
       }
     >
-      {/* Tab bar */}
       <div className="flex gap-1 bg-slate-100 p-1 rounded-xl mb-5">
         {tabs.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
@@ -110,9 +170,8 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
         ))}
       </div>
 
-      {/* TABS CONTENT */}
       {tab === 'info' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fadeIn">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[['Email', data.email, true], ['Username', data.username, true], ['Mobile', data.mobile, true], ['Joined', data.created_at ? new Date(data.created_at).toLocaleDateString() : 'N/A', true]].map(([lbl, val, ro]) => (
             <div key={lbl}>
               <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">{lbl}</label>
@@ -128,11 +187,30 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
             <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Referred By</label>
             <input readOnly value={referrer || 'Direct'} className="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-200 text-slate-600 outline-none" />
           </div>
+          {/* Socials buttons - Kept Exactly as before */}
+          {data.telegram && (
+            <div className="sm:col-span-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Telegram</label>
+              <div className="flex gap-2">
+                <input readOnly value={data.telegram} className="flex-1 px-3 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-200 text-slate-600 outline-none" />
+                <a href={data.telegram} target="_blank" rel="noreferrer" className="px-4 rounded-xl bg-sky-50 text-sky-600 border border-sky-200 hover:bg-sky-500 hover:text-white transition-colors flex items-center"><i className="fab fa-telegram" /></a>
+              </div>
+            </div>
+          )}
+          {data.youtube && (
+            <div className="sm:col-span-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">YouTube</label>
+              <div className="flex gap-2">
+                <input readOnly value={data.youtube} className="flex-1 px-3 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-200 text-slate-600 outline-none" />
+                <a href={data.youtube} target="_blank" rel="noreferrer" className="px-4 rounded-xl bg-red-50 text-red-500 border border-red-200 hover:bg-red-500 hover:text-white transition-colors flex items-center"><i className="fab fa-youtube" /></a>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {tab === 'payment' && (
-        <div className="space-y-4 animate-fadeIn">
+        <div className="space-y-4">
           <div className="bg-violet-50 border border-violet-200 p-4 rounded-xl">
             <p className="text-[10px] font-bold text-violet-600 uppercase mb-1">Withdrawal Method</p>
             <p className="text-base font-bold text-slate-800 uppercase">{data.withdrawal_method || 'UPI'}</p>
@@ -149,7 +227,7 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
         </div>
       )}
 
-      {/* 💰 FINANCE TAB (Added) */}
+      {/* 🟢 NEW FINANCE TAB CONTENT */}
       {tab === 'finance' && (
         <div className="space-y-5 animate-fadeIn">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -168,26 +246,22 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
           </div>
 
           <div className="border border-slate-100 rounded-2xl overflow-hidden bg-white">
-            <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-100 flex justify-between items-center">
+            <div className="bg-slate-50 px-4 py-2 border-b border-slate-100 flex justify-between items-center">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Withdrawal History</p>
               {loadingHistory && <Spinner sm />}
             </div>
             <div className="max-h-[220px] overflow-y-auto custom-scrollbar">
               <table className="w-full text-xs text-left">
                 <thead className="bg-white sticky top-0 border-b border-slate-50 text-[10px] text-slate-400 font-bold uppercase">
-                  <tr>
-                    <th className="p-3">Date</th>
-                    <th className="p-3 text-center">Amount</th>
-                    <th className="p-3 text-right">Status</th>
-                  </tr>
+                  <tr><th className="p-3">Date</th><th className="p-3 text-center">Amount</th><th className="p-3 text-right">Status</th></tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
                   {loadingHistory && history.length === 0 ? (
-                    <tr><td colSpan="3" className="p-10 text-center italic text-slate-300">Synchronizing...</td></tr>
+                    <tr><td colSpan="3" className="p-10 text-center italic text-slate-300 animate-pulse">Syncing...</td></tr>
                   ) : history.length === 0 ? (
-                    <tr><td colSpan="3" className="p-10 text-center text-slate-300 italic">No withdrawal history found</td></tr>
+                    <tr><td colSpan="3" className="p-10 text-center text-slate-300 italic">No history found</td></tr>
                   ) : history.map(w => (
-                    <tr key={w.id} className="hover:bg-slate-50/50 transition-colors">
+                    <tr key={w.id} className="hover:bg-slate-50 transition-colors">
                       <td className="p-3 text-slate-500 font-medium">{new Date(w.created_at).toLocaleDateString()}</td>
                       <td className="p-3 text-center font-bold font-mono text-slate-700">{fmt$(w.amount)}</td>
                       <td className="p-3 text-right">
@@ -205,7 +279,7 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
       )}
 
       {tab === 'stats' && (
-        <div className="space-y-4 animate-fadeIn">
+        <div className="space-y-4">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {[
               { label: 'Total Links', value: fmtN(data.links_count), icon: 'fa-link', c: 'bg-slate-100 text-slate-500' },
@@ -225,14 +299,13 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
       )}
 
       {tab === 'config' && (
-        <div className="space-y-5 animate-fadeIn">
+        <div className="space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Role</label>
               <select value={data.role} onChange={e => set('role', e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 text-slate-800 outline-none focus:border-violet-400">
                 <option value="user">User</option>
                 <option value="manager">Manager</option>
-                <option value="admin">Admin</option>
               </select>
             </div>
             <div>
@@ -256,14 +329,6 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
           </div>
         </div>
       )}
-      
-      {/* 🟢 CSS Inline fix for modal feel */}
-      <style>{`
-        .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-      `}</style>
     </Modal>
   );
 }
