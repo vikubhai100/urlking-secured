@@ -1,75 +1,55 @@
 import React, { useState, useEffect } from 'react';
-import Modal from './Modal'; // Ensure Modal is properly imported
-import { showToast } from '../../../toast'; // Path check kar lena agar alag ho
+import Modal from './Modal';
+import { showToast } from '../../../toast'; 
 
 const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
 
-// ─────────────────────────────────────────────
-// FETCH HELPER (To prevent auto-logout crashes)
-// ─────────────────────────────────────────────
-async function apiFetch(url, opts = {}, retries = 2) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 12000);
-  try {
-    const res = await fetch(url, { ...opts, signal: controller.signal });
-    clearTimeout(timeout);
-    if (res.status === 401) { localStorage.removeItem('admin_token'); window.location.reload(); }
-    return res;
-  } catch (err) {
-    clearTimeout(timeout);
-    if (retries > 0 && err.name !== 'AbortError') {
-      await new Promise(r => setTimeout(r, 800));
-      return apiFetch(url, opts, retries - 1);
-    }
-    throw err;
-  }
-}
-
-// ─────────────────────────────────────────────
-// TINY HELPERS (From your old code)
-// ─────────────────────────────────────────────
+// Helper Components
+const Spinner = ({ sm }) => <div className={`${sm ? 'w-4 h-4 border-2' : 'w-8 h-8 border-[3px]'} rounded-full border-slate-200 border-t-violet-500 animate-spin`} />;
 const fmt$ = (n, d = 2) => `$${parseFloat(n || 0).toFixed(d)}`;
 const fmtN = (n) => Number(n || 0).toLocaleString();
 
-function getTodayClicks(u) {
+const getTodayClicks = (u) => {
   if (u.stats?.today_clicks != null) return u.stats.today_clicks;
   const e = parseFloat(u.stats?.today_earnings || 0);
   const c = parseFloat(u.cpm || 0.5);
   return c > 0 ? Math.round((e / c) * 1000) : 0;
+};
+
+// Fetch Helper (Matches your AdminConsole logic to prevent logout)
+async function apiFetchLocal(url, opts = {}) {
+  const res = await fetch(url, opts);
+  if (res.status === 401) { 
+    localStorage.removeItem('admin_token'); 
+    window.location.reload(); 
+  }
+  return res;
 }
 
-function Spinner({ sm }) {
-  return <div className={`${sm ? 'w-4 h-4 border-2' : 'w-8 h-8 border-[3px]'} rounded-full border-slate-200 border-t-violet-500 animate-spin`} />;
-}
-
-function Badge({ children, color = 'slate' }) {
-  const map = { green: 'bg-emerald-50 text-emerald-700 border-emerald-200', red: 'bg-red-50 text-red-600 border-red-200', yellow: 'bg-amber-50 text-amber-700 border-amber-200', blue: 'bg-sky-50 text-sky-700 border-sky-200', slate: 'bg-slate-100 text-slate-600 border-slate-200', purple: 'bg-violet-50 text-violet-700 border-violet-200' };
-  return <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border ${map[color]}`}>{children}</span>;
-}
-
-// ─────────────────────────────────────────────
-// USER MODAL (100% YOUR OLD CODE + FINANCE)
-// ─────────────────────────────────────────────
 export default function UserModal({ user, allUsers, adminToken, onClose, onSaved }) {
   const [tab, setTab] = useState('info');
   const [data, setData] = useState(user);
   const [saving, setSaving] = useState(false);
-
-  // 💰 Finance State (Only new addition)
+  
+  // Finance State
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
   const set = (k, v) => setData(p => ({ ...p, [k]: v }));
 
-  // Fetch Finance History
+  // Finance Fetch Logic
   useEffect(() => {
     if (tab === 'finance') {
       const getHistory = async () => {
         setLoadingHistory(true);
         try {
-          const res = await apiFetch(`${API}/api/withdraw/admin/requests`, { headers: { 'x-admin-token': adminToken } });
+          const res = await apiFetchLocal(`${API}/api/withdraw/admin/requests`, {
+            headers: { 'x-admin-token': adminToken }
+          });
           const json = await res.json();
-          if (Array.isArray(json)) setHistory(json.filter(w => w.uid === data.uid));
+          if (Array.isArray(json)) {
+            setHistory(json.filter(w => w.uid === data.uid));
+          }
         } catch (err) { console.error(err); }
         finally { setLoadingHistory(false); }
       };
@@ -77,30 +57,49 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
     }
   }, [tab, data.uid, adminToken]);
 
-  // Balance Calculation
+  // Financial Calculations
   const earnings = parseFloat(data.stats?.earnings || 0);
   const withdrawn = parseFloat(data.stats?.withdrawn || 0);
   const pending = parseFloat(data.stats?.pending || 0);
   const balance = earnings - (withdrawn + pending);
 
-  // Exact old save function (No changes)
   const save = async () => {
     setSaving(true);
     try {
-      await apiFetch(`${API}/api/admin/user`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'x-admin-token': adminToken }, body: JSON.stringify({ uid: data.uid, role: data.role, cpm: data.cpm, name: data.name, click_percentage: data.click_percentage ?? 100 }) });
-      await apiFetch(`${API}/api/dev/toggle-permission`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ uid: data.uid, can_upload: data.can_upload ? 1 : 0 }) }).catch(() => {});
+      await apiFetchLocal(`${API}/api/admin/user`, { 
+        method: 'PUT', 
+        headers: { 'Content-Type': 'application/json', 'x-admin-token': adminToken }, 
+        body: JSON.stringify({ 
+          uid: data.uid, 
+          role: data.role, 
+          cpm: data.cpm, 
+          name: data.name,
+          telegram: data.telegram,
+          youtube: data.youtube,
+          click_percentage: data.click_percentage ?? 100 
+        }) 
+      });
+      
+      await apiFetchLocal(`${API}/api/dev/toggle-permission`, { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ uid: data.uid, can_upload: data.can_upload ? 1 : 0 }) 
+      }).catch(() => {});
+      
       showToast('Saved!', 'success');
       onSaved();
-    } catch { showToast('Save failed', 'error'); }
-    finally { setSaving(false); }
+    } catch { 
+      showToast('Save failed', 'error'); 
+    } finally { 
+      setSaving(false); 
+    }
   };
 
-  // Finance tab added to array
   const tabs = [
     { id: 'info', label: 'Info' }, 
     { id: 'payment', label: 'Payment' }, 
     { id: 'stats', label: 'Stats' }, 
-    { id: 'finance', label: 'Finance' }, 
+    { id: 'finance', label: 'Finance' },
     { id: 'config', label: 'Config' }
   ];
 
@@ -110,14 +109,13 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
     <Modal open onClose={onClose} title={data.name || data.username || 'User'} subtitle={`UID: ${data.uid}`} wide
       footer={
         <div className="flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
-          <button onClick={save} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-bold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-50 flex items-center gap-2 transition-colors">
+          <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100">Cancel</button>
+          <button onClick={save} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-bold bg-violet-600 text-white flex items-center gap-2">
             {saving ? <Spinner sm /> : <i className="fas fa-save" />} Save
           </button>
         </div>
       }
     >
-      {/* Tab bar */}
       <div className="flex gap-1 bg-slate-100 p-1 rounded-xl mb-5">
         {tabs.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
@@ -127,159 +125,135 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
         ))}
       </div>
 
-      {/* 🟢 EXACT OLD INFO TAB */}
       {tab === 'info' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[['Email', data.email, true], ['Username', data.username, true], ['Mobile', data.mobile, true], ['Joined', data.created_at ? new Date(data.created_at).toLocaleDateString() : 'N/A', true]].map(([lbl, val, ro]) => (
             <div key={lbl}>
               <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">{lbl}</label>
               <input readOnly={ro} value={val || ''} onChange={ro ? undefined : e => set(lbl.toLowerCase(), e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-200 text-slate-700 outline-none focus:border-violet-400 transition-colors" />
+                className="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-200 text-slate-700 outline-none focus:border-violet-400" />
             </div>
           ))}
           <div>
             <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Full Name</label>
-            <input value={data.name || ''} onChange={e => set('name', e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 text-slate-800 outline-none focus:border-violet-400" />
+            <input value={data.name || ''} onChange={e => set('name', e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 outline-none" />
           </div>
           <div>
             <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Referred By</label>
-            <input readOnly value={referrer || 'Direct'} className="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-200 text-slate-600 outline-none" />
+            <input readOnly value={referrer || 'Direct'} className="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-200 outline-none" />
           </div>
-          {data.telegram && (
-            <div className="sm:col-span-2">
-              <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Telegram</label>
-              <div className="flex gap-2">
-                <input readOnly value={data.telegram} className="flex-1 px-3 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-200 text-slate-600 outline-none" />
-                <a href={data.telegram} target="_blank" rel="noreferrer" className="px-4 rounded-xl bg-sky-50 text-sky-600 border border-sky-200 hover:bg-sky-500 hover:text-white transition-colors flex items-center"><i className="fab fa-telegram" /></a>
-              </div>
+          {/* ✅ Restored Social Inputs */}
+          <div className="sm:col-span-2">
+            <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Telegram Link</label>
+            <div className="flex gap-2">
+              <input value={data.telegram || ''} onChange={e => set('telegram', e.target.value)} placeholder="https://t.me/..." className="flex-1 px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 outline-none" />
+              {data.telegram && <a href={data.telegram} target="_blank" rel="noreferrer" className="px-4 rounded-xl bg-sky-50 text-sky-600 border border-sky-200 flex items-center"><i className="fab fa-telegram" /></a>}
             </div>
-          )}
-          {data.youtube && (
-            <div className="sm:col-span-2">
-              <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">YouTube</label>
-              <div className="flex gap-2">
-                <input readOnly value={data.youtube} className="flex-1 px-3 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-200 text-slate-600 outline-none" />
-                <a href={data.youtube} target="_blank" rel="noreferrer" className="px-4 rounded-xl bg-red-50 text-red-500 border border-red-200 hover:bg-red-500 hover:text-white transition-colors flex items-center"><i className="fab fa-youtube" /></a>
-              </div>
+          </div>
+          <div className="sm:col-span-2">
+            <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">YouTube Link</label>
+            <div className="flex gap-2">
+              <input value={data.youtube || ''} onChange={e => set('youtube', e.target.value)} placeholder="https://youtube.com/..." className="flex-1 px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 outline-none" />
+              {data.youtube && <a href={data.youtube} target="_blank" rel="noreferrer" className="px-4 rounded-xl bg-red-50 text-red-500 border border-red-200 flex items-center"><i className="fab fa-youtube" /></a>}
             </div>
-          )}
+          </div>
         </div>
       )}
 
-      {/* 🟢 EXACT OLD PAYMENT TAB */}
       {tab === 'payment' && (
         <div className="space-y-4">
           <div className="bg-violet-50 border border-violet-200 p-4 rounded-xl">
             <p className="text-[10px] font-bold text-violet-600 uppercase mb-1">Withdrawal Method</p>
             <p className="text-base font-bold text-slate-800 uppercase">{data.withdrawal_method || 'UPI'}</p>
-            <p className="text-sm font-mono text-slate-600 mt-1 break-all">{data.withdrawal_account || 'N/A'}</p>
+            <p className="text-sm font-mono text-slate-600 mt-1 break-all">{data.withdrawal_account || data.upi_id || 'N/A'}</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            {[['Bank Name', data.bank_name], ['IFSC', data.bank_ifsc], ['Account No.', data.bank_account], ['Holder Name', data.bank_holder]].map(([lbl, val]) => (
+             {[['UPI ID', data.upi_id], ['Bank Name', data.bank_name], ['IFSC', data.bank_ifsc], ['Account No.', data.bank_account]].map(([lbl, val]) => (
               <div key={lbl}>
                 <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">{lbl}</label>
-                <input readOnly value={val || 'N/A'} className="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-200 text-slate-700 font-mono outline-none" />
+                <input readOnly value={val || 'N/A'} className="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-200 font-mono outline-none" />
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* 🟢 EXACT OLD STATS TAB */}
-      {tab === 'stats' && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {[
-              { label: 'Total Links', value: fmtN(data.links_count), icon: 'fa-link', c: 'bg-slate-100 text-slate-500' },
-              { label: 'Total Clicks', value: fmtN(data.stats?.total), icon: 'fa-mouse-pointer', c: 'bg-violet-100 text-violet-500' },
-              { label: 'Today Clicks', value: fmtN(getTodayClicks(data)), icon: 'fa-bolt', c: 'bg-sky-100 text-sky-500' },
-              { label: 'Total Earned', value: fmt$(data.stats?.earnings, 2), icon: 'fa-dollar-sign', c: 'bg-emerald-100 text-emerald-500' },
-              { label: 'Today Earned', value: fmt$(data.stats?.today_earnings, 4), icon: 'fa-coins', c: 'bg-amber-100 text-amber-500' },
-            ].map(s => (
-              <div key={s.label} className="bg-white border border-slate-100 rounded-xl p-4 text-center shadow-sm">
-                <div className={`w-8 h-8 rounded-lg ${s.c} flex items-center justify-center mx-auto mb-2`}><i className={`fas ${s.icon} text-sm`} /></div>
-                <div className="text-xl font-bold text-slate-800 font-mono">{s.value}</div>
-                <div className="text-[10px] text-slate-400 uppercase font-semibold mt-0.5">{s.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* 💰 NEW FINANCE TAB */}
       {tab === 'finance' && (
         <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="bg-violet-600 border border-violet-700 p-4 rounded-xl text-white shadow-sm">
-              <p className="text-[10px] font-bold uppercase opacity-80 mb-1">Balance</p>
-              <p className="text-xl font-bold font-mono">{fmt$(balance)}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+            <div className="bg-violet-600 p-4 rounded-2xl text-white">
+              <p className="text-[9px] font-bold uppercase opacity-70">Balance</p>
+              <p className="text-lg font-black font-mono">{fmt$(balance)}</p>
             </div>
-            <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl">
-              <p className="text-[10px] font-bold text-emerald-600 uppercase mb-1">Paid Out</p>
-              <p className="text-xl font-bold text-slate-800 font-mono">{fmt$(withdrawn)}</p>
+            <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl text-emerald-700">
+              <p className="text-[9px] font-bold uppercase">Paid Out</p>
+              <p className="text-lg font-black font-mono">{fmt$(withdrawn)}</p>
             </div>
-            <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl">
-              <p className="text-[10px] font-bold text-amber-600 uppercase mb-1">Pending</p>
-              <p className="text-xl font-bold text-slate-800 font-mono">{fmt$(pending)}</p>
+            <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl text-amber-700">
+              <p className="text-[9px] font-bold uppercase">Pending</p>
+              <p className="text-lg font-black font-mono">{fmt$(pending)}</p>
             </div>
           </div>
-          <div className="bg-white border border-slate-100 rounded-xl overflow-hidden shadow-sm">
-            <div className="bg-slate-50 px-4 py-3 border-b border-slate-100 flex justify-between items-center">
-              <p className="text-xs font-bold text-slate-600 uppercase tracking-wider">Withdrawal History</p>
-            </div>
-            <div className="max-h-[220px] overflow-y-auto">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-white sticky top-0 border-b border-slate-100 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                  <tr><th className="p-3">Date</th><th className="p-3 text-center">Amount</th><th className="p-3 text-right">Status</th></tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {loadingHistory ? (
-                    <tr><td colSpan="3" className="p-8 text-center text-slate-400 italic text-xs">Loading history...</td></tr>
-                  ) : history.length === 0 ? (
-                    <tr><td colSpan="3" className="p-8 text-center text-slate-400 italic text-xs">No withdrawal history</td></tr>
-                  ) : history.map(w => (
-                    <tr key={w.id} className="hover:bg-slate-50">
-                      <td className="p-3 text-slate-600 text-xs">{new Date(w.created_at).toLocaleDateString()}</td>
-                      <td className="p-3 text-center font-bold font-mono text-slate-800">{fmt$(w.amount)}</td>
-                      <td className="p-3 text-right">
-                        <Badge color={w.status === 'approved' ? 'green' : w.status === 'pending' ? 'yellow' : 'red'}>{w.status}</Badge>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          <div className="border border-slate-100 rounded-2xl overflow-hidden bg-white max-h-[200px] overflow-y-auto">
+            <table className="w-full text-xs text-left">
+              <thead className="bg-slate-50 sticky top-0 border-b border-slate-100">
+                <tr><th className="p-3">Date</th><th className="p-3 text-center">Amount</th><th className="p-3 text-right">Status</th></tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {loadingHistory ? <tr><td colSpan="3" className="p-10 text-center animate-pulse">Loading...</td></tr> :
+                 history.length === 0 ? <tr><td colSpan="3" className="p-10 text-center text-slate-300">No data</td></tr> :
+                 history.map(w => (
+                  <tr key={w.id} className="hover:bg-slate-50">
+                    <td className="p-3">{new Date(w.created_at).toLocaleDateString()}</td>
+                    <td className="p-3 text-center font-bold">{fmt$(w.amount)}</td>
+                    <td className="p-3 text-right capitalize font-semibold">{w.status}</td>
+                  </tr>
+                 ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
-      {/* 🟢 EXACT OLD CONFIG TAB */}
+      {tab === 'stats' && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {[
+            { label: 'Total Links', value: fmtN(data.links_count), icon: 'fa-link', c: 'bg-slate-100 text-slate-500' },
+            { label: 'Total Clicks', value: fmtN(data.stats?.total), icon: 'fa-mouse-pointer', c: 'bg-violet-100 text-violet-500' },
+            { label: 'Today Clicks', value: fmtN(getTodayClicks(data)), icon: 'fa-bolt', c: 'bg-sky-100 text-sky-500' },
+            { label: 'Total Earned', value: fmt$(data.stats?.earnings, 2), icon: 'fa-dollar-sign', c: 'bg-emerald-100 text-emerald-500' },
+            { label: 'Today Earned', value: fmt$(data.stats?.today_earnings, 4), icon: 'fa-coins', c: 'bg-amber-100 text-amber-500' },
+          ].map(s => (
+            <div key={s.label} className="bg-white border border-slate-100 rounded-xl p-4 text-center shadow-sm">
+              <div className={`w-8 h-8 rounded-lg ${s.c} flex items-center justify-center mx-auto mb-2`}><i className={`fas ${s.icon} text-sm`} /></div>
+              <div className="text-xl font-bold text-slate-800 font-mono">{s.value}</div>
+              <div className="text-[10px] text-slate-400 uppercase font-semibold mt-0.5">{s.label}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {tab === 'config' && (
         <div className="space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Role</label>
-              <select value={data.role} onChange={e => set('role', e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 text-slate-800 outline-none focus:border-violet-400">
-                <option value="user">User</option>
-                <option value="manager">Manager</option>
-                <option value="admin">Admin</option>
+              <select value={data.role} onChange={e => set('role', e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 outline-none">
+                <option value="user">User</option><option value="manager">Manager</option><option value="admin">Admin</option>
               </select>
             </div>
             <div>
               <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">CPM ($)</label>
-              <input type="number" step="0.01" value={data.cpm || ''} onChange={e => set('cpm', e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 text-slate-800 font-mono outline-none focus:border-violet-400" />
+              <input type="number" step="0.01" value={data.cpm || ''} onChange={e => set('cpm', e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 font-mono outline-none" />
             </div>
             <div>
               <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Click % (0-100)</label>
-              <input type="number" min="0" max="100" value={data.click_percentage ?? 100} onChange={e => set('click_percentage', e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 text-slate-800 font-mono outline-none focus:border-violet-400" />
+              <input type="number" min="0" max="100" value={data.click_percentage ?? 100} onChange={e => set('click_percentage', e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 font-mono outline-none" />
             </div>
           </div>
           <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl p-4">
-            <div>
-              <p className="text-sm font-bold text-slate-700">File Upload Access</p>
-              <p className="text-xs text-slate-400 mt-0.5">Allow this user to upload files</p>
-            </div>
-            <button onClick={() => set('can_upload', !data.can_upload)}
+             <p className="text-sm font-bold text-slate-700">File Upload Access</p>
+             <button onClick={() => set('can_upload', !data.can_upload)}
               className={`relative w-12 h-6 rounded-full transition-colors ${data.can_upload ? 'bg-violet-500' : 'bg-slate-200'}`}>
               <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${data.can_upload ? 'left-7' : 'left-1'}`} />
             </button>
