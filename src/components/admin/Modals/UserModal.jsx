@@ -1,29 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
-import { showToast } from '../../../toast'; // ✅ Path ekdum sahi hai
+import { showToast } from '../../../toast'; 
 
 const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
-
-// ─────────────────────────────────────────────
-// FETCH HELPER (To prevent auto-logout crashes)
-// ─────────────────────────────────────────────
-async function apiFetch(url, opts = {}, retries = 2) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 12000);
-  try {
-    const res = await fetch(url, { ...opts, signal: controller.signal });
-    clearTimeout(timeout);
-    if (res.status === 401) { localStorage.removeItem('admin_token'); window.location.reload(); }
-    return res;
-  } catch (err) {
-    clearTimeout(timeout);
-    if (retries > 0 && err.name !== 'AbortError') {
-      await new Promise(r => setTimeout(r, 800));
-      return apiFetch(url, opts, retries - 1);
-    }
-    throw err;
-  }
-}
 
 // ─────────────────────────────────────────────
 // TINY HELPERS
@@ -48,9 +27,9 @@ function Badge({ children, color = 'slate' }) {
 }
 
 // ─────────────────────────────────────────────
-// USER MODAL (100% YOUR OLD CODE + FINANCE TAB + FIXES)
+// USER MODAL (NO LOGOUT BUG + FINANCE + SAFE READONLY)
 // ─────────────────────────────────────────────
-export default function UserModal({ user, allUsers, adminToken, onClose, onSaved }) {
+export default function UserModal({ user, allUsers = [], adminToken, onClose, onSaved }) {
   const [tab, setTab] = useState('info');
   const [data, setData] = useState(user);
   const [saving, setSaving] = useState(false);
@@ -59,7 +38,7 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
-  // ✅ Yahi 100% wale bug ko fix karega, lazily loaded info ko form me sync karega
+  // Jab naya lazy-loaded data aaye, usko form mein sync karein (Click % 100 wala issue fix)
   useEffect(() => {
     if (user) setData(user);
   }, [user]);
@@ -72,7 +51,7 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
       const getHistory = async () => {
         setLoadingHistory(true);
         try {
-          const res = await apiFetch(`${API}/api/withdraw/admin/requests`, {
+          const res = await fetch(`${API}/api/withdraw/admin/requests`, {
             headers: { 'x-admin-token': adminToken }
           });
           const json = await res.json();
@@ -92,11 +71,12 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
   const pending = parseFloat(data.stats?.pending || 0);
   const balance = earnings - (withdrawn + pending);
 
-  // ✅ Auto-logout Fixed & Save Logic Restored
+  // 🔴 SAVE LOGIC: Direct fetch to prevent auto-logout if permission API fails
   const save = async () => {
     setSaving(true);
     try {
-      await apiFetch(`${API}/api/admin/user`, { 
+      // 1. UPDATE USER (Does NOT send telegram or youtube to ensure safe read-only)
+      const res = await fetch(`${API}/api/admin/user`, { 
         method: 'PUT', 
         headers: { 'Content-Type': 'application/json', 'x-admin-token': adminToken }, 
         body: JSON.stringify({ 
@@ -107,17 +87,27 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
           click_percentage: data.click_percentage ?? 100 
         }) 
       });
-      // Added missing token header here to prevent logout crash
-      await apiFetch(`${API}/api/dev/toggle-permission`, { 
+
+      if (res.status === 401) {
+        showToast('Admin Token Expired! Reload page.', 'error');
+        setSaving(false);
+        return;
+      }
+
+      // 2. TOGGLE UPLOAD PERMISSION (Silent catch, never logs out admin)
+      await fetch(`${API}/api/dev/toggle-permission`, { 
         method: 'POST', 
-        headers: { 'Content-Type': 'application/json', 'x-admin-token': adminToken }, 
+        headers: { 'Content-Type': 'application/json' }, 
         body: JSON.stringify({ uid: data.uid, can_upload: data.can_upload ? 1 : 0 }) 
-      }).catch(() => {});
+      }).catch(e => console.log('Dev toggle error ignored:', e));
       
-      showToast('Saved!', 'success');
+      showToast('Saved Successfully!', 'success');
       onSaved();
-    } catch { showToast('Save failed', 'error'); }
-    finally { setSaving(false); }
+    } catch { 
+      showToast('Save failed', 'error'); 
+    } finally { 
+      setSaving(false); 
+    }
   };
 
   const tabs = [
@@ -128,7 +118,8 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
     { id: 'config', label: 'Config' }
   ];
 
-  const referrer = data.referred_by ? (allUsers.find(x => x.uid === data.referred_by)?.username || data.referred_by.slice(0, 8)) : null;
+  // Safeguard finding referrer
+  const referrer = data.referred_by ? ((allUsers || []).find(x => x.uid === data.referred_by)?.username || data.referred_by.slice(0, 8)) : null;
 
   return (
     <Modal open onClose={onClose} title={data.name || data.username || 'User'} subtitle={`UID: ${data.uid}`} wide
@@ -151,7 +142,7 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
         ))}
       </div>
 
-      {/* 🟢 INFO TAB (TG/YT Restored) */}
+      {/* 🟢 INFO TAB (TG/YT are Strictly Read Only!) */}
       {tab === 'info' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[['Email', data.email, true], ['Username', data.username, true], ['Mobile', data.mobile, true], ['Joined', data.created_at ? new Date(data.created_at).toLocaleDateString() : 'N/A', true]].map(([lbl, val, ro]) => (
@@ -191,7 +182,7 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
         </div>
       )}
 
-      {/* 🟢 PAYMENT TAB (UPI ID explicitly mapped) */}
+      {/* 🟢 PAYMENT TAB (Includes Explicit UPI View) */}
       {tab === 'payment' && (
         <div className="space-y-4">
           <div className="bg-violet-50 border border-violet-200 p-4 rounded-xl">
@@ -241,15 +232,15 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
               <p className="text-xs font-bold text-slate-600 uppercase tracking-wider">Withdrawal History</p>
             </div>
             <div className="max-h-[220px] overflow-y-auto">
-              <table className="w-full text-sm text-left">
+              <table className="w-full text-xs text-left">
                 <thead className="bg-white sticky top-0 border-b border-slate-100 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
                   <tr><th className="p-3">Date</th><th className="p-3 text-center">Amount</th><th className="p-3 text-right">Status</th></tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
                   {loadingHistory ? (
-                    <tr><td colSpan="3" className="p-8 text-center text-slate-400 italic text-xs">Loading history...</td></tr>
+                    <tr><td colSpan="3" className="p-8 text-center text-slate-400 italic">Loading history...</td></tr>
                   ) : history.length === 0 ? (
-                    <tr><td colSpan="3" className="p-8 text-center text-slate-400 italic text-xs">No withdrawal history</td></tr>
+                    <tr><td colSpan="3" className="p-8 text-center text-slate-400 italic">No withdrawal history</td></tr>
                   ) : history.map(w => (
                     <tr key={w.id} className="hover:bg-slate-50">
                       <td className="p-3 text-slate-600 text-xs">{new Date(w.created_at).toLocaleDateString()}</td>
@@ -291,7 +282,7 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Role</label>
-              <select value={data.role} onChange={e => set('role', e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 text-slate-800 outline-none focus:border-violet-400">
+              <select value={data.role} onChange={e => set('role', e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 outline-none focus:border-violet-400">
                 <option value="user">User</option>
                 <option value="manager">Manager</option>
                 <option value="admin">Admin</option>
@@ -299,11 +290,11 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
             </div>
             <div>
               <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">CPM ($)</label>
-              <input type="number" step="0.01" value={data.cpm || ''} onChange={e => set('cpm', e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 text-slate-800 font-mono outline-none focus:border-violet-400" />
+              <input type="number" step="0.01" value={data.cpm || ''} onChange={e => set('cpm', e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 font-mono outline-none focus:border-violet-400" />
             </div>
             <div>
               <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Click % (0-100)</label>
-              <input type="number" min="0" max="100" value={data.click_percentage ?? 100} onChange={e => set('click_percentage', e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 text-slate-800 font-mono outline-none focus:border-violet-400" />
+              <input type="number" min="0" max="100" value={data.click_percentage ?? 100} onChange={e => set('click_percentage', e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 font-mono outline-none focus:border-violet-400" />
             </div>
           </div>
           <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl p-4">
