@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
-import { showToast } from '../../../toast'; 
+import { showToast } from '../../../toast'; // ✅ Path ekdum sahi hai
 
 const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
 
 // ─────────────────────────────────────────────
-// FETCH HELPER
+// FETCH HELPER (To prevent auto-logout crashes)
 // ─────────────────────────────────────────────
 async function apiFetch(url, opts = {}, retries = 2) {
   const controller = new AbortController();
@@ -13,7 +13,6 @@ async function apiFetch(url, opts = {}, retries = 2) {
   try {
     const res = await fetch(url, { ...opts, signal: controller.signal });
     clearTimeout(timeout);
-    // 401 error par logout
     if (res.status === 401) { localStorage.removeItem('admin_token'); window.location.reload(); }
     return res;
   } catch (err) {
@@ -49,7 +48,7 @@ function Badge({ children, color = 'slate' }) {
 }
 
 // ─────────────────────────────────────────────
-// USER MODAL (100% WORKING WITH FINANCE & PAYMENT FIXED)
+// USER MODAL (100% YOUR OLD CODE + FINANCE TAB + FIXES)
 // ─────────────────────────────────────────────
 export default function UserModal({ user, allUsers, adminToken, onClose, onSaved }) {
   const [tab, setTab] = useState('info');
@@ -60,12 +59,12 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
-  const set = (k, v) => setData(p => ({ ...p, [k]: v }));
-
-  // ✅ Ensures Modal gets updated data when lazy load completes (Fixes 100% bug)
+  // ✅ Yahi 100% wale bug ko fix karega, lazily loaded info ko form me sync karega
   useEffect(() => {
     if (user) setData(user);
   }, [user]);
+
+  const set = (k, v) => setData(p => ({ ...p, [k]: v }));
 
   // 🚀 Fetch Finance History
   useEffect(() => {
@@ -93,6 +92,7 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
   const pending = parseFloat(data.stats?.pending || 0);
   const balance = earnings - (withdrawn + pending);
 
+  // ✅ Auto-logout Fixed & Save Logic Restored
   const save = async () => {
     setSaving(true);
     try {
@@ -107,8 +107,7 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
           click_percentage: data.click_percentage ?? 100 
         }) 
       });
-      
-      // ✅ Added Token to prevent auto-logout issue
+      // Added missing token header here to prevent logout crash
       await apiFetch(`${API}/api/dev/toggle-permission`, { 
         method: 'POST', 
         headers: { 'Content-Type': 'application/json', 'x-admin-token': adminToken }, 
@@ -142,6 +141,7 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
         </div>
       }
     >
+      {/* Tab bar */}
       <div className="flex gap-1 bg-slate-100 p-1 rounded-xl mb-5">
         {tabs.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
@@ -151,28 +151,28 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
         ))}
       </div>
 
-      {/* 🟢 INFO TAB */}
+      {/* 🟢 INFO TAB (TG/YT Restored) */}
       {tab === 'info' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[['Email', data.email, true], ['Username', data.username, true], ['Mobile', data.mobile, true], ['Joined', data.created_at ? new Date(data.created_at).toLocaleDateString() : 'N/A', true]].map(([lbl, val, ro]) => (
             <div key={lbl}>
               <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">{lbl}</label>
               <input readOnly={ro} value={val || ''} onChange={ro ? undefined : e => set(lbl.toLowerCase(), e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-200 text-slate-700 outline-none focus:border-violet-400" />
+                className="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-200 text-slate-700 outline-none focus:border-violet-400 transition-colors" />
             </div>
           ))}
           <div>
             <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Full Name</label>
-            <input value={data.name || ''} onChange={e => set('name', e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 outline-none focus:border-violet-400" />
+            <input value={data.name || ''} onChange={e => set('name', e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 text-slate-800 outline-none focus:border-violet-400" />
           </div>
           <div>
             <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Referred By</label>
-            <input readOnly value={referrer || 'Direct'} className="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-200 outline-none" />
+            <input readOnly value={referrer || 'Direct'} className="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-200 text-slate-600 outline-none" />
           </div>
-          {/* ✅ Social Links RESTORED AND READ-ONLY */}
+          {/* ✅ Social Links kept purely READ-ONLY */}
           {data.telegram && (
             <div className="sm:col-span-2">
-              <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Telegram Link</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Telegram</label>
               <div className="flex gap-2">
                 <input readOnly value={data.telegram} className="flex-1 px-3 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-200 text-slate-600 outline-none" />
                 <a href={data.telegram} target="_blank" rel="noreferrer" className="px-4 rounded-xl bg-sky-50 text-sky-600 border border-sky-200 hover:bg-sky-500 hover:text-white transition-colors flex items-center"><i className="fab fa-telegram" /></a>
@@ -181,7 +181,7 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
           )}
           {data.youtube && (
             <div className="sm:col-span-2">
-              <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">YouTube Link</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">YouTube</label>
               <div className="flex gap-2">
                 <input readOnly value={data.youtube} className="flex-1 px-3 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-200 text-slate-600 outline-none" />
                 <a href={data.youtube} target="_blank" rel="noreferrer" className="px-4 rounded-xl bg-red-50 text-red-500 border border-red-200 hover:bg-red-500 hover:text-white transition-colors flex items-center"><i className="fab fa-youtube" /></a>
@@ -191,11 +191,11 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
         </div>
       )}
 
-      {/* 🟢 PAYMENT TAB (FIXED: Added explicit inputs for UPI and Account) */}
+      {/* 🟢 PAYMENT TAB (UPI ID explicitly mapped) */}
       {tab === 'payment' && (
         <div className="space-y-4">
           <div className="bg-violet-50 border border-violet-200 p-4 rounded-xl">
-            <p className="text-[10px] font-bold text-violet-600 uppercase mb-1">Selected Withdrawal Method</p>
+            <p className="text-[10px] font-bold text-violet-600 uppercase mb-1">Withdrawal Method</p>
             <p className="text-base font-bold text-slate-800 uppercase">{data.withdrawal_method || 'Not Selected'}</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -209,7 +209,6 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
                 <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">UPI ID</label>
                 <input readOnly value={data.upi_id || 'N/A'} className="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-200 text-slate-700 font-mono outline-none" />
              </div>
-             {/* Bank Specific Details */}
             {[['Bank Name', data.bank_name], ['IFSC', data.bank_ifsc], ['Bank Account No.', data.bank_account], ['Holder Name', data.bank_holder]].map(([lbl, val]) => (
               <div key={lbl}>
                 <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">{lbl}</label>
@@ -224,36 +223,45 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
       {tab === 'finance' && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
-            <div className="bg-violet-600 p-4 rounded-2xl text-white">
-              <p className="text-[9px] font-bold uppercase opacity-70">Balance</p>
+            <div className="bg-violet-600 p-4 rounded-2xl text-white shadow-sm">
+              <p className="text-[9px] font-bold uppercase opacity-70 mb-1">Balance</p>
               <p className="text-lg font-black font-mono">{fmt$(balance)}</p>
             </div>
             <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl text-emerald-700">
-              <p className="text-[9px] font-bold uppercase">Paid Out</p>
+              <p className="text-[9px] font-bold uppercase mb-1">Paid Out</p>
               <p className="text-lg font-black font-mono">{fmt$(withdrawn)}</p>
             </div>
             <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl text-amber-700">
-              <p className="text-[9px] font-bold uppercase">Pending</p>
+              <p className="text-[9px] font-bold uppercase mb-1">Pending</p>
               <p className="text-lg font-black font-mono">{fmt$(pending)}</p>
             </div>
           </div>
-          <div className="bg-white border border-slate-100 rounded-xl overflow-hidden max-h-[200px] overflow-y-auto">
-            <table className="w-full text-xs text-left">
-              <thead className="bg-slate-50 sticky top-0 border-b border-slate-100 text-[10px] text-slate-400 uppercase">
-                <tr><th className="p-3">Date</th><th className="p-3 text-center">Amount</th><th className="p-3 text-right">Status</th></tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {loadingHistory ? <tr><td colSpan="3" className="p-10 text-center animate-pulse text-slate-400">Loading...</td></tr> :
-                 history.length === 0 ? <tr><td colSpan="3" className="p-10 text-center text-slate-300">No data</td></tr> :
-                 history.map(w => (
-                  <tr key={w.id} className="hover:bg-slate-50">
-                    <td className="p-3 font-medium text-slate-600">{new Date(w.created_at).toLocaleDateString()}</td>
-                    <td className="p-3 text-center font-bold font-mono">{fmt$(w.amount)}</td>
-                    <td className="p-3 text-right capitalize"><Badge color={w.status === 'approved' ? 'green' : w.status === 'pending' ? 'yellow' : 'red'}>{w.status}</Badge></td>
-                  </tr>
-                 ))}
-              </tbody>
-            </table>
+          <div className="bg-white border border-slate-100 rounded-xl overflow-hidden shadow-sm">
+            <div className="bg-slate-50 px-4 py-3 border-b border-slate-100">
+              <p className="text-xs font-bold text-slate-600 uppercase tracking-wider">Withdrawal History</p>
+            </div>
+            <div className="max-h-[220px] overflow-y-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-white sticky top-0 border-b border-slate-100 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                  <tr><th className="p-3">Date</th><th className="p-3 text-center">Amount</th><th className="p-3 text-right">Status</th></tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {loadingHistory ? (
+                    <tr><td colSpan="3" className="p-8 text-center text-slate-400 italic text-xs">Loading history...</td></tr>
+                  ) : history.length === 0 ? (
+                    <tr><td colSpan="3" className="p-8 text-center text-slate-400 italic text-xs">No withdrawal history</td></tr>
+                  ) : history.map(w => (
+                    <tr key={w.id} className="hover:bg-slate-50">
+                      <td className="p-3 text-slate-600 text-xs">{new Date(w.created_at).toLocaleDateString()}</td>
+                      <td className="p-3 text-center font-bold font-mono text-slate-800">{fmt$(w.amount)}</td>
+                      <td className="p-3 text-right">
+                        <Badge color={w.status === 'approved' ? 'green' : w.status === 'pending' ? 'yellow' : 'red'}>{w.status}</Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
@@ -283,22 +291,27 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Role</label>
-              <select value={data.role} onChange={e => set('role', e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 outline-none">
-                <option value="user">User</option><option value="manager">Manager</option><option value="admin">Admin</option>
+              <select value={data.role} onChange={e => set('role', e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 text-slate-800 outline-none focus:border-violet-400">
+                <option value="user">User</option>
+                <option value="manager">Manager</option>
+                <option value="admin">Admin</option>
               </select>
             </div>
             <div>
               <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">CPM ($)</label>
-              <input type="number" step="0.01" value={data.cpm || ''} onChange={e => set('cpm', e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 font-mono outline-none" />
+              <input type="number" step="0.01" value={data.cpm || ''} onChange={e => set('cpm', e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 text-slate-800 font-mono outline-none focus:border-violet-400" />
             </div>
             <div>
               <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Click % (0-100)</label>
-              <input type="number" min="0" max="100" value={data.click_percentage ?? 100} onChange={e => set('click_percentage', e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 font-mono outline-none" />
+              <input type="number" min="0" max="100" value={data.click_percentage ?? 100} onChange={e => set('click_percentage', e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 text-slate-800 font-mono outline-none focus:border-violet-400" />
             </div>
           </div>
           <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl p-4">
-             <p className="text-sm font-bold text-slate-700">File Upload Access</p>
-             <button onClick={() => set('can_upload', !data.can_upload)}
+            <div>
+              <p className="text-sm font-bold text-slate-700">File Upload Access</p>
+              <p className="text-xs text-slate-400 mt-0.5">Allow this user to upload files</p>
+            </div>
+            <button onClick={() => set('can_upload', !data.can_upload)}
               className={`relative w-12 h-6 rounded-full transition-colors ${data.can_upload ? 'bg-violet-500' : 'bg-slate-200'}`}>
               <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${data.can_upload ? 'left-7' : 'left-1'}`} />
             </button>
