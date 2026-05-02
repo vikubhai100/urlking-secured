@@ -1,173 +1,178 @@
-import React, { useState } from 'react';
-import Modal from './Modal';
-// Note: showToast aur apiFetch ko aapne jaha rakha hai waha se import kar lena
-// import { showToast } from '../../../toast'; 
-// import { apiFetch } from '../../../utils/api';
+import React, { useState, useEffect } from 'react';
 
 const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
 
-// Helper Components
-const Spinner = ({ sm }) => <div className={`${sm ? 'w-4 h-4 border-2' : 'w-8 h-8 border-[3px]'} rounded-full border-slate-200 border-t-violet-500 animate-spin`} />;
-const fmt$ = (n, d = 2) => `$${parseFloat(n || 0).toFixed(d)}`;
-const fmtN = (n) => Number(n || 0).toLocaleString();
-const getTodayClicks = (u) => {
-  if (u.stats?.today_clicks != null) return u.stats.today_clicks;
-  const e = parseFloat(u.stats?.today_earnings || 0);
-  const c = parseFloat(u.cpm || 0.5);
-  return c > 0 ? Math.round((e / c) * 1000) : 0;
+// --- INNER HELPERS (Taki Reference Error na aaye) ---
+const fmt$ = (n) => `$${parseFloat(n || 0).toFixed(4)}`;
+
+const ModalBadge = ({ children, color = 'slate' }) => {
+  const map = { 
+    green: 'bg-emerald-50 text-emerald-700 border-emerald-200', 
+    red: 'bg-red-50 text-red-600 border-red-200', 
+    yellow: 'bg-amber-50 text-amber-700 border-amber-200', 
+    purple: 'bg-violet-50 text-violet-700 border-violet-200',
+    slate: 'bg-slate-100 text-slate-600 border-slate-200'
+  };
+  return <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border ${map[color]}`}>{children}</span>;
 };
 
-export default function UserModal({ user, allUsers, adminToken, onClose, onSaved, apiFetch, showToast }) {
-  const [tab, setTab] = useState('info');
-  const [data, setData] = useState(user);
-  const [saving, setSaving] = useState(false);
+export default function UserModal({ user, adminToken, onClose, onSaved }) {
+  const [activeTab, setActiveTab] = useState('stats');
+  const [withdrawals, setWithdrawals] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
-  const set = (k, v) => setData(p => ({ ...p, [k]: v }));
+  // Safety Checks for stats
+  const totalEarnings = parseFloat(user?.stats?.earnings || 0);
+  const totalWithdrawn = parseFloat(user?.stats?.withdrawn || 0);
+  const totalPending = parseFloat(user?.stats?.pending || 0);
+  const currentBalance = totalEarnings - (totalWithdrawn + totalPending);
 
-  const save = async () => {
-    setSaving(true);
-    try {
-      await apiFetch(`${API}/api/admin/user`, { 
-        method: 'PUT', 
-        headers: { 'Content-Type': 'application/json', 'x-admin-token': adminToken }, 
-        body: JSON.stringify({ uid: data.uid, role: data.role, cpm: data.cpm, name: data.name, click_percentage: data.click_percentage ?? 100 }) 
-      });
-      await apiFetch(`${API}/api/dev/toggle-permission`, { 
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ uid: data.uid, can_upload: data.can_upload ? 1 : 0 }) 
-      }).catch(() => {});
-      
-      showToast('Saved!', 'success');
-      onSaved();
-    } catch { 
-      showToast('Save failed', 'error'); 
-    } finally { 
-      setSaving(false); 
+  useEffect(() => {
+    if (activeTab === 'finance' && user?.uid) {
+      const fetchHistory = async () => {
+        setLoadingHistory(true);
+        try {
+          const res = await fetch(`${API}/api/withdraw/admin/requests?uid=${user.uid}`, {
+            headers: { 'x-admin-token': adminToken }
+          });
+          const data = await res.json();
+          setWithdrawals(Array.isArray(data) ? data : []);
+        } catch (err) { console.error(err); }
+        finally { setLoadingHistory(false); }
+      };
+      fetchHistory();
     }
-  };
+  }, [activeTab, user?.uid, adminToken]);
 
-  const tabs = [
-    { id: 'info', label: 'Info' }, 
-    { id: 'payment', label: 'Payment' }, 
-    { id: 'stats', label: 'Stats' }, 
-    { id: 'config', label: 'Config' }
-  ];
-
-  const referrer = data.referred_by ? (allUsers.find(x => x.uid === data.referred_by)?.username || data.referred_by.slice(0, 8)) : null;
+  if (!user) return null;
 
   return (
-    <Modal open onClose={onClose} title={data.name || data.username || 'User'} subtitle={`UID: ${data.uid}`} wide
-      footer={
-        <div className="flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
-          <button onClick={save} disabled={saving} className="px-5 py-2 rounded-xl text-sm font-bold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-50 flex items-center gap-2 transition-colors">
-            {saving ? <Spinner sm /> : <i className="fas fa-save" />} Save
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+      <div className="bg-white w-full max-w-2xl rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        
+        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-violet-600 flex items-center justify-center text-white text-xl font-black shadow-lg shadow-violet-200">
+              {(user.username || '?')[0].toUpperCase()}
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-slate-800 leading-tight">@{user.username || 'User'}</h3>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Admin Control Panel</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-10 h-10 rounded-full hover:bg-slate-50 flex items-center justify-center text-slate-400 transition-colors">
+            <i className="fas fa-times" />
           </button>
         </div>
-      }
-    >
-      {/* Tab bar */}
-      <div className="flex gap-1 bg-slate-100 p-1 rounded-xl mb-5">
-        {tabs.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)}
-            className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${tab === t.id ? 'bg-white text-violet-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-            {t.label}
-          </button>
-        ))}
-      </div>
 
-      {/* TABS CONTENT */}
-      {tab === 'info' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {[['Email', data.email, true], ['Username', data.username, true], ['Mobile', data.mobile, true], ['Joined', data.created_at ? new Date(data.created_at).toLocaleDateString() : 'N/A', true]].map(([lbl, val, ro]) => (
-            <div key={lbl}>
-              <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">{lbl}</label>
-              <input readOnly={ro} value={val || ''} onChange={ro ? undefined : e => set(lbl.toLowerCase(), e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-200 text-slate-700 outline-none focus:border-violet-400 transition-colors" />
-            </div>
-          ))}
-          <div>
-            <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Full Name</label>
-            <input value={data.name || ''} onChange={e => set('name', e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 text-slate-800 outline-none focus:border-violet-400" />
-          </div>
-          <div>
-            <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Referred By</label>
-            <input readOnly value={referrer || 'Direct'} className="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-200 text-slate-600 outline-none" />
-          </div>
-        </div>
-      )}
-
-      {tab === 'payment' && (
-        <div className="space-y-4">
-          <div className="bg-violet-50 border border-violet-200 p-4 rounded-xl">
-            <p className="text-[10px] font-bold text-violet-600 uppercase mb-1">Withdrawal Method</p>
-            <p className="text-base font-bold text-slate-800 uppercase">{data.withdrawal_method || 'UPI'}</p>
-            <p className="text-sm font-mono text-slate-600 mt-1 break-all">{data.withdrawal_account || 'N/A'}</p>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            {[['Bank Name', data.bank_name], ['IFSC', data.bank_ifsc], ['Account No.', data.bank_account], ['Holder Name', data.bank_holder]].map(([lbl, val]) => (
-              <div key={lbl}>
-                <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">{lbl}</label>
-                <input readOnly value={val || 'N/A'} className="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-200 text-slate-700 font-mono outline-none" />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {tab === 'stats' && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {[
-              { label: 'Total Links', value: fmtN(data.links_count), icon: 'fa-link', c: 'bg-slate-100 text-slate-500' },
-              { label: 'Total Clicks', value: fmtN(data.stats?.total), icon: 'fa-mouse-pointer', c: 'bg-violet-100 text-violet-500' },
-              { label: 'Today Clicks', value: fmtN(getTodayClicks(data)), icon: 'fa-bolt', c: 'bg-sky-100 text-sky-500' },
-              { label: 'Total Earned', value: fmt$(data.stats?.earnings, 2), icon: 'fa-dollar-sign', c: 'bg-emerald-100 text-emerald-500' },
-              { label: 'Today Earned', value: fmt$(data.stats?.today_earnings, 4), icon: 'fa-coins', c: 'bg-amber-100 text-amber-500' },
-            ].map(s => (
-              <div key={s.label} className="bg-white border border-slate-100 rounded-xl p-4 text-center shadow-sm">
-                <div className={`w-8 h-8 rounded-lg ${s.c} flex items-center justify-center mx-auto mb-2`}><i className={`fas ${s.icon} text-sm`} /></div>
-                <div className="text-xl font-bold text-slate-800 font-mono">{s.value}</div>
-                <div className="text-[10px] text-slate-400 uppercase font-semibold mt-0.5">{s.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {tab === 'config' && (
-        <div className="space-y-5">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Role</label>
-              <select value={data.role} onChange={e => set('role', e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 text-slate-800 outline-none focus:border-violet-400">
-                <option value="user">User</option>
-                <option value="manager">Manager</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">CPM ($)</label>
-              <input type="number" step="0.01" value={data.cpm || ''} onChange={e => set('cpm', e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 text-slate-800 font-mono outline-none focus:border-violet-400" />
-            </div>
-            <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Click % (0-100)</label>
-              <input type="number" min="0" max="100" value={data.click_percentage ?? 100} onChange={e => set('click_percentage', e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 text-slate-800 font-mono outline-none focus:border-violet-400" />
-            </div>
-          </div>
-          <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl p-4">
-            <div>
-              <p className="text-sm font-bold text-slate-700">File Upload Access</p>
-              <p className="text-xs text-slate-400 mt-0.5">Allow this user to upload files</p>
-            </div>
-            <button onClick={() => set('can_upload', !data.can_upload)}
-              className={`relative w-12 h-6 rounded-full transition-colors ${data.can_upload ? 'bg-violet-500' : 'bg-slate-200'}`}>
-              <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${data.can_upload ? 'left-7' : 'left-1'}`} />
+        <div className="flex gap-1 p-2 bg-slate-50/50 border-b border-slate-100 overflow-x-auto no-scrollbar">
+          {['info', 'stats', 'finance', 'payment', 'config'].map(tab => (
+            <button key={tab} onClick={() => setActiveTab(tab)}
+              className={`px-5 py-2.5 rounded-2xl text-[11px] font-black uppercase tracking-wider transition-all whitespace-nowrap ${activeTab === tab ? 'bg-white text-violet-600 shadow-sm border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}>
+              {tab === 'finance' ? 'Wallet & History' : tab}
             </button>
-          </div>
+          ))}
         </div>
-      )}
-    </Modal>
+
+        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar bg-white">
+          {activeTab === 'stats' && (
+            <div className="grid grid-cols-2 gap-4 animate-fadeIn">
+               <div className="p-5 rounded-3xl bg-slate-50 border border-slate-100">
+                  <i className="fas fa-link text-violet-500 mb-2" />
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Total Links</p>
+                  <p className="text-2xl font-black text-slate-800">{user.links_count || 0}</p>
+               </div>
+               <div className="p-5 rounded-3xl bg-slate-50 border border-slate-100">
+                  <i className="fas fa-mouse-pointer text-sky-500 mb-2" />
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Total Clicks</p>
+                  <p className="text-2xl font-black text-slate-800">{Number(user.stats?.total || 0).toLocaleString()}</p>
+               </div>
+               <div className="p-5 rounded-3xl bg-amber-50 border border-amber-100">
+                  <i className="fas fa-bolt text-amber-500 mb-2" />
+                  <p className="text-[10px] font-bold text-amber-500 uppercase">Today Clicks</p>
+                  <p className="text-2xl font-black text-amber-700">{user.stats?.today_clicks || 0}</p>
+               </div>
+               <div className="p-5 rounded-3xl bg-emerald-50 border border-emerald-100">
+                  <i className="fas fa-dollar-sign text-emerald-500 mb-2" />
+                  <p className="text-[10px] font-bold text-emerald-500 uppercase">Earnings</p>
+                  <p className="text-2xl font-black text-emerald-700">{fmt$(totalEarnings)}</p>
+               </div>
+            </div>
+          )}
+
+          {activeTab === 'finance' && (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-4 rounded-2xl bg-violet-600 text-white shadow-xl shadow-violet-100">
+                  <p className="text-[9px] font-bold uppercase opacity-70 mb-1">Balance</p>
+                  <p className="text-xl font-black font-mono">{fmt$(currentBalance)}</p>
+                </div>
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                  <p className="text-[9px] font-bold text-slate-400 uppercase mb-1">Withdrawn</p>
+                  <p className="text-xl font-black text-emerald-600 font-mono">{fmt$(totalWithdrawn)}</p>
+                </div>
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                  <p className="text-[9px] font-bold text-slate-400 uppercase mb-1">Pending</p>
+                  <p className="text-xl font-black text-amber-500 font-mono">{fmt$(totalPending)}</p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Withdrawal History</h4>
+                <div className="border border-slate-100 rounded-2xl overflow-hidden">
+                  <table className="w-full text-xs text-left">
+                    <thead className="bg-slate-50">
+                      <tr><th className="p-3">DATE</th><th className="p-3 text-center">AMOUNT</th><th className="p-3 text-right">STATUS</th></tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {loadingHistory ? (
+                        <tr><td colSpan="3" className="p-6 text-center animate-pulse text-slate-300">Syncing history...</td></tr>
+                      ) : withdrawals.length === 0 ? (
+                        <tr><td colSpan="3" className="p-10 text-center text-slate-300 italic">No history found</td></tr>
+                      ) : withdrawals.map(w => (
+                        <tr key={w.id}>
+                          <td className="p-3 text-slate-500">{new Date(w.created_at).toLocaleDateString()}</td>
+                          <td className="p-3 text-center font-bold">{fmt$(w.amount)}</td>
+                          <td className="p-3 text-right">
+                            <ModalBadge color={w.status === 'approved' ? 'green' : w.status === 'pending' ? 'yellow' : 'red'}>{w.status}</ModalBadge>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'info' && (
+            <div className="space-y-4 animate-fadeIn">
+               <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Username</label>
+                    <input readOnly value={user.username || ''} className="w-full mt-1 p-3 rounded-xl bg-slate-50 border border-slate-100 text-sm font-bold" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Role</label>
+                    <input readOnly value={user.role || 'user'} className="w-full mt-1 p-3 rounded-xl bg-slate-50 border border-slate-100 text-sm font-bold capitalize" />
+                  </div>
+               </div>
+               <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-1">Email</label>
+                  <input readOnly value={user.email || ''} className="w-full mt-1 p-3 rounded-xl bg-slate-50 border border-slate-100 text-sm font-bold" />
+               </div>
+            </div>
+          )}
+        </div>
+
+        <div className="p-5 bg-slate-50/50 border-t border-slate-100 flex justify-end gap-3">
+          <button onClick={onClose} className="px-6 py-2.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Close</button>
+          <button onClick={onSaved} className="px-8 py-3 bg-violet-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-violet-200">
+            Save Changes
+          </button>
+        </div>
+      </div>
+      <style>{`.no-scrollbar::-webkit-scrollbar { display: none; } .custom-scrollbar::-webkit-scrollbar { width: 4px; } .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }`}</style>
+    </div>
   );
 }
