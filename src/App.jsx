@@ -1,26 +1,12 @@
 import React, { useEffect, useState, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
-// 🟢 PUBLIC PAGES (0 Delay)
+// 🟢 PUBLIC CORE PAGES (0 Delay - Turant khulenge)
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
-// 🟣 ADMIN PANEL FIX: Direct Import (Taaki infinite loading par na atke)
-// ⚠️ DHYAN DEIN: Agar aapne AdminLayout ko pages folder me rakha hai, toh uska path './pages/admin/AdminLayout' kar lena.
-import AdminLogin from './pages/admin/AdminLogin';
-import AdminLayout from './components/admin/AdminLayout'; 
-import Overview from './pages/admin/Overview';
-import UsersPage from './pages/admin/UsersPage';
-import TopPerformers from './pages/admin/TopPerformers';
-import WithdrawalsPage from './pages/admin/WithdrawalsPage';
-import SupportTickets from './pages/admin/SupportTickets';
-import MailerPage from './pages/admin/MailerPage';
-import ManagersPage from './pages/admin/ManagersPage';
-import RecyclePage from './pages/admin/RecyclePage';
-import SettingsPage from './pages/admin/SettingsPage';
-
-// --- 🟡 USER HEAVY PAGES (Lazy Load - Yeh public site ko fast rakhenge) ---
+// --- 🟡 PUBLIC HEAVY PAGES (Lazy Load) ---
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const Rates = lazy(() => import('./pages/Rates'));
@@ -32,6 +18,20 @@ const DMCA = lazy(() => import('./pages/DMCA'));
 const Terms = lazy(() => import('./pages/Terms'));
 const InvalidLink = lazy(() => import('./pages/InvalidLink'));
 
+// --- 🟣 ADMIN PANEL (Strict Lazy Load) ---
+// YEH TAB TAK LOAD NAHI HONGE JAB TAK KOI /admin PAR NAHI JATA
+const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
+const AdminLayout = lazy(() => import('./components/admin/AdminLayout')); // ✅ Path correct
+const Overview = lazy(() => import('./pages/admin/Overview'));
+const UsersPage = lazy(() => import('./pages/admin/UsersPage'));
+const TopPerformers = lazy(() => import('./pages/admin/TopPerformers'));
+const WithdrawalsPage = lazy(() => import('./pages/admin/WithdrawalsPage'));
+const SupportTickets = lazy(() => import('./pages/admin/SupportTickets'));
+const MailerPage = lazy(() => import('./pages/admin/MailerPage'));
+const ManagersPage = lazy(() => import('./pages/admin/ManagersPage'));
+const RecyclePage = lazy(() => import('./pages/admin/RecyclePage'));
+const SettingsPage = lazy(() => import('./pages/admin/SettingsPage'));
+
 // 🟢 Anti-Flash Loader
 const PageLoader = () => {
   const [show, setShow] = useState(false);
@@ -39,7 +39,9 @@ const PageLoader = () => {
     const timeout = setTimeout(() => setShow(true), 300);
     return () => clearTimeout(timeout);
   }, []);
+  
   if (!show) return null;
+  
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-[var(--bg-body)] z-50">
       <div className="w-12 h-12 border-4 border-violet-500/20 border-t-violet-500 rounded-full animate-spin"></div>
@@ -60,6 +62,8 @@ function App() {
 
   // 🚀 BACKGROUND PRELOAD MAGIC (Sirf public pages ke liye)
   useEffect(() => {
+    // Admin ko preload se HATA diya hai. 
+    // Normal users ka data bachane ke liye sirf public dashboard preload hoga.
     const preloadTimeout = setTimeout(() => {
       import('./pages/Dashboard');
       import('./pages/Uploader');
