@@ -1,18 +1,20 @@
 import React, { useEffect, useState, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
-// 🟢 PUBLIC CORE PAGES (0 Delay)
+// ⚠️ STEP 1: CSS IMPORTS (Inhe check karein, aapki file ka jo bhi naam ho)
+import './index.css'; 
+import './App.css'; 
+
+// 🟢 PUBLIC CORE PAGES
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
-// 🚀 FIX: AdminLayout aur Overview ko DIRECT IMPORT kiya hai.
-// Isse /admin hit hote hi bina kisi delay ya chunk error ke turant khulega.
-// ⚠️ DHYAN DEIN: Apna folder check karna. Agar AdminLayout 'pages' me rakha hai, to path us hisab se dalna.
+// 🚀 ADMIN CORE
 import AdminLayout from './components/admin/AdminLayout'; 
 import Overview from './pages/admin/Overview';
 
-// --- 🟣 ADMIN PAGES (Lazy Load - Par inka hit hona safe hai) ---
+// --- 🟣 ADMIN PAGES (Lazy) ---
 const AdminLogin = lazy(() => import('./pages/admin/AdminLogin'));
 const UsersPage = lazy(() => import('./pages/admin/UsersPage'));
 const TopPerformers = lazy(() => import('./pages/admin/TopPerformers'));
@@ -23,30 +25,27 @@ const ManagersPage = lazy(() => import('./pages/admin/ManagersPage'));
 const RecyclePage = lazy(() => import('./pages/admin/RecyclePage'));
 const SettingsPage = lazy(() => import('./pages/admin/SettingsPage'));
 
-// --- 🟡 PUBLIC HEAVY PAGES (Lazy Load) ---
+// --- 🟡 PUBLIC HEAVY PAGES (Lazy) ---
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const Rates = lazy(() => import('./pages/Rates'));
 const PaymentProof = lazy(() => import('./pages/PaymentProof'));
 const Uploader = lazy(() => import('./pages/Uploader'));
-
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const DMCA = lazy(() => import('./pages/DMCA'));
 const Terms = lazy(() => import('./pages/Terms'));
 const InvalidLink = lazy(() => import('./pages/InvalidLink'));
 
-// 🟢 Anti-Flash Loader
+// 🟢 Page Loader
 const PageLoader = () => {
   const [show, setShow] = useState(false);
   useEffect(() => {
     const timeout = setTimeout(() => setShow(true), 300);
     return () => clearTimeout(timeout);
   }, []);
-  
   if (!show) return null;
-  
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-[var(--bg-body)] z-50">
+    <div className="fixed inset-0 flex items-center justify-center bg-[var(--bg-body)] z-[999]">
       <div className="w-12 h-12 border-4 border-violet-500/20 border-t-violet-500 rounded-full animate-spin"></div>
     </div>
   );
@@ -67,8 +66,6 @@ function App() {
     const preloadTimeout = setTimeout(() => {
       import('./pages/Dashboard');
       import('./pages/Uploader');
-      import('./pages/Rates');
-      import('./pages/PaymentProof');
     }, 2000); 
     return () => clearTimeout(preloadTimeout);
   }, []);
@@ -100,7 +97,6 @@ function App() {
 
           <Route path="/admin/login" element={<AdminLogin />} />
 
-          {/* 🟣 SaaS Admin Panel Nested Routes */}
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Overview />} />
             <Route path="users" element={<UsersPage />} />
@@ -117,9 +113,37 @@ function App() {
         </Routes>
       </Suspense>
 
+      {/* 🚀 STEP 2: FIXED THEME BUTTON */}
       <button onClick={toggleTheme} className="floating-theme-btn" title="Toggle Theme">
         <i className={`fas ${isLightMode ? 'fa-sun text-yellow-500' : 'fa-moon'}`}></i>
       </button>
+
+      {/* 🚀 STEP 3: MISSING CSS BLOCK */}
+      <style>{`
+        .floating-theme-btn {
+          position: fixed;
+          bottom: 25px;
+          right: 25px;
+          width: 50px;
+          height: 50px;
+          border-radius: 50%;
+          background: #1e293b;
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+          border: none;
+          z-index: 40; /* Modal se niche rahega */
+          transition: transform 0.2s;
+        }
+        .floating-theme-btn:active { transform: scale(0.9); }
+        .light-mode .floating-theme-btn { background: white; color: #1e293b; border: 1px solid #e2e8f0; }
+        
+        /* Smooth transitions for theme */
+        body { transition: background-color 0.3s, color 0.3s; }
+      `}</style>
     </Router>
   );
 }
