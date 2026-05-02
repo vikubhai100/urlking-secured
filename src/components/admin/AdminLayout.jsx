@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, Navigate } from 'react-router-dom';
 
 // Sidebar Navigation Menu
 const NAV = [
@@ -18,6 +18,13 @@ export default function AdminLayout() {
   const [sidebar, setSidebar] = useState(false);
   const navigate = useNavigate();
 
+  // 🔒 THE GATEKEEPER LOCK: Check for admin token
+  const token = localStorage.getItem('admin_token');
+  if (!token) {
+    // Agar token nahi hai, toh bina UI render kiye Login page par bhej do
+    return <Navigate to="/admin/login" replace />;
+  }
+
   // Logout Logic
   const handleLogout = () => {
     // Backend logout API call yahan daal sakte ho agar zaroorat ho
@@ -34,7 +41,7 @@ export default function AdminLayout() {
           onClick={() => setSidebar(false)} 
         />
       )}
-      
+
       {/* Sidebar */}
       <aside 
         className={`fixed inset-y-0 left-0 z-40 w-60 bg-white border-r border-slate-100 flex flex-col transition-transform duration-200 ${
@@ -53,7 +60,7 @@ export default function AdminLayout() {
             </div>
           </div>
         </div>
-        
+
         {/* Navigation Menu */}
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto custom-scrollbar">
           {NAV.map(n => (
@@ -75,7 +82,7 @@ export default function AdminLayout() {
             </NavLink>
           ))}
         </nav>
-        
+
         {/* Bottom Logout Button */}
         <div className="p-4 border-t border-slate-100 bg-slate-50/50">
           <button 
@@ -89,7 +96,7 @@ export default function AdminLayout() {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
-        
+
         {/* Mobile Header (Hidden on Desktop) */}
         <div className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-slate-100 sticky top-0 z-20 shadow-sm">
           <button 
@@ -110,8 +117,8 @@ export default function AdminLayout() {
           <Outlet /> 
         </main>
       </div>
-      
-      {/* Global Styles for Scrollbar & Animations (Optional: App.css me bhi daal sakte ho) */}
+
+      {/* Global Styles for Scrollbar & Animations */}
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
