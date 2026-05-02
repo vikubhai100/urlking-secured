@@ -1,39 +1,49 @@
 import React, { useEffect, useState } from 'react';
-import Stat from '../../components/admin/Stat';
 
 const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
 
+// 🟢 FIX 1: Stat component ko isi file mein daal diya taaki Import Error na aaye
+const Stat = ({ label, value, icon, accent }) => (
+  <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm transition-all hover:shadow-md">
+    <div className="flex items-center justify-between mb-3">
+      <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{label}</span>
+      <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${accent}`}>
+        <i className={`fas ${icon} text-sm`}></i>
+      </div>
+    </div>
+    <div className="text-2xl font-bold text-slate-800 font-mono">{value}</div>
+  </div>
+);
+
 export default function Overview() {
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState(null); // 🟢 FIX 2: Agar error aaye toh UI pe dikhega
   const [stats, setStats] = useState({
-    users: 0,
-    clicks_today: 0,
-    clicks_7d: 0, // Iske liye backend update chahiye
-    clicks_total: 0,
-    income_today: 0,
-    income_7d: 0, // Iske liye backend update chahiye
-    income_total: 0,
-    withdraw_today: 0, 
-    withdraw_total: 0
+    users: 0, clicks_today: 0, clicks_7d: 0, clicks_total: 0,
+    income_today: 0, income_7d: 0, income_total: 0,
+    withdraw_today: 0, withdraw_total: 0
   });
 
   useEffect(() => {
     const fetchRealStats = async () => {
-      setLoading(true);
       try {
+        console.log("Overview: Fetching API data..."); // Debug log
         const token = localStorage.getItem('admin_token');
+        if (!token) throw new Error("Admin token missing!");
+
         const headers = { 'x-admin-token': token };
 
         // 1. Fetch Users Data
         const usersRes = await fetch(`${API}/api/admin/users?deleted=false`, { headers });
+        if (!usersRes.ok) throw new Error(`Users API Failed: ${usersRes.status}`);
         const usersData = await usersRes.json();
 
         // 2. Fetch Withdrawals Data
         const withdrawRes = await fetch(`${API}/api/withdraw/admin/requests`, { headers });
+        if (!withdrawRes.ok) throw new Error(`Withdraw API Failed: ${withdrawRes.status}`);
         const withdrawData = await withdrawRes.json();
 
         if (Array.isArray(usersData) && Array.isArray(withdrawData)) {
-          // --- Calculate Users & Earnings ---
           let t_users = usersData.length;
           let t_clicks = 0, today_clicks = 0;
           let t_income = 0, today_income = 0;
@@ -43,7 +53,6 @@ export default function Overview() {
             t_income += parseFloat(u.stats?.earnings || 0);
             today_income += parseFloat(u.stats?.today_earnings || 0);
 
-            // Calculate Today Clicks (Exact purana formula)
             let clicksToday = u.stats?.today_clicks;
             if (clicksToday == null) {
               const e = parseFloat(u.stats?.today_earnings || 0);
@@ -53,46 +62,51 @@ export default function Overview() {
             today_clicks += clicksToday;
           });
 
-          // --- Calculate Withdrawals ---
           let t_withdraw = 0;
           let today_withdraw = 0;
-          const todayDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+          const todayDate = new Date().toISOString().split('T')[0];
 
           withdrawData.forEach(w => {
-            // Sirf Approved payments ko total mein ginen
             if (w.status === 'approved') {
               t_withdraw += parseFloat(w.amount || 0);
-              
-              // Agar withdrawal ki date aaj ki hai (Assuming w.updated_at exists)
               if (w.updated_at && w.updated_at.startsWith(todayDate)) {
                 today_withdraw += parseFloat(w.amount || 0);
               }
             }
           });
 
-          // Set Real Data to State
           setStats({
-            users: t_users,
-            clicks_today: today_clicks,
-            clicks_7d: 0, // Backend me 7-days ka endpoint banana padega aapko
-            clicks_total: t_clicks,
-            income_today: today_income,
-            income_7d: 0, // Backend me 7-days ka endpoint banana padega
-            income_total: t_income,
-            withdraw_today: today_withdraw,
-            withdraw_total: t_withdraw
+            users: t_users, clicks_today: today_clicks, clicks_7d: 0, clicks_total: t_clicks,
+            income_today: today_income, income_7d: 0, income_total: t_income,
+            withdraw_today: today_withdraw, withdraw_total: t_withdraw
           });
+          console.log("Overview: Data loaded successfully!"); // Debug log
+        } else {
+          throw new Error("Invalid data format received from API");
         }
       } catch (error) {
-        console.error("Error fetching real stats:", error);
+        console.error("Overview Error:", error.message);
+        setErrorMsg(error.message);
       } finally {
-        setLoading(false);
+        setLoading(false); // 🟢 Har haal me loading false hoga
       }
     };
 
     fetchRealStats();
   }, []);
 
+  // 🟢 Agar API me koi fault hoga, toh gol-gol ghoomne ke bajaye yeh message dikhega
+  if (errorMsg) {
+    return (
+      <div className="p-6 bg-red-50 rounded-2xl border border-red-200 text-center animate-fadeIn">
+        <i className="fas fa-exclamation-triangle text-red-500 text-3xl mb-3" />
+        <h3 className="text-red-700 font-bold text-lg mb-1">Failed to load Dashboard</h3>
+        <p className="text-red-600 text-sm font-mono">{errorMsg}</p>
+      </div>
+    );
+  }
+
+  // Local Page Loader
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
