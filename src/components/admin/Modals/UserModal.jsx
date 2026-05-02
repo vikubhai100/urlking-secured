@@ -1,34 +1,62 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
-import { showToast } from '../../../toast'; // ✅ Fixed path to src/toast
+import { showToast } from '../../../toast'; // ✅ 3 level peeche src/toast.js tak
 
 const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
 
-// Helper Components
-const Spinner = ({ sm }) => <div className={`${sm ? 'w-4 h-4 border-2' : 'w-8 h-8 border-[3px]'} rounded-full border-slate-200 border-t-violet-500 animate-spin`} />;
+// ─────────────────────────────────────────────
+// FETCH HELPER — Aapke working code se copy kiya
+// ─────────────────────────────────────────────
+async function apiFetch(url, opts = {}, retries = 2) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12000);
+  try {
+    const res = await fetch(url, { ...opts, signal: controller.signal });
+    clearTimeout(timeout);
+    if (res.status === 401) { localStorage.removeItem('admin_token'); window.location.reload(); }
+    return res;
+  } catch (err) {
+    clearTimeout(timeout);
+    if (retries > 0 && err.name !== 'AbortError') {
+      await new Promise(r => setTimeout(r, 800));
+      return apiFetch(url, opts, retries - 1);
+    }
+    throw err;
+  }
+}
+
+// ─────────────────────────────────────────────
+// TINY HELPERS
+// ─────────────────────────────────────────────
 const fmt$ = (n, d = 2) => `$${parseFloat(n || 0).toFixed(d)}`;
 const fmtN = (n) => Number(n || 0).toLocaleString();
 
-const getTodayClicks = (u) => {
+function getTodayClicks(u) {
   if (u.stats?.today_clicks != null) return u.stats.today_clicks;
   const e = parseFloat(u.stats?.today_earnings || 0);
   const c = parseFloat(u.cpm || 0.5);
   return c > 0 ? Math.round((e / c) * 1000) : 0;
-};
+}
 
-// 🚀 MAIN COMPONENT EXPORT
-export default function UserModal({ user, allUsers, adminToken, onClose, onSaved, apiFetch }) {
+function Spinner({ sm }) {
+  return <div className={`${sm ? 'w-4 h-4 border-2' : 'w-8 h-8 border-[3px]'} rounded-full border-slate-200 border-t-violet-500 animate-spin`} />;
+}
+
+// ─────────────────────────────────────────────
+// MAIN USER MODAL COMPONENT
+// ─────────────────────────────────────────────
+export default function UserModal({ user, allUsers, adminToken, onClose, onSaved }) {
   const [tab, setTab] = useState('info');
   const [data, setData] = useState(user);
   const [saving, setSaving] = useState(false);
   
-  // Finance State
+  // 💰 Finance State
   const [history, setHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
   const set = (k, v) => setData(p => ({ ...p, [k]: v }));
 
-  // Finance Fetch Logic
+  // 🚀 Fetch Finance History (Sirf is user ka)
   useEffect(() => {
     if (tab === 'finance') {
       const getHistory = async () => {
@@ -37,18 +65,17 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
           const res = await apiFetch(`${API}/api/withdraw/admin/requests`, {
             headers: { 'x-admin-token': adminToken }
           });
-          if (Array.isArray(res)) {
-            setHistory(res.filter(w => w.uid === data.uid));
+          const json = await res.json();
+          if (Array.isArray(json)) {
+            // 🎯 Main Filter: Sirf user uid match wala data
+            setHistory(json.filter(w => w.uid === data.uid));
           }
-        } catch (err) { 
-          console.error(err); 
-        } finally { 
-          setLoadingHistory(false); 
-        }
+        } catch (err) { console.error(err); }
+        finally { setLoadingHistory(false); }
       };
       getHistory();
     }
-  }, [tab, data.uid, adminToken, apiFetch]);
+  }, [tab, data.uid, adminToken]);
 
   // Financial Calculations
   const earnings = parseFloat(data.stats?.earnings || 0);
@@ -59,31 +86,19 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
   const save = async () => {
     setSaving(true);
     try {
-      await apiFetch(`${API}/api/admin/user`, { 
-        method: 'PUT', 
-        headers: { 'Content-Type': 'application/json', 'x-admin-token': adminToken }, 
-        body: JSON.stringify({ uid: data.uid, role: data.role, cpm: data.cpm, name: data.name, click_percentage: data.click_percentage ?? 100 }) 
-      });
-      await apiFetch(`${API}/api/dev/toggle-permission`, { 
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ uid: data.uid, can_upload: data.can_upload ? 1 : 0 }) 
-      }).catch(() => {});
-      
+      await apiFetch(`${API}/api/admin/user`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'x-admin-token': adminToken }, body: JSON.stringify({ uid: data.uid, role: data.role, cpm: data.cpm, name: data.name, click_percentage: data.click_percentage ?? 100 }) });
+      await apiFetch(`${API}/api/dev/toggle-permission`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ uid: data.uid, can_upload: data.can_upload ? 1 : 0 }) }).catch(() => {});
       showToast('Saved!', 'success');
       onSaved();
-    } catch { 
-      showToast('Save failed', 'error'); 
-    } finally { 
-      setSaving(false); 
-    }
+    } catch { showToast('Save failed', 'error'); }
+    finally { setSaving(false); }
   };
 
   const tabs = [
     { id: 'info', label: 'Info' }, 
     { id: 'payment', label: 'Payment' }, 
     { id: 'stats', label: 'Stats' }, 
-    { id: 'finance', label: 'Finance' },
+    { id: 'finance', label: 'Finance' }, 
     { id: 'config', label: 'Config' }
   ];
 
@@ -109,12 +124,14 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
         ))}
       </div>
 
+      {/* ℹ️ INFO TAB (Restore Exactly as old code) */}
       {tab === 'info' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[['Email', data.email, true], ['Username', data.username, true], ['Mobile', data.mobile, true], ['Joined', data.created_at ? new Date(data.created_at).toLocaleDateString() : 'N/A', true]].map(([lbl, val, ro]) => (
             <div key={lbl}>
               <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">{lbl}</label>
-              <input readOnly={ro} value={val || ''} className="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-200 text-slate-700 outline-none" />
+              <input readOnly={ro} value={val || ''}
+                className="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-200 text-slate-700 outline-none transition-colors" />
             </div>
           ))}
           <div>
@@ -126,48 +143,97 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
             <input readOnly value={referrer || 'Direct'} className="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-200 text-slate-600 outline-none" />
           </div>
           {data.telegram && (
-            <div className="sm:col-span-2 flex gap-2">
-              <input readOnly value={data.telegram} className="flex-1 px-3 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-200 text-slate-600 outline-none" />
-              <a href={data.telegram} target="_blank" rel="noreferrer" className="px-4 rounded-xl bg-sky-50 text-sky-600 border border-sky-200 flex items-center"><i className="fab fa-telegram" /></a>
+            <div className="sm:col-span-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Telegram</label>
+              <div className="flex gap-2">
+                <input readOnly value={data.telegram} className="flex-1 px-3 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-200 text-slate-600 outline-none" />
+                <a href={data.telegram} target="_blank" rel="noreferrer" className="px-4 rounded-xl bg-sky-50 text-sky-600 border border-sky-200 hover:bg-sky-500 hover:text-white transition-colors flex items-center"><i className="fab fa-telegram" /></a>
+              </div>
+            </div>
+          )}
+          {data.youtube && (
+            <div className="sm:col-span-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">YouTube</label>
+              <div className="flex gap-2">
+                <input readOnly value={data.youtube} className="flex-1 px-3 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-200 text-slate-600 outline-none" />
+                <a href={data.youtube} target="_blank" rel="noreferrer" className="px-4 rounded-xl bg-red-50 text-red-500 border border-red-200 hover:bg-red-500 hover:text-white transition-colors flex items-center"><i className="fab fa-youtube" /></a>
+              </div>
             </div>
           )}
         </div>
       )}
 
-      {tab === 'finance' && (
-        <div className="space-y-5">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
-            <div className="bg-violet-600 p-4 rounded-2xl text-white">
-              <p className="text-[9px] font-bold uppercase opacity-70">Balance</p>
-              <p className="text-lg font-black font-mono">{fmt$(balance)}</p>
-            </div>
-            <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl">
-              <p className="text-[9px] font-bold text-emerald-500 uppercase">Paid Out</p>
-              <p className="text-lg font-black text-emerald-700 font-mono">{fmt$(withdrawn)}</p>
-            </div>
-            <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl">
-              <p className="text-[9px] font-bold text-amber-500 uppercase">Pending</p>
-              <p className="text-lg font-black text-amber-700 font-mono">{fmt$(pending)}</p>
-            </div>
+      {/* 💳 PAYMENT TAB (Restore Exactly as old code) */}
+      {tab === 'payment' && (
+        <div className="space-y-4">
+          <div className="bg-violet-50 border border-violet-200 p-4 rounded-xl">
+            <p className="text-[10px] font-bold text-violet-600 uppercase mb-1">Withdrawal Method</p>
+            <p className="text-base font-bold text-slate-800 uppercase">{data.withdrawal_method || 'UPI'}</p>
+            <p className="text-sm font-mono text-slate-600 mt-1 break-all">{data.withdrawal_account || 'N/A'}</p>
           </div>
-          <div className="border border-slate-100 rounded-2xl overflow-hidden max-h-[200px] overflow-y-auto">
-            <table className="w-full text-xs text-left">
-              <thead className="bg-slate-50 text-slate-400 font-bold uppercase">
-                <tr><th className="p-3">Date</th><th className="p-3 text-center">Amount</th><th className="p-3 text-right">Status</th></tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {loadingHistory ? <tr><td colSpan="3" className="p-10 text-center animate-pulse text-slate-300">Loading...</td></tr> :
-                 history.length === 0 ? <tr><td colSpan="3" className="p-10 text-center text-slate-300">No data</td></tr> :
-                 history.map(w => (
-                  <tr key={w.id}><td className="p-3">{new Date(w.created_at).toLocaleDateString()}</td><td className="p-3 text-center font-bold">{fmt$(w.amount)}</td><td className="p-3 text-right capitalize">{w.status}</td></tr>
-                 ))}
-              </tbody>
-            </table>
+          <div className="grid grid-cols-2 gap-3">
+            {[['Bank Name', data.bank_name], ['IFSC', data.bank_ifsc], ['Account No.', data.bank_account], ['Holder Name', data.bank_holder]].map(([lbl, val]) => (
+              <div key={lbl}>
+                <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">{lbl}</label>
+                <input readOnly value={val || 'N/A'} className="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 border border-slate-200 text-slate-700 font-mono outline-none" />
+              </div>
+            ))}
           </div>
         </div>
       )}
 
-      {/* Stats Tab logic ... keep as is from previous code */}
+      {/* 💰 FINANCE TAB (Added) */}
+      {tab === 'finance' && (
+        <div className="space-y-5 animate-fadeIn">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="bg-violet-600 p-4 rounded-2xl text-white shadow-lg">
+              <p className="text-[9px] font-bold uppercase opacity-70 mb-1">Current Balance</p>
+              <p className="text-lg font-black font-mono">{fmt$(balance)}</p>
+            </div>
+            <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl">
+              <p className="text-[9px] font-bold text-emerald-500 uppercase mb-1">Total Paid</p>
+              <p className="text-lg font-black text-emerald-700 font-mono">{fmt$(withdrawn)}</p>
+            </div>
+            <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl">
+              <p className="text-[9px] font-bold text-amber-500 uppercase mb-1">Pending</p>
+              <p className="text-lg font-black text-amber-700 font-mono">{fmt$(pending)}</p>
+            </div>
+          </div>
+
+          <div className="border border-slate-100 rounded-2xl overflow-hidden bg-white">
+            <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-100 flex justify-between items-center">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Withdrawal History</p>
+              {loadingHistory && <Spinner sm />}
+            </div>
+            <div className="max-h-[220px] overflow-y-auto custom-scrollbar">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-white sticky top-0 border-b border-slate-50 text-[10px] text-slate-400 font-bold uppercase">
+                  <tr><th className="p-3">Date</th><th className="p-3 text-center">Amount</th><th className="p-3 text-right">Status</th></tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {loadingHistory && history.length === 0 ? (
+                    <tr><td colSpan="3" className="p-10 text-center italic text-slate-300">Syncing...</td></tr>
+                  ) : history.length === 0 ? (
+                    <tr><td colSpan="3" className="p-10 text-center text-slate-300 italic">No history found</td></tr>
+                  ) : history.map(w => (
+                    <tr key={w.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="p-3 text-slate-500 font-medium">{new Date(w.created_at).toLocaleDateString()}</td>
+                      <td className="p-3 text-center font-bold font-mono text-slate-700">{fmt$(w.amount)}</td>
+                      <td className="p-3 text-right">
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border ${w.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : w.status === 'pending' ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                          {w.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 📊 STATS TAB (Restore Exactly as old code) */}
       {tab === 'stats' && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {[
@@ -186,17 +252,46 @@ export default function UserModal({ user, allUsers, adminToken, onClose, onSaved
         </div>
       )}
 
-      {/* Config Tab logic ... keep as is */}
+      {/* ⚙️ CONFIG TAB (Restore Exactly as old code) */}
       {tab === 'config' && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-             <div><label className="text-[10px] font-bold text-slate-400 uppercase">Role</label>
-             <select value={data.role} onChange={e => set('role', e.target.value)} className="w-full p-2.5 rounded-xl bg-white border border-slate-200 text-sm"><option value="user">User</option><option value="manager">Manager</option></select></div>
-             <div><label className="text-[10px] font-bold text-slate-400 uppercase">CPM ($)</label>
-             <input type="number" step="0.01" value={data.cpm || ''} onChange={e => set('cpm', e.target.value)} className="w-full p-2.5 rounded-xl bg-white border border-slate-200 text-sm font-mono" /></div>
+        <div className="space-y-5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Role</label>
+              <select value={data.role} onChange={e => set('role', e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 text-slate-800 outline-none focus:border-violet-400">
+                <option value="user">User</option>
+                <option value="manager">Manager</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">CPM ($)</label>
+              <input type="number" step="0.01" value={data.cpm || ''} onChange={e => set('cpm', e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 text-slate-800 font-mono outline-none focus:border-violet-400" />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Click % (0-100)</label>
+              <input type="number" min="0" max="100" value={data.click_percentage ?? 100} onChange={e => set('click_percentage', e.target.value)} className="w-full px-3 py-2.5 rounded-xl text-sm bg-white border border-slate-200 text-slate-800 font-mono outline-none focus:border-violet-400" />
+            </div>
+          </div>
+          <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl p-4">
+            <div>
+              <p className="text-sm font-bold text-slate-700">File Upload Access</p>
+              <p className="text-xs text-slate-400 mt-0.5">Allow this user to upload files</p>
+            </div>
+            <button onClick={() => set('can_upload', !data.can_upload)}
+              className={`relative w-12 h-6 rounded-full transition-colors ${data.can_upload ? 'bg-violet-500' : 'bg-slate-200'}`}>
+              <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${data.can_upload ? 'left-7' : 'left-1'}`} />
+            </button>
           </div>
         </div>
       )}
+      
+      <style>{`
+        .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+      `}</style>
     </Modal>
   );
 }
