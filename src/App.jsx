@@ -76,6 +76,10 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          
+          {/* 💡 YAHI MISSING THA: Reset Password Route */}
+          <Route path="/reset-password" element={<ResetPassword />} /> 
+
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/rates" element={<Rates />} />
           <Route path="/payment-proof" element={<PaymentProof />} />
