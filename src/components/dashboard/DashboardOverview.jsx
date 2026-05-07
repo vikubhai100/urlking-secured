@@ -71,7 +71,7 @@ const DashboardOverview = ({ token, user, isActive }) => {
 
       if (!res.ok) throw new Error(data.error || "Failed to create short link");
 
-      setResultLink(`https://go.urlking.site/${data.id}`); 
+      setResultLink(`https://urlking.in/${data.id}`);
       setUrl('');
       setAlias('');
       setExpirationDate(''); 
