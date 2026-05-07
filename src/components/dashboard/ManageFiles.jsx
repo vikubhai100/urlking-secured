@@ -11,7 +11,7 @@ const ManageFiles = ({ token }) => {
   const [deleteModal, setDeleteModal] = useState({ open: false, id: '' });
 
   const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
-  const AD_BASE = import.meta.env.VITE_AD_BASE || "https://go.urlking.site/";
+  const AD_BASE = import.meta.env.VITE_AD_BASE || "https://urlking.in/";
 
   const loadFiles = useCallback(async (p) => {
     setLoading(true);
