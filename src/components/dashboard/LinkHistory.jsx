@@ -10,7 +10,7 @@ const LinkHistory = ({ token, isActive }) => {
   const [editModal, setEditModal] = useState({ open: false, id: '', url: '' });
 
   const API = "https://go.urlking.site";
-  const AD_BASE = "https://go.urlking.site/";
+  const AD_BASE = "https://urlking.in/";
 
   // 2. isActive check karega aur silently data update karega
   useEffect(() => {
