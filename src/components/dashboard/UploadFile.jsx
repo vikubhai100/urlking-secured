@@ -4,6 +4,11 @@ import { showToast } from '../../toast';
 const UploadFile = ({ token, user }) => {
   const [uploadMode, setUploadMode] = useState('local'); 
 
+  // --- STORAGE QUOTA STATES ---
+  const [storageUsed, setStorageUsed] = useState(0);
+  const [storageLimit] = useState(10 * 1024 * 1024 * 1024); // 10 GB
+  const [isQuotaFull, setIsQuotaFull] = useState(false);
+
   // --- LOCAL UPLOAD STATES ---
   const [file, setFile] = useState(null);
   const [progress, setProgress] = useState(0);
@@ -48,6 +53,27 @@ const UploadFile = ({ token, user }) => {
     return () => clearInterval(interval);
   }, [remoteStatus]);
 
+  // 💡 Fetch Storage Usage on Load
+  useEffect(() => {
+    const fetchStorageData = async () => {
+      try {
+        const res = await fetch(`${API}/api/dev/storage-info`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.used_bytes !== undefined) {
+          setStorageUsed(data.used_bytes);
+          if (data.used_bytes >= storageLimit) {
+            setIsQuotaFull(true);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch storage info", err);
+      }
+    };
+    if (token) fetchStorageData();
+  }, [token, storageLimit, resultLink]); // resultLink change hone par wapas refresh hoga
+
   const formatBytes = (bytes) => {
     if (bytes === 0 || !bytes || isNaN(bytes)) return '0 B';
     const k = 1024;
@@ -82,6 +108,14 @@ const UploadFile = ({ token, user }) => {
         return;
       }
 
+      // 💡 Quota Check Before Upload
+      if (selectedFile.size > 100 * 1024 * 1024) { // Only check for > 100MB files
+        if (storageUsed + selectedFile.size > storageLimit) {
+            showToast("Storage Limit Reached! Delete old files to free up space.", "error");
+            return;
+        }
+      }
+
       setFile(selectedFile);
       setResultLink('');
       setProgress(0);
@@ -94,20 +128,14 @@ const UploadFile = ({ token, user }) => {
 
   const startUpload = async () => {
     if (!file) return showToast("Please select a file to upload.", "error");
-
-    if (file.size > 2 * 1024 * 1024 * 1024) {
-        return showToast("File exceeds 2GB limit.", "error");
-    }
+    if (file.size > 2 * 1024 * 1024 * 1024) return showToast("File exceeds 2GB limit.", "error");
 
     setIsUploading(true);
     setProgress(0);
     setTotalSize(formatBytes(file.size));
 
     try {
-      // ⚡ FIX: File type nikal liya
       const fileType = file.type || 'application/octet-stream';
-
-      // 🚀 1. Send Size, Name AND Type to backend for Hybrid Routing
       const serverRes = await fetch(
         `${API}/api/dev/server?size=${file.size}&name=${encodeURIComponent(file.name)}&type=${encodeURIComponent(fileType)}`, 
         { headers: { Authorization: `Bearer ${token}` } }
@@ -120,12 +148,30 @@ const UploadFile = ({ token, user }) => {
       const xhr = new XMLHttpRequest();
       xhrRef.current = xhr; 
 
-      const isR2Upload = serverData.upload_type === 'r2';
+      const isR2Upload = serverData.upload_type === 'r2' || serverData.upload_type === 'clone';
 
-      // 🚀 2. Open XHR connection based on type
+      if (serverData.upload_type === 'clone') {
+          // ⚡ Bypassed Upload
+          setProgress(100);
+          const payload = { 
+            file_code: serverData.file_code, 
+            file_name: file.name, 
+            file_size: file.size >= 1048576 ? (file.size / 1048576).toFixed(2) + " MB" : (file.size / 1024).toFixed(2) + " KB",
+            upload_type: "clone"
+          };
+          const finalRes = await fetch(`${API}/api/dev/finalize`, {
+            method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify(payload)
+          });
+          const finalData = await finalRes.json();
+          setResultLink(`https://go.urlking.site/${finalData.short_id}`);
+          showToast("File instantly cloned and uploaded!", "success");
+          setIsUploading(false);
+          return;
+      }
+
       if (isR2Upload) {
         xhr.open('PUT', serverData.url, true);
-        // ⚡ FIX: Exact same Content-Type bhejenge taaki Cloudflare reject na kare
         xhr.setRequestHeader('Content-Type', fileType);
       } else {
         xhr.open('POST', serverData.url, true);
@@ -164,14 +210,11 @@ const UploadFile = ({ token, user }) => {
       };
 
       xhr.onload = async () => {
-        // R2 successful upload returns 200, but some S3 variants might return 204
         if (xhr.status >= 200 && xhr.status < 300) {
           try {
             let fileCode = "";
-
-            // 🚀 3. Extract File Code based on upload type
             if (isR2Upload) {
-              fileCode = serverData.file_code; // Get code directly from our node backend pre-signed response
+              fileCode = serverData.file_code; 
             } else {
               const response = JSON.parse(xhr.responseText);
               fileCode = Array.isArray(response) && response[0] ? response[0].file_code : response.file_code;
@@ -179,7 +222,6 @@ const UploadFile = ({ token, user }) => {
 
             let fileSizeStr = file.size >= 1048576 ? (file.size / 1048576).toFixed(2) + " MB" : (file.size / 1024).toFixed(2) + " KB";
 
-            // 🚀 4. Finalize with all hybrid info
             const payload = { 
               file_code: fileCode, 
               file_name: file.name, 
@@ -203,7 +245,6 @@ const UploadFile = ({ token, user }) => {
       xhr.onerror = () => { showToast("Upload network error.", "error"); setIsUploading(false); };
       xhr.onabort = () => { showToast("Upload Cancelled!", "error"); setIsUploading(false); };
 
-      // 🚀 5. Send raw file for R2, FormData for Telegram
       if (isR2Upload) {
         xhr.send(file);
       } else {
@@ -237,6 +278,13 @@ const UploadFile = ({ token, user }) => {
       });
       const data = await res.json();
       if (data.ok) {
+        // 💡 Quota Check for Remote Download
+        if (data.fileSize > 100 * 1024 * 1024) { 
+            if (storageUsed + data.fileSize > storageLimit) {
+                setRemoteStatus('idle');
+                return showToast("Storage Limit Reached! Delete old files to free up space.", "error");
+            }
+        }
         setRemoteInfo(data);
         setNewRemoteName(data.originalName);
         setRemoteStatus('ready');
@@ -290,21 +338,41 @@ const UploadFile = ({ token, user }) => {
     );
   }
 
+  // Calculate Progress for Storage Bar
+  const storagePercentage = Math.min((storageUsed / storageLimit) * 100, 100).toFixed(1);
+
   return (
     <div className="fade-in w-full max-w-4xl mx-auto space-y-6">
 
-      <div className="glass-panel p-6 rounded-3xl bg-gradient-to-r from-[#0088cc]/10 to-indigo-900/10 border border-[#0088cc]/30 relative overflow-hidden flex flex-col md:flex-row items-center gap-6 text-center md:text-left shadow-lg mb-2">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-[#0088cc] blur-[80px] opacity-20 rounded-full pointer-events-none"></div>
-        <div className="w-16 h-16 rounded-full bg-[#0088cc]/20 flex items-center justify-center text-[#0088cc] text-3xl shrink-0 border border-[#0088cc]/30 shadow-[0_0_20px_rgba(0,136,204,0.3)] z-10">
-          <i className="fab fa-telegram-plane"></i>
+      {/* 🚀 STORAGE QUOTA TRACKER UI */}
+      <div className="glass-panel p-6 rounded-2xl bg-gradient-to-r from-[var(--bg-body)] to-slate-800/30 border border-[var(--glass-border)] shadow-md">
+        <div className="flex justify-between items-end mb-3">
+            <div>
+                <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest"><i className="fas fa-hdd mr-2"></i> Your Cloud Storage</h4>
+                <p className="text-xs text-slate-500 mt-1 font-medium">Limit applies only to files larger than 100MB.</p>
+            </div>
+            <div className="text-right">
+                <p className={`text-lg font-black ${isQuotaFull ? 'text-red-500' : 'text-emerald-400'}`}>
+                    {formatBytes(storageUsed)} <span className="text-sm text-slate-500 font-bold">/ 10 GB</span>
+                </p>
+                <p className="text-[10px] text-blue-400 font-bold mt-1 uppercase tracking-wider">
+                    <i className="fas fa-infinity text-blue-500"></i> Small Files (&lt; 100MB): Unlimited
+                </p>
+            </div>
         </div>
-        <div className="flex-1 z-10">
-          <h3 className="text-xl font-black mb-1 text-[var(--text-primary)]">🔥 UrlKing Uploader BOT</h3>
-          <p className="text-sm text-slate-400 font-medium">Upload files, bypass links, and manage your account instantly via our powerful Telegram Bot.</p>
+
+        <div className="h-2.5 rounded-full bg-slate-800 overflow-hidden mb-2">
+            <div 
+                className={`h-full rounded-full transition-all duration-700 ${isQuotaFull ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : 'bg-gradient-to-r from-emerald-400 to-teal-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]'}`} 
+                style={{ width: `${storagePercentage}%` }}
+            ></div>
         </div>
-        <a href="https://t.me/URLKINGS_BOT" target="_blank" rel="noreferrer" className="btn-action bg-gradient-to-r from-[#0088cc] to-[#00aaff] px-8 py-3.5 rounded-xl text-white font-bold flex items-center gap-3 z-10 w-full md:w-auto justify-center shadow-[0_10px_20px_rgba(0,136,204,0.4)] hover:-translate-y-1 transition-transform">
-          Start Bot <i className="fas fa-arrow-right text-sm"></i>
-        </a>
+        
+        {isQuotaFull && (
+            <div className="text-xs text-red-400 font-bold flex items-center gap-2 mt-2 bg-red-500/10 p-2 rounded-lg border border-red-500/20">
+                <i className="fas fa-exclamation-triangle"></i> Storage Full! Please go to your Dashboard and delete older large files to upload new ones.
+            </div>
+        )}
       </div>
 
       <div className="flex bg-[var(--nav-hover)] p-1.5 rounded-xl border border-[var(--glass-border)] shadow-inner">
@@ -327,8 +395,8 @@ const UploadFile = ({ token, user }) => {
 
           {uploadMode === 'local' && (
             <div className="space-y-6 fade-in">
-              <div className={`relative border-2 border-dashed rounded-2xl p-10 text-center transition-all duration-300 ${file ? 'border-indigo-500 bg-indigo-500/5 shadow-[0_0_20px_rgba(99,102,241,0.1)]' : 'border-[var(--glass-border)] hover:border-indigo-500/50'}`}>
-                <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onChange={handleFileChange} disabled={isUploading || resultLink} />
+              <div className={`relative border-2 border-dashed rounded-2xl p-10 text-center transition-all duration-300 ${file ? 'border-indigo-500 bg-indigo-500/5 shadow-[0_0_20px_rgba(99,102,241,0.1)]' : 'border-[var(--glass-border)] hover:border-indigo-500/50'} ${isQuotaFull ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
+                <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onChange={handleFileChange} disabled={isUploading || resultLink || isQuotaFull} />
                 {!file ? (
                   <div>
                     <div className="w-16 h-16 mx-auto bg-indigo-500/10 rounded-full flex items-center justify-center mb-4 border border-indigo-500/20"><i className="fas fa-cloud-upload-alt text-3xl text-indigo-500"></i></div>
@@ -382,7 +450,7 @@ const UploadFile = ({ token, user }) => {
                 </div>
               )}
 
-              {file && !isUploading && !resultLink && (
+              {file && !isUploading && !resultLink && !isQuotaFull && (
                 <button onClick={startUpload} className="w-full py-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-xl font-black text-lg shadow-[0_10px_20px_rgba(99,102,241,0.3)] hover:-translate-y-1 transition-transform flex items-center justify-center gap-3">
                   <i className="fas fa-rocket"></i> Start Upload Now
                 </button>
@@ -409,18 +477,11 @@ const UploadFile = ({ token, user }) => {
                       />
                     </div>
                     <button 
-                      onClick={fetchRemoteDetails} disabled={!remoteUrl || remoteStatus === 'fetching'}
+                      onClick={fetchRemoteDetails} disabled={!remoteUrl || remoteStatus === 'fetching' || isQuotaFull}
                       className="px-8 py-4 bg-emerald-500/10 text-emerald-500 border border-emerald-500 hover:bg-emerald-500 hover:text-white rounded-xl font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                       {remoteStatus === 'fetching' ? <><i className="fas fa-spinner fa-spin"></i> Fetching</> : <><i className="fas fa-search"></i> Fetch Info</>}
                     </button>
-                  </div>
-
-                  <div className="mt-2 bg-[var(--nav-hover)] border border-[var(--glass-border)] rounded-lg p-3 flex gap-3 text-xs text-slate-400">
-                    <i className="fas fa-info-circle text-blue-400 mt-0.5"></i>
-                    <div>
-                      <strong className="text-[var(--text-primary)]">Supported Links:</strong> UrlKing & DevUploads (Instant Clone ⚡), MediaFire (Slower 🐢).
-                    </div>
                   </div>
                 </div>
               )}
@@ -449,7 +510,7 @@ const UploadFile = ({ token, user }) => {
                     />
                   </div>
 
-                  <button onClick={processRemoteUrl} className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl font-black text-lg shadow-[0_10px_20px_rgba(16,185,129,0.3)] hover:-translate-y-1 transition-transform flex items-center justify-center gap-3">
+                  <button onClick={processRemoteUrl} disabled={isQuotaFull} className="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl font-black text-lg shadow-[0_10px_20px_rgba(16,185,129,0.3)] hover:-translate-y-1 transition-transform flex items-center justify-center gap-3 disabled:opacity-50 disabled:hover:translate-y-0">
                     <i className="fas fa-bolt"></i> Process & Shorten Link
                   </button>
                 </div>
@@ -508,30 +569,6 @@ const UploadFile = ({ token, user }) => {
             </div>
           )}
 
-        </div>
-      </div>
-
-      <div className="glass-panel p-6 rounded-2xl border-l-4 border-amber-500 mt-8 shadow-lg">
-        <h4 className="text-sm font-black text-amber-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-          <i className="fas fa-shield-alt text-lg"></i> Important Notice & Rules
-        </h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs md:text-sm text-slate-400 font-medium">
-          <div className="flex gap-3 items-start bg-[var(--nav-hover)] p-3 rounded-lg border border-[var(--glass-border)]">
-            <i className="fas fa-hdd text-indigo-400 text-lg mt-0.5"></i>
-            <p>Maximum allowed file size per upload is <strong className="text-[var(--text-primary)]">2GB</strong>. Larger files will be rejected.</p>
-          </div>
-          <div className="flex gap-3 items-start bg-[var(--nav-hover)] p-3 rounded-lg border border-[var(--glass-border)]">
-            <i className="fas fa-user-shield text-emerald-400 text-lg mt-0.5"></i>
-            <p>Your files are securely encrypted and stored on high-speed private cloud servers.</p>
-          </div>
-          <div className="flex gap-3 items-start bg-[var(--nav-hover)] p-3 rounded-lg border border-red-500/20">
-            <i className="fas fa-ban text-red-500 text-lg mt-0.5"></i>
-            <p>Pornography, Child Abuse material, or illegal content is <strong className="text-red-400">strictly prohibited</strong>. Violators will be banned.</p>
-          </div>
-          <div className="flex gap-3 items-start bg-[var(--nav-hover)] p-3 rounded-lg border border-[var(--glass-border)]">
-            <i className="fas fa-trash-alt text-amber-400 text-lg mt-0.5"></i>
-            <p><strong className="text-amber-500">Strictly:</strong> If a file receives 0 clicks/downloads for <strong>5 days</strong>, it will be automatically deleted to save space.</p>
-          </div>
         </div>
       </div>
 
