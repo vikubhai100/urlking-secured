@@ -164,7 +164,7 @@ const UploadFile = ({ token, user }) => {
             body: JSON.stringify(payload)
           });
           const finalData = await finalRes.json();
-          setResultLink(`https://go.urlking.site/${finalData.short_id}`);
+          setResultLink(`https://urlking.in/${finalData.short_id}`);
           showToast("File instantly cloned and uploaded!", "success");
           setIsUploading(false);
           return;
@@ -235,7 +235,7 @@ const UploadFile = ({ token, user }) => {
               body: JSON.stringify(payload)
             });
             const finalData = await finalRes.json();
-            setResultLink(`https://go.urlking.site/${finalData.short_id}`);
+            setResultLink(`https://urlking.in/${finalData.short_id}`);
             showToast("File uploaded securely!", "success");
           } catch(e) { showToast("Error finalizing: " + e.message, "error"); }
         } else { showToast("Upload failed by server.", "error"); }
@@ -310,7 +310,9 @@ const UploadFile = ({ token, user }) => {
       });
       const data = await res.json();
       if (data.ok) {
-        setResultLink(data.short_link);
+        // Force the link to be urlking.in just in case backend sends the old domain
+        const correctDomainLink = data.short_link.replace('go.urlking.site', 'urlking.in');
+        setResultLink(correctDomainLink);
         setRemoteStatus('done');
         showToast("Remote URL Processed Successfully!", "success");
       } else {
@@ -344,6 +346,21 @@ const UploadFile = ({ token, user }) => {
   return (
     <div className="fade-in w-full max-w-4xl mx-auto space-y-6">
 
+      {/* 🚀 TELEGRAM BOT PROMO UI (RESTORED) */}
+      <div className="glass-panel p-6 rounded-3xl bg-gradient-to-r from-[#0088cc]/10 to-indigo-900/10 border border-[#0088cc]/30 relative overflow-hidden flex flex-col md:flex-row items-center gap-6 text-center md:text-left shadow-lg mb-2">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-[#0088cc] blur-[80px] opacity-20 rounded-full pointer-events-none"></div>
+        <div className="w-16 h-16 rounded-full bg-[#0088cc]/20 flex items-center justify-center text-[#0088cc] text-3xl shrink-0 border border-[#0088cc]/30 shadow-[0_0_20px_rgba(0,136,204,0.3)] z-10">
+          <i className="fab fa-telegram-plane"></i>
+        </div>
+        <div className="flex-1 z-10">
+          <h3 className="text-xl font-black mb-1 text-[var(--text-primary)]">🔥 UrlKing Uploader BOT</h3>
+          <p className="text-sm text-slate-400 font-medium">Upload files, bypass links, and manage your account instantly via our powerful Telegram Bot.</p>
+        </div>
+        <a href="https://t.me/URLKINGS_BOT" target="_blank" rel="noreferrer" className="btn-action bg-gradient-to-r from-[#0088cc] to-[#00aaff] px-8 py-3.5 rounded-xl text-white font-bold flex items-center gap-3 z-10 w-full md:w-auto justify-center shadow-[0_10px_20px_rgba(0,136,204,0.4)] hover:-translate-y-1 transition-transform">
+          Start Bot <i className="fas fa-arrow-right text-sm"></i>
+        </a>
+      </div>
+
       {/* 🚀 STORAGE QUOTA TRACKER UI */}
       <div className="glass-panel p-6 rounded-2xl bg-gradient-to-r from-[var(--bg-body)] to-slate-800/30 border border-[var(--glass-border)] shadow-md">
         <div className="flex justify-between items-end mb-3">
@@ -367,7 +384,7 @@ const UploadFile = ({ token, user }) => {
                 style={{ width: `${storagePercentage}%` }}
             ></div>
         </div>
-        
+
         {isQuotaFull && (
             <div className="text-xs text-red-400 font-bold flex items-center gap-2 mt-2 bg-red-500/10 p-2 rounded-lg border border-red-500/20">
                 <i className="fas fa-exclamation-triangle"></i> Storage Full! Please go to your Dashboard and delete older large files to upload new ones.
@@ -569,6 +586,31 @@ const UploadFile = ({ token, user }) => {
             </div>
           )}
 
+        </div>
+      </div>
+
+      {/* 🚀 IMPORTANT RULES UI (RESTORED) */}
+      <div className="glass-panel p-6 rounded-2xl border-l-4 border-amber-500 mt-8 shadow-lg">
+        <h4 className="text-sm font-black text-amber-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+          <i className="fas fa-shield-alt text-lg"></i> Important Notice & Rules
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs md:text-sm text-slate-400 font-medium">
+          <div className="flex gap-3 items-start bg-[var(--nav-hover)] p-3 rounded-lg border border-[var(--glass-border)]">
+            <i className="fas fa-hdd text-indigo-400 text-lg mt-0.5"></i>
+            <p>Maximum allowed file size per upload is <strong className="text-[var(--text-primary)]">2GB</strong>. Larger files will be rejected.</p>
+          </div>
+          <div className="flex gap-3 items-start bg-[var(--nav-hover)] p-3 rounded-lg border border-[var(--glass-border)]">
+            <i className="fas fa-user-shield text-emerald-400 text-lg mt-0.5"></i>
+            <p>Your files are securely encrypted and stored on high-speed private cloud servers.</p>
+          </div>
+          <div className="flex gap-3 items-start bg-[var(--nav-hover)] p-3 rounded-lg border border-red-500/20">
+            <i className="fas fa-ban text-red-500 text-lg mt-0.5"></i>
+            <p>Pornography, Child Abuse material, or illegal content is <strong className="text-red-400">strictly prohibited</strong>. Violators will be banned.</p>
+          </div>
+          <div className="flex gap-3 items-start bg-[var(--nav-hover)] p-3 rounded-lg border border-[var(--glass-border)]">
+            <i className="fas fa-trash-alt text-amber-400 text-lg mt-0.5"></i>
+            <p><strong className="text-amber-500">Strictly:</strong> If a file receives 0 clicks/downloads for <strong>5 days</strong>, it will be automatically deleted to save space.</p>
+          </div>
         </div>
       </div>
 
