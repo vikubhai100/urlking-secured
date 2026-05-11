@@ -5,7 +5,7 @@ const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
 const PER_PAGE = 10;
 
 const Avatar = ({ name }) => (
-  <div className="w-9 h-9 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 font-black text-xs shrink-0 border border-slate-200">
+  <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black shrink-0 border border-slate-200 bg-slate-100 text-slate-400">
     {(name || '?')[0].toUpperCase()}
   </div>
 );
@@ -19,7 +19,6 @@ export default function RecyclePage() {
   
   const token = localStorage.getItem('admin_token');
 
-  // 🚀 FAST FETCH LOGIC
   const loadDeletedUsers = useCallback(async () => {
     setLoading(true);
     try {
@@ -35,11 +34,8 @@ export default function RecyclePage() {
     }
   }, [token]);
 
-  useEffect(() => {
-    loadDeletedUsers();
-  }, [loadDeletedUsers]);
+  useEffect(() => { loadDeletedUsers(); }, [loadDeletedUsers]);
 
-  // Actions handler
   const executeAction = async () => {
     const { type, payload } = confirmModal;
     setConfirmModal(null);
@@ -58,7 +54,6 @@ export default function RecyclePage() {
     }
   };
 
-  // Search & Pagination Logic
   const filteredUsers = users.filter(u => 
     !search || u.username?.toLowerCase().includes(search.toLowerCase()) || u.email?.toLowerCase().includes(search.toLowerCase())
   );
@@ -67,15 +62,18 @@ export default function RecyclePage() {
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      {/* --- HEADER --- */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+
+      {/* ─── Header ─── */}
+      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center shadow-inner">
-            <i className="fas fa-trash-alt text-slate-400" />
+          <div className="w-11 h-11 rounded-2xl bg-slate-800 flex items-center justify-center shadow-lg shadow-slate-900/30">
+            <i className="fas fa-trash-alt text-slate-300" />
           </div>
           <div>
-            <h2 className="text-xl font-black text-slate-800 tracking-tight">Recycle Bin</h2>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Manage suspended accounts</p>
+            <h2 className="text-xl font-black text-slate-900 tracking-tight">Recycle Bin</h2>
+            <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">
+              {users.length} suspended accounts
+            </p>
           </div>
         </div>
 
@@ -84,75 +82,87 @@ export default function RecyclePage() {
             <i className="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-300 text-xs" />
             <input 
               value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
-              placeholder="Search deleted users..."
-              className="w-full sm:w-64 pl-9 pr-4 py-2.5 rounded-2xl border border-slate-100 bg-white text-sm focus:border-violet-400 outline-none transition-all shadow-sm"
+              placeholder="Search suspended users..."
+              className="w-full sm:w-64 pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm outline-none shadow-sm placeholder-slate-400 transition-all"
+              onFocus={e => e.target.style.borderColor='#64748b'}
+              onBlur={e => e.target.style.borderColor=''}
             />
           </div>
-          <button onClick={loadDeletedUsers} className="p-2.5 rounded-2xl bg-white border border-slate-100 text-slate-400 hover:text-violet-600 transition-colors shadow-sm">
-            <i className={`fas fa-sync-alt ${loading ? 'animate-spin' : ''}`} />
+          <button 
+            onClick={loadDeletedUsers} 
+            className="p-2.5 rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-slate-700 hover:border-slate-300 shadow-sm transition-all"
+          >
+            <i className={`fas fa-sync-alt text-sm ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
 
-      {/* --- TABLE SECTION --- */}
-      <div className="bg-white rounded-[32px] border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden">
+      {/* ─── Table ─── */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead>
-              <tr className="bg-slate-50/50 border-b border-slate-100">
-                <th className="p-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Suspended User</th>
-                <th className="p-5 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Data Loss</th>
-                <th className="p-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Recovery Actions</th>
+              <tr className="border-b border-slate-100">
+                <th className="px-5 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/70">Suspended User</th>
+                <th className="px-5 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/70">Data</th>
+                <th className="px-5 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/70">Recovery Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {loading ? (
-                // 🦴 Skeleton UI
                 [...Array(3)].map((_, i) => (
                   <tr key={i} className="animate-pulse">
-                    <td className="p-5"><div className="h-10 w-40 bg-slate-100 rounded-2xl" /></td>
-                    <td className="p-5"><div className="h-6 w-16 bg-slate-50 rounded-lg mx-auto" /></td>
-                    <td className="p-5"><div className="h-10 w-24 bg-slate-50 rounded-2xl ml-auto" /></td>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 bg-slate-100 rounded-xl" />
+                        <div className="space-y-1.5">
+                          <div className="h-3 w-24 bg-slate-100 rounded" />
+                          <div className="h-2.5 w-32 bg-slate-50 rounded" />
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4"><div className="h-6 w-20 bg-slate-50 rounded-lg mx-auto" /></td>
+                    <td className="px-5 py-4"><div className="h-9 w-32 bg-slate-50 rounded-xl ml-auto" /></td>
                   </tr>
                 ))
               ) : pageUsers.length === 0 ? (
                 <tr>
-                  <td colSpan="3" className="p-20 text-center">
-                    <div className="flex flex-col items-center gap-2 opacity-30">
-                      <i className="fas fa-box-open text-4xl" />
-                      <p className="font-bold text-sm">Recycle bin is clean</p>
+                  <td colSpan="3" className="py-20 text-center">
+                    <div className="flex flex-col items-center gap-3 opacity-40">
+                      <i className="fas fa-box-open text-4xl text-slate-400" />
+                      <p className="font-bold text-slate-500 text-sm">Recycle bin is empty</p>
                     </div>
                   </td>
                 </tr>
               ) : (
                 pageUsers.map(u => (
                   <tr key={u.uid} className="group hover:bg-slate-50/50 transition-all duration-200">
-                    <td className="p-5">
-                      <div className="flex items-center gap-4 opacity-60 group-hover:opacity-100 transition-opacity">
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3 opacity-60 group-hover:opacity-100 transition-opacity">
                         <Avatar name={u.username} />
                         <div>
                           <div className="font-bold text-slate-700">{u.username || 'Unknown User'}</div>
-                          <div className="text-[11px] text-slate-400 font-medium">{u.email}</div>
+                          <div className="text-[11px] text-slate-400 font-medium mt-0.5">{u.email}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="p-5 text-center">
-                      <div className="inline-flex flex-col">
-                        <span className="font-black text-slate-600 font-mono">{u.links_count || 0} Links</span>
-                        <span className="text-[9px] font-bold text-slate-300 uppercase">Will be restored</span>
+                    <td className="px-5 py-4 text-center">
+                      <div className="inline-flex flex-col items-center">
+                        <span className="font-black text-slate-600 font-mono text-xs">{u.links_count || 0} Links</span>
+                        <span className="text-[9px] font-bold text-slate-300 uppercase tracking-wide">Will be restored</span>
                       </div>
                     </td>
-                    <td className="p-5 text-right">
+                    <td className="px-5 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <button 
                           onClick={() => setConfirmModal({ type: 'restore', payload: [u.uid], title: 'Restore Account?', message: `This will bring @${u.username} back to the active user list.`, confirmText: 'Restore Now', danger: false })}
-                          className="px-4 py-2 rounded-xl bg-emerald-50 text-emerald-600 text-[11px] font-black uppercase tracking-widest border border-emerald-100 hover:bg-emerald-600 hover:text-white transition-all active:scale-95 shadow-sm"
+                          className="px-4 py-2 rounded-xl bg-emerald-50 text-emerald-600 text-[11px] font-black uppercase tracking-wider border border-emerald-100 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all active:scale-95 shadow-sm"
                         >
-                          <i className="fas fa-undo-alt mr-2" /> Restore
+                          <i className="fas fa-undo-alt mr-1.5" /> Restore
                         </button>
                         <button 
-                          onClick={() => setConfirmModal({ type: 'permanent', payload: [u.uid], title: 'Permanent Wipe?', message: `Deleting @${u.username} is irreversible. All their links and data will be lost forever.`, confirmText: 'Wipe Data', danger: true })}
-                          className="w-10 h-10 rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white border border-red-100 transition-all active:scale-95 flex items-center justify-center shadow-sm"
+                          onClick={() => setConfirmModal({ type: 'permanent', payload: [u.uid], title: 'Permanent Delete?', message: `Deleting @${u.username} is irreversible. All their data will be lost forever.`, confirmText: 'Wipe Data', danger: true })}
+                          className="w-9 h-9 rounded-xl bg-red-50 text-red-400 hover:bg-red-500 hover:text-white border border-red-100 hover:border-red-500 transition-all active:scale-95 flex items-center justify-center shadow-sm"
                         >
                           <i className="fas fa-skull-crossbones text-xs" />
                         </button>
@@ -165,17 +175,17 @@ export default function RecyclePage() {
           </table>
         </div>
 
-        {/* --- PAGINATION --- */}
-        <div className="p-5 bg-slate-50/30 border-t border-slate-100 flex items-center justify-between">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+        {/* ─── Pagination ─── */}
+        <div className="px-5 py-4 bg-slate-50/60 border-t border-slate-100 flex items-center justify-between">
+          <p className="text-[11px] font-bold text-slate-400">
             {filteredUsers.length} Suspended · Page {page}/{totalPages}
           </p>
           <div className="flex gap-2">
-            <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="w-9 h-9 rounded-xl bg-white border border-slate-200 text-slate-400 disabled:opacity-20 hover:border-violet-300 transition-all shadow-sm">
-              <i className="fas fa-chevron-left text-xs" />
+            <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="w-9 h-9 rounded-xl bg-white border border-slate-200 text-slate-500 disabled:opacity-25 hover:border-slate-400 shadow-sm transition-all text-xs">
+              <i className="fas fa-chevron-left" />
             </button>
-            <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)} className="w-9 h-9 rounded-xl bg-white border border-slate-200 text-slate-400 disabled:opacity-20 hover:border-violet-300 transition-all shadow-sm">
-              <i className="fas fa-chevron-right text-xs" />
+            <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)} className="w-9 h-9 rounded-xl bg-white border border-slate-200 text-slate-500 disabled:opacity-25 hover:border-slate-400 shadow-sm transition-all text-xs">
+              <i className="fas fa-chevron-right" />
             </button>
           </div>
         </div>
