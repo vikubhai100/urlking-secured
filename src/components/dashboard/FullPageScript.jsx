@@ -10,7 +10,7 @@ const FullPageScript = ({ user, isActive }) => {
   var urlking_api = '${apiToken}';
   var urlking_domains = ['example.com', 'test.com']; 
 </script>
-<script src="https://go.urlking.site/js/fullpage.js"></script>`;
+<script src="https://go.urlking.site/fullpage.js"></script>`;
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(scriptCode);
