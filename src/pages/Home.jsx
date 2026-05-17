@@ -103,7 +103,7 @@ const Home = () => {
 
   return (
     <>
-      <style>{`
+           <style>{`
         /* --- System font stack & Dark Mode Vars (Default) ---- */
         :root {
           --fd: -apple-system, 'SF Pro Display', BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
@@ -125,8 +125,8 @@ const Home = () => {
         }
 
         /* --- Light Mode Vars Overrides --- */
-        :global(.light-mode), .light-mode {
-          --vt: #8b5cf6; /* Darker accent for contrast */
+        html.light-mode {
+          --vt: #8b5cf6; 
           --s1: #f8fafc;
           --s2: #ffffff;
           --s3: #e2e8f0;
@@ -289,29 +289,21 @@ const Home = () => {
 
         /* --- Mobile Fixes --- */
         h1,h2,h3,p { word-break: break-word; overflow-wrap: break-word; }
-
-        .hero-h1 {
-          font-family: var(--fd); font-weight: 800; letter-spacing: -.025em; line-height: 1.07;
-          font-size: clamp(28px, 8.5vw, 66px); margin-bottom: 18px;
-        }
-
+        .hero-h1 { font-family: var(--fd); font-weight: 800; letter-spacing: -.025em; line-height: 1.07; font-size: clamp(28px, 8.5vw, 66px); margin-bottom: 18px; }
         .cta-row { display: flex; flex-direction: row; flex-wrap: wrap; gap: 10px; margin-bottom: 28px; }
         .cta-row .btn-p, .cta-row .btn-g { flex: 1 1 auto; min-width: 140px; max-width: 220px; }
-
         .trust-row { display:flex; flex-wrap:wrap; gap:14px 20px; align-items:center; }
         .trust-item { display:flex; align-items:center; gap:6px; color:var(--mt); font-size:13px; }
-
         .hero-grid { display: grid; grid-template-columns: 1fr; gap: 44px; align-items: center; }
         @media (min-width: 1024px) { .hero-grid { grid-template-columns: 1fr 1fr; } }
-
         .sec { padding: 80px 20px; }
         .sec-narrow { max-width: 860px; margin: 0 auto; }
         .sec-wide   { max-width: 1200px; margin: 0 auto; }
-
         .feat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
         .step-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 28px; }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 28px; text-align: center; }
       `}</style>
+
 
       <Particles />
       <Header />
