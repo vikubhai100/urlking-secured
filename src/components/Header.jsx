@@ -218,11 +218,61 @@ const Header = () => {
           .uk-links, .uk-auth { display: none; }
           .uk-hamburger { display: flex; }
         }
+
+        /* --- LIGHT MODE OVERRIDES --- */
+        :global(.light-mode) .uk-header.scrolled,
+        .light-mode .uk-header.scrolled {
+          background: rgba(255, 255, 255, 0.85);
+          border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+          box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+        }
+        :global(.light-mode) .uk-logo-text,
+        .light-mode .uk-logo-text {
+          background: linear-gradient(135deg, #1e1b4b 30%, #6366f1);
+          -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        :global(.light-mode) .uk-link-item a,
+        .light-mode .uk-link-item a { color: rgba(0, 0, 0, 0.6); }
+        :global(.light-mode) .uk-link-item a:hover,
+        :global(.light-mode) .uk-link-item a.active,
+        .light-mode .uk-link-item a:hover,
+        .light-mode .uk-link-item a.active {
+          color: #000;
+          background: rgba(0, 0, 0, 0.05);
+        }
+        :global(.light-mode) .uk-btn-signin,
+        .light-mode .uk-btn-signin { color: rgba(0, 0, 0, 0.7); }
+        :global(.light-mode) .uk-btn-signin:hover,
+        .light-mode .uk-btn-signin:hover {
+          color: #000; background: rgba(0, 0, 0, 0.05); border-color: rgba(0, 0, 0, 0.1);
+        }
+        :global(.light-mode) .uk-hamburger span,
+        .light-mode .uk-hamburger span { background: rgba(0, 0, 0, 0.8); }
+        :global(.light-mode) .uk-drawer,
+        .light-mode .uk-drawer {
+          background: rgba(248, 250, 252, 0.97); /* Light background for mobile menu */
+          border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        }
+        :global(.light-mode) .uk-drawer-link,
+        .light-mode .uk-drawer-link { color: rgba(0, 0, 0, 0.7); }
+        :global(.light-mode) .uk-drawer-link:hover,
+        :global(.light-mode) .uk-drawer-link.active,
+        .light-mode .uk-drawer-link:hover,
+        .light-mode .uk-drawer-link.active {
+          color: #000; background: rgba(0, 0, 0, 0.05);
+        }
+        :global(.light-mode) .uk-drawer-link.active,
+        .light-mode .uk-drawer-link.active { color: #6366f1; }
+        :global(.light-mode) .uk-drawer-divider,
+        .light-mode .uk-drawer-divider { background: rgba(0, 0, 0, 0.08); }
+        :global(.light-mode) .uk-drawer-cta .signin-m,
+        .light-mode .uk-drawer-cta .signin-m { color: rgba(0, 0, 0, 0.7); border-color: rgba(0, 0, 0, 0.15); }
+        :global(.light-mode) .uk-drawer-cta .signin-m:hover,
+        .light-mode .uk-drawer-cta .signin-m:hover { background: rgba(0, 0, 0, 0.05); color: #000; }
       `}</style>
 
       <header className={`uk-header ${scrolled ? 'scrolled' : 'top'}`}>
         <nav className="uk-nav">
-
           {/* Logo */}
           <Link to="/" className="uk-logo">
             <div className="uk-logo-icon">
