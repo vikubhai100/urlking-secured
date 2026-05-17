@@ -7,120 +7,298 @@ const Header = () => {
 
   const location = useLocation();
   const currentPath = location.pathname;
+  const token = localStorage.getItem('token');
 
-  const token = localStorage.getItem("token");
-
-  // Scroll effect for navbar background shadow
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 10);
-    };
+    const handleScroll = () => setScrolled(window.scrollY > 12);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const closeMenu = () => {
-    setIsMenuOpen(false);
-  };
+  // Close menu on route change
+  useEffect(() => { setIsMenuOpen(false); }, [location]);
 
-  // 🟢 UPDATE: Comment ko return ke bahar kar diya taaki build fail na ho
+  const closeMenu = () => setIsMenuOpen(false);
+
+  const navLinks = [
+    { to: '/rates',         label: 'Payout Rates'   },
+    { to: '/payment-proof', label: 'Payment Proof'  },
+    { to: '/uploader',      label: 'Bot Guide'       },
+  ];
+
   return (
-    <header className={`fixed top-0 left-0 w-full z-[100] transition-all duration-300 ${scrolled ? 'bg-[var(--bg-body)]/80 backdrop-blur-lg border-b border-[var(--glass-border)] shadow-sm' : 'bg-transparent border-b border-transparent'}`}>
-      
-      {/* 🟢 UPDATE: Inner container max-width ke sath */}
-      <nav className="max-w-7xl mx-auto h-[80px] flex items-center justify-between px-4 md:px-8 w-full">
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&display=swap');
 
-        {/* Logo */}
-        <Link to="/" onClick={closeMenu} className="text-2xl font-extrabold flex items-center gap-3 text-[var(--text-primary)] transition-transform hover:scale-105 z-50">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-pink-500 flex items-center justify-center text-white shadow-md">
-            <i className="fas fa-crown text-lg"></i>
-          </div>
-          <span className="tracking-tight">URLKING</span>
-        </Link>
+        .uk-header {
+          position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+          transition: background 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+        }
+        .uk-header.scrolled {
+          background: rgba(13, 17, 23, 0.82);
+          backdrop-filter: blur(20px) saturate(1.5);
+          -webkit-backdrop-filter: blur(20px) saturate(1.5);
+          border-bottom: 1px solid rgba(255,255,255,0.07);
+          box-shadow: 0 4px 30px rgba(0,0,0,0.3);
+        }
+        .uk-header.top {
+          background: transparent;
+          border-bottom: 1px solid transparent;
+        }
 
-        {/* Desktop & Mobile Links Container */}
-        <div className={`
-          absolute lg:static top-[80px] left-0 w-full lg:w-auto 
-          bg-[var(--bg-body)] lg:bg-transparent 
-          flex flex-col lg:flex-row items-center gap-6 lg:gap-8 
-          p-8 lg:p-0 
-          border-b border-[var(--glass-border)] lg:border-none
-          shadow-xl lg:shadow-none
-          transition-all duration-300 ease-in-out z-40
-          ${isMenuOpen ? 'translate-y-0 opacity-100 visible' : '-translate-y-4 opacity-0 invisible lg:translate-y-0 lg:opacity-100 lg:visible'}
-        `}>
+        .uk-nav {
+          max-width: 1200px; margin: 0 auto;
+          height: 76px; display: flex; align-items: center;
+          justify-content: space-between; padding: 0 28px;
+        }
 
-          <Link 
-            to="/rates" 
-            onClick={closeMenu} 
-            className={`font-bold text-sm uppercase tracking-wider transition-colors relative group ${currentPath === '/rates' ? 'text-indigo-500' : 'text-slate-500 hover:text-[var(--text-primary)]'}`}
-          >
-            Payout Rates
-            <span className={`absolute -bottom-1.5 left-0 h-0.5 bg-indigo-500 transition-all duration-300 ${currentPath === '/rates' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
+        /* Logo */
+        .uk-logo {
+          display: flex; align-items: center; gap: 11px;
+          text-decoration: none; z-index: 60;
+          transition: transform 0.2s ease;
+          flex-shrink: 0;
+        }
+        .uk-logo:hover { transform: scale(1.03); }
+        .uk-logo-icon {
+          width: 40px; height: 40px; border-radius: 13px;
+          background: linear-gradient(135deg, #6366f1, #f472b6);
+          display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 0 20px rgba(99,102,241,0.4);
+          font-size: 17px; color: #fff; flex-shrink: 0;
+        }
+        .uk-logo-text {
+          font-family: 'Syne', sans-serif; font-weight: 800;
+          font-size: 19px; letter-spacing: -0.01em;
+          background: linear-gradient(135deg, #fff 30%, #a78bfa);
+          -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+
+        /* Desktop links */
+        .uk-links {
+          display: flex; align-items: center; gap: 6px;
+          list-style: none;
+        }
+        .uk-link-item a {
+          display: block; padding: 7px 13px; border-radius: 10px;
+          font-size: 13px; font-weight: 600; letter-spacing: 0.02em;
+          text-decoration: none; color: rgba(255,255,255,0.5);
+          transition: color 0.2s, background 0.2s;
+          position: relative;
+        }
+        .uk-link-item a:hover,
+        .uk-link-item a.active {
+          color: #fff;
+          background: rgba(255,255,255,0.06);
+        }
+        .uk-link-item a.active::after {
+          content: '';
+          position: absolute; bottom: 4px; left: 50%;
+          transform: translateX(-50%);
+          width: 18px; height: 2px; border-radius: 2px;
+          background: linear-gradient(to right, #6366f1, #f472b6);
+        }
+
+        /* Auth buttons */
+        .uk-auth { display: flex; align-items: center; gap: 10px; }
+
+        .uk-btn-signin {
+          padding: 8px 18px; border-radius: 10px;
+          font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.55);
+          text-decoration: none; transition: color 0.2s, background 0.2s;
+          border: 1px solid transparent;
+        }
+        .uk-btn-signin:hover {
+          color: #fff; background: rgba(255,255,255,0.06);
+          border-color: rgba(255,255,255,0.08);
+        }
+
+        .uk-btn-signup {
+          padding: 9px 20px; border-radius: 11px;
+          font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px;
+          background: linear-gradient(135deg, #6366f1, #a78bfa);
+          color: #fff; text-decoration: none; border: none; cursor: pointer;
+          box-shadow: 0 4px 18px rgba(99,102,241,0.35),
+                      inset 0 1px 0 rgba(255,255,255,0.18);
+          transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
+          display: inline-flex; align-items: center; gap: 7px;
+        }
+        .uk-btn-signup:hover {
+          transform: translateY(-1px) scale(1.02);
+          box-shadow: 0 8px 24px rgba(99,102,241,0.45);
+          filter: brightness(1.06);
+        }
+        .uk-btn-signup:active { transform: scale(0.97); }
+
+        .uk-btn-dashboard {
+          padding: 9px 20px; border-radius: 11px;
+          font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px;
+          background: linear-gradient(135deg, #f472b6, #a78bfa);
+          color: #fff; text-decoration: none;
+          box-shadow: 0 4px 18px rgba(244,114,182,0.3),
+                      inset 0 1px 0 rgba(255,255,255,0.15);
+          display: inline-flex; align-items: center; gap: 7px;
+          transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .uk-btn-dashboard:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(244,114,182,0.4); }
+
+        /* Mobile toggle */
+        .uk-hamburger {
+          display: none; flex-direction: column;
+          gap: 5px; cursor: pointer; padding: 8px; z-index: 60;
+          background: none; border: none;
+        }
+        .uk-hamburger span {
+          display: block; width: 22px; height: 2px; border-radius: 2px;
+          background: rgba(255,255,255,0.7);
+          transition: transform 0.3s ease, opacity 0.3s ease, width 0.3s ease;
+          transform-origin: center;
+        }
+        .uk-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+        .uk-hamburger.open span:nth-child(2) { opacity: 0; width: 0; }
+        .uk-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+        /* Mobile drawer */
+        .uk-drawer {
+          position: fixed; top: 76px; left: 0; right: 0;
+          background: rgba(13,17,23,0.97);
+          backdrop-filter: blur(24px);
+          border-bottom: 1px solid rgba(255,255,255,0.07);
+          padding: 20px 24px 28px;
+          display: flex; flex-direction: column; gap: 4px;
+          z-index: 999;
+          transform: translateY(-12px);
+          opacity: 0; visibility: hidden;
+          transition: transform 0.3s cubic-bezier(.16,1,.3,1),
+                      opacity 0.3s ease, visibility 0.3s;
+        }
+        .uk-drawer.open {
+          transform: translateY(0); opacity: 1; visibility: visible;
+        }
+        .uk-drawer-link {
+          display: block; padding: 14px 16px; border-radius: 12px;
+          font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.6);
+          text-decoration: none; transition: color 0.2s, background 0.2s;
+          display: flex; align-items: center; justify-content: space-between;
+        }
+        .uk-drawer-link:hover, .uk-drawer-link.active {
+          color: #fff; background: rgba(255,255,255,0.06);
+        }
+        .uk-drawer-link.active { color: #a78bfa; }
+        .uk-drawer-divider {
+          height: 1px; background: rgba(255,255,255,0.06);
+          margin: 10px 0;
+        }
+        .uk-drawer-cta {
+          display: flex; flex-direction: column; gap: 10px; margin-top: 6px;
+        }
+        .uk-drawer-cta a {
+          text-align: center; padding: 14px;
+          border-radius: 13px; font-weight: 700; font-size: 15px;
+          text-decoration: none;
+        }
+        .uk-drawer-cta .signin-m {
+          color: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.1);
+          transition: background 0.2s, color 0.2s;
+        }
+        .uk-drawer-cta .signin-m:hover { background: rgba(255,255,255,0.06); color: #fff; }
+        .uk-drawer-cta .signup-m {
+          background: linear-gradient(135deg, #6366f1, #a78bfa);
+          color: #fff;
+          box-shadow: 0 4px 18px rgba(99,102,241,0.3);
+        }
+        .uk-drawer-cta .dashboard-m {
+          background: linear-gradient(135deg, #f472b6, #a78bfa);
+          color: #fff;
+          box-shadow: 0 4px 18px rgba(244,114,182,0.3);
+        }
+
+        @media (max-width: 1023px) {
+          .uk-links, .uk-auth { display: none; }
+          .uk-hamburger { display: flex; }
+        }
+      `}</style>
+
+      <header className={`uk-header ${scrolled ? 'scrolled' : 'top'}`}>
+        <nav className="uk-nav">
+
+          {/* Logo */}
+          <Link to="/" className="uk-logo">
+            <div className="uk-logo-icon">
+              <i className="fas fa-crown" />
+            </div>
+            <span className="uk-logo-text">URLKING</span>
           </Link>
 
-          <Link 
-            to="/payment-proof" 
-            onClick={closeMenu} 
-            className={`font-bold text-sm uppercase tracking-wider transition-colors relative group ${currentPath === '/payment-proof' ? 'text-indigo-500' : 'text-slate-500 hover:text-[var(--text-primary)]'}`}
-          >
-            Payment Proof
-            <span className={`absolute -bottom-1.5 left-0 h-0.5 bg-indigo-500 transition-all duration-300 ${currentPath === '/payment-proof' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
-          </Link>
+          {/* Desktop Nav Links */}
+          <ul className="uk-links">
+            {navLinks.map(({ to, label }) => (
+              <li key={to} className="uk-link-item">
+                <Link to={to} className={currentPath === to ? 'active' : ''}>{label}</Link>
+              </li>
+            ))}
+          </ul>
 
-          <Link 
-            to="/uploader" 
-            onClick={closeMenu} 
-            className={`font-bold text-sm uppercase tracking-wider transition-colors relative group ${currentPath === '/uploader' ? 'text-indigo-500' : 'text-slate-500 hover:text-[var(--text-primary)]'}`}
-          >
-            Bot Guide
-            <span className={`absolute -bottom-1.5 left-0 h-0.5 bg-indigo-500 transition-all duration-300 ${currentPath === '/uploader' ? 'w-full' : 'w-0 group-hover:w-full'}`}></span>
-          </Link>
-
-          {/* Divider for Mobile */}
-          <div className="w-full h-[1px] bg-[var(--glass-border)] lg:hidden my-2"></div>
-
-          {/* AUTH BUTTONS LOGIC */}
-          <div className="flex flex-col lg:flex-row items-center gap-4 w-full lg:w-auto">
+          {/* Desktop Auth */}
+          <div className="uk-auth">
             {token ? (
-              <Link 
-                to="/dashboard" 
-                onClick={closeMenu} 
-                className="btn-action w-full lg:w-auto text-center px-8 py-3 rounded-full font-black text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/30 hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2"
-              >
-                Dashboard <i className="fas fa-rocket"></i>
+              <Link to="/dashboard" className="uk-btn-dashboard">
+                Dashboard <i className="fas fa-rocket" style={{ fontSize: 12 }} />
               </Link>
             ) : (
               <>
-                <Link 
-                  to="/login" 
-                  onClick={closeMenu} 
-                  className="w-full lg:w-auto text-center font-bold text-slate-500 hover:text-[var(--text-primary)] transition-colors py-2"
-                >
-                  Sign In
-                </Link>
-                <Link 
-                  to="/register" 
-                  onClick={closeMenu} 
-                  className="btn-action w-full lg:w-auto text-center px-8 py-3 rounded-full font-black text-white bg-pink-600 hover:bg-pink-700 shadow-lg shadow-pink-500/30 hover:-translate-y-1 transition-all duration-300"
-                >
-                  Sign Up Free
+                <Link to="/login" className="uk-btn-signin">Sign In</Link>
+                <Link to="/register" className="uk-btn-signup">
+                  Get Started <span>→</span>
                 </Link>
               </>
             )}
           </div>
 
-        </div>
+          {/* Mobile Hamburger */}
+          <button
+            className={`uk-hamburger ${isMenuOpen ? 'open' : ''}`}
+            onClick={() => setIsMenuOpen(prev => !prev)}
+            aria-label="Toggle menu"
+          >
+            <span /><span /><span />
+          </button>
+        </nav>
+      </header>
 
-        {/* Mobile Toggle Button */}
-        <button 
-          className="lg:hidden w-10 h-10 rounded-lg text-2xl text-[var(--text-primary)] hover:bg-slate-500/10 focus:outline-none flex items-center justify-center transition-colors z-50" 
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-        >
-          <i className={`fas ${isMenuOpen ? 'fa-times' : 'fa-bars'}`}></i>
-        </button>
-      </nav>
-    </header>
+      {/* Mobile Drawer */}
+      <div className={`uk-drawer ${isMenuOpen ? 'open' : ''}`}>
+        {navLinks.map(({ to, label }) => (
+          <Link
+            key={to}
+            to={to}
+            className={`uk-drawer-link ${currentPath === to ? 'active' : ''}`}
+            onClick={closeMenu}
+          >
+            {label}
+            <span style={{ fontSize: 12, opacity: 0.4 }}>→</span>
+          </Link>
+        ))}
+
+        <div className="uk-drawer-divider" />
+
+        <div className="uk-drawer-cta">
+          {token ? (
+            <Link to="/dashboard" className="dashboard-m" onClick={closeMenu}>
+              Dashboard 🚀
+            </Link>
+          ) : (
+            <>
+              <Link to="/login" className="signin-m" onClick={closeMenu}>Sign In</Link>
+              <Link to="/register" className="signup-m" onClick={closeMenu}>
+                Create Free Account →
+              </Link>
+            </>
+          )}
+        </div>
+      </div>
+    </>
   );
 };
 
