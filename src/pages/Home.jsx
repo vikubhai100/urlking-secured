@@ -36,7 +36,7 @@ const useRipple = () =>
       left: `${e.clientX - r.left - d / 2}px`,
       top: `${e.clientY - r.top - d / 2}px`,
       position: 'absolute', borderRadius: '50%',
-      background: 'rgba(255,255,255,0.2)',
+      background: 'var(--ripple-bg, rgba(255,255,255,0.2))',
       transform: 'scale(0)', animation: 'ukRipple .5s linear',
       pointerEvents: 'none',
     });
@@ -56,9 +56,9 @@ const Home = () => {
   const [activeCard, setActiveCard] = useState(0);
 
   const cards = [
-    { title: 'TOTAL CLICKS',   value: stats.clicks,   sub: 'Tracking Live', icon: '👁', accent: '#6366f1', bg: 'rgba(99,102,241,.12)',  bd: 'rgba(99,102,241,.25)'  },
-    { title: 'LINKS VIA BOT',  value: stats.botLinks,  sub: '@urlkings_bot', icon: '✈', accent: '#a78bfa', bg: 'rgba(167,139,250,.12)', bd: 'rgba(167,139,250,.25)' },
-    { title: 'FILES UPLOADED', value: stats.files,     sub: 'Safe Hosting',  icon: '☁', accent: '#f472b6', bg: 'rgba(244,114,182,.12)', bd: 'rgba(244,114,182,.25)' },
+    { title: 'TOTAL CLICKS',   value: stats.clicks,   sub: 'Tracking Live', icon: '👁', accent: 'var(--in)', bg: 'rgba(99,102,241,.12)',  bd: 'rgba(99,102,241,.25)'  },
+    { title: 'LINKS VIA BOT',  value: stats.botLinks,  sub: '@urlkings_bot', icon: '✈', accent: 'var(--vt)', bg: 'rgba(167,139,250,.12)', bd: 'rgba(167,139,250,.25)' },
+    { title: 'FILES UPLOADED', value: stats.files,     sub: 'Safe Hosting',  icon: '☁', accent: 'var(--pk)', bg: 'rgba(244,114,182,.12)', bd: 'rgba(244,114,182,.25)' },
   ];
 
   /* scroll reveal */
@@ -104,7 +104,7 @@ const Home = () => {
   return (
     <>
       <style>{`
-        /* --- System font stack: zero latency, looks great ---- */
+        /* --- System font stack & Dark Mode Vars (Default) ---- */
         :root {
           --fd: -apple-system, 'SF Pro Display', BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
           --fb: -apple-system, 'SF Pro Text',    BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
@@ -112,14 +112,46 @@ const Home = () => {
           --s1: #0d1117; --s2: #131a26; --s3: #1b2336;
           --bd: rgba(255,255,255,.07);
           --tx: #eef2ff; --mt: #6b7a96;
+          --btn-g-bg: rgba(255,255,255,.05);
+          --btn-g-bd: rgba(255,255,255,.1);
+          --btn-g-bg-hover: rgba(255,255,255,.09);
+          --btn-g-bd-hover: rgba(255,255,255,.16);
+          --band-bg: rgba(255,255,255,.01);
+          --band-bg-2: rgba(255,255,255,.012);
+          --hcard-shadow: 0 36px 80px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.03);
+          --fcard-shadow-hover: 0 16px 44px rgba(0,0,0,.32), 0 0 24px rgba(99,102,241,.07);
+          --dot-bg: #fff;
+          --ripple-bg: rgba(255,255,255,0.2);
         }
+
+        /* --- Light Mode Vars Overrides --- */
+        :global(.light-mode), .light-mode {
+          --vt: #8b5cf6; /* Darker accent for contrast */
+          --s1: #f8fafc;
+          --s2: #ffffff;
+          --s3: #e2e8f0;
+          --bd: rgba(0,0,0,.08);
+          --tx: #0f172a;
+          --mt: #475569;
+          --btn-g-bg: rgba(0,0,0,.04);
+          --btn-g-bd: rgba(0,0,0,.1);
+          --btn-g-bg-hover: rgba(0,0,0,.08);
+          --btn-g-bd-hover: rgba(0,0,0,.16);
+          --band-bg: rgba(0,0,0,.02);
+          --band-bg-2: rgba(0,0,0,.03);
+          --hcard-shadow: 0 20px 60px rgba(0,0,0,.08), 0 0 0 1px rgba(0,0,0,.05);
+          --fcard-shadow-hover: 0 16px 44px rgba(0,0,0,.08), 0 0 24px rgba(99,102,241,.15);
+          --dot-bg: rgba(0,0,0,0.5);
+          --ripple-bg: rgba(0,0,0,0.1);
+        }
+
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         html { scroll-behavior: smooth; }
         body {
           background: var(--s1); color: var(--tx);
           font-family: var(--fb); -webkit-font-smoothing: antialiased;
-          /* CRITICAL: prevent horizontal scroll on mobile */
           overflow-x: hidden; max-width: 100vw;
+          transition: background 0.3s ease, color 0.3s ease;
         }
 
         /* --- Keyframes --- */
@@ -146,7 +178,7 @@ const Home = () => {
 
         /* --- Gradient text --- */
         .gt {
-          background: linear-gradient(135deg,#6366f1,#a78bfa 50%,#f472b6);
+          background: linear-gradient(135deg,#6366f1,var(--vt) 50%,#f472b6);
           background-size: 200% auto;
           -webkit-background-clip: text; -webkit-text-fill-color: transparent;
           animation: ukGrad 4s linear infinite;
@@ -175,11 +207,10 @@ const Home = () => {
           display:inline-flex; align-items:center; justify-content:center; gap:8px;
           padding:13px 26px; border-radius:13px; border:none; cursor:pointer;
           font-family:var(--fd); font-weight:700; font-size:15px; letter-spacing:-.01em;
-          background:linear-gradient(135deg,#6366f1,#a78bfa);
+          background:linear-gradient(135deg,#6366f1,var(--vt));
           color:#fff; text-decoration:none; position:relative; overflow:hidden;
           box-shadow:0 6px 22px rgba(99,102,241,.38),inset 0 1px 0 rgba(255,255,255,.18);
           transition:transform .18s,box-shadow .18s,filter .18s;
-          /* GPU hint for smooth animation */
           will-change:transform;
           white-space:nowrap;
         }
@@ -190,29 +221,30 @@ const Home = () => {
           display:inline-flex; align-items:center; justify-content:center; gap:8px;
           padding:13px 26px; border-radius:13px; cursor:pointer;
           font-family:var(--fd); font-weight:600; font-size:15px; letter-spacing:-.01em;
-          background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1);
+          background:var(--btn-g-bg); border:1px solid var(--btn-g-bd);
           color:var(--tx); text-decoration:none; position:relative; overflow:hidden;
           transition:background .18s,border-color .18s,transform .18s;
           will-change:transform; white-space:nowrap;
         }
-        .btn-g:hover { background:rgba(255,255,255,.09); border-color:rgba(255,255,255,.16); transform:translateY(-1px); }
+        .btn-g:hover { background:var(--btn-g-bg-hover); border-color:var(--btn-g-bd-hover); transform:translateY(-1px); }
         .btn-g:active{ transform:scale(.97); }
 
         /* --- Hero card --- */
         .hcard {
           background:var(--s2); border:1px solid var(--bd); border-radius:24px; padding:28px;
-          box-shadow:0 36px 80px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.03);
+          box-shadow:var(--hcard-shadow);
           animation:ukFloat 5s ease-in-out infinite;
           will-change:transform;
+          transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
         }
 
         /* --- Feature card --- */
         .fcard {
           background:var(--s2); border:1px solid var(--bd); border-radius:20px; padding:32px 28px;
-          transition:transform .28s,border-color .28s,box-shadow .28s;
+          transition:transform .28s,border-color .28s,box-shadow .28s, background 0.3s ease;
           will-change:transform;
         }
-        .fcard:hover { transform:translateY(-4px); border-color:rgba(99,102,241,.22); box-shadow:0 16px 44px rgba(0,0,0,.32),0 0 24px rgba(99,102,241,.07); }
+        .fcard:hover { transform:translateY(-4px); border-color:rgba(99,102,241,.22); box-shadow:var(--fcard-shadow-hover); }
 
         .ficon { width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:16px;border:1px solid var(--bd); }
 
@@ -248,84 +280,37 @@ const Home = () => {
           border:1px solid rgba(99,102,241,.18);border-radius:24px;
           padding:52px 32px;text-align:center;position:relative;overflow:hidden;
         }
-        .ctabanner::before{content:'';position:absolute;inset:0;opacity:.03;background-image:radial-gradient(circle at 1px 1px,white 1px,transparent 0);background-size:24px 24px;}
+        .ctabanner::before{content:'';position:absolute;inset:0;opacity:.03;background-image:radial-gradient(circle at 1px 1px,var(--dot-bg) 1px,transparent 0);background-size:24px 24px;}
 
         /* --- Scrollbar --- */
         ::-webkit-scrollbar{width:4px}
         ::-webkit-scrollbar-track{background:var(--s1)}
         ::-webkit-scrollbar-thumb{background:rgba(99,102,241,.3);border-radius:2px}
 
-        /* ============================================================
-           MOBILE FIXES — this is the key section
-           ============================================================ */
-        /* Prevent text overflow: allow natural wrap */
+        /* --- Mobile Fixes --- */
         h1,h2,h3,p { word-break: break-word; overflow-wrap: break-word; }
 
-        /* Hero headline font scale — won't overflow at any screen width */
         .hero-h1 {
           font-family: var(--fd); font-weight: 800; letter-spacing: -.025em; line-height: 1.07;
-          /* clamp(min, preferred, max) — scales with viewport, never overflows */
-          font-size: clamp(28px, 8.5vw, 66px);
-          margin-bottom: 18px;
+          font-size: clamp(28px, 8.5vw, 66px); margin-bottom: 18px;
         }
 
-        /* CTA row: side by side on all screens, wraps gracefully */
-        .cta-row {
-          display: flex;
-          flex-direction: row;
-          flex-wrap: wrap;
-          gap: 10px;
-          margin-bottom: 28px;
-        }
-        /* Each button shrinks but stays readable */
-        .cta-row .btn-p,
-        .cta-row .btn-g {
-          flex: 1 1 auto;
-          min-width: 140px;
-          max-width: 220px;
-        }
+        .cta-row { display: flex; flex-direction: row; flex-wrap: wrap; gap: 10px; margin-bottom: 28px; }
+        .cta-row .btn-p, .cta-row .btn-g { flex: 1 1 auto; min-width: 140px; max-width: 220px; }
 
-        /* Trust row */
         .trust-row { display:flex; flex-wrap:wrap; gap:14px 20px; align-items:center; }
         .trust-item { display:flex; align-items:center; gap:6px; color:var(--mt); font-size:13px; }
 
-        /* Hero grid: single column on mobile, 2-col on ≥1024px */
-        .hero-grid {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: 44px;
-          align-items: center;
-        }
-        @media (min-width: 1024px) {
-          .hero-grid { grid-template-columns: 1fr 1fr; }
-        }
+        .hero-grid { display: grid; grid-template-columns: 1fr; gap: 44px; align-items: center; }
+        @media (min-width: 1024px) { .hero-grid { grid-template-columns: 1fr 1fr; } }
 
-        /* Full-bleed section padding — safe on small screens */
         .sec { padding: 80px 20px; }
         .sec-narrow { max-width: 860px; margin: 0 auto; }
         .sec-wide   { max-width: 1200px; margin: 0 auto; }
 
-        /* Feature grid */
-        .feat-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-          gap: 16px;
-        }
-
-        /* Step grid */
-        .step-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 28px;
-        }
-
-        /* Stats grid */
-        .stats-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-          gap: 28px;
-          text-align: center;
-        }
+        .feat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+        .step-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 28px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 28px; text-align: center; }
       `}</style>
 
       <Particles />
@@ -333,42 +318,34 @@ const Home = () => {
 
       <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh' }}>
         <main>
-
           {/* ── HERO ── */}
           <section
             ref={heroRef}
             style={{ padding: '148px 20px 88px', position: 'relative' }}
           >
             <div className="sec-wide" style={{ position: 'relative' }}>
-
-              {/* Ambient orbs — clipped so they don't cause scroll */}
               <div className="orb" style={{ width: 420, height: 420, background: '#6366f1', top: -40, left: -80, animationDelay: '0s' }} />
               <div className="orb" style={{ width: 280, height: 280, background: '#f472b6', top: 100, right: -60, animationDelay: '5s' }} />
 
               <div className="hero-grid">
-
-                {/* Left: copy */}
                 <div>
-                  {/* Live badge */}
                   <div className="m0" style={{ marginBottom: 20 }}>
                     <span style={{
                       display: 'inline-flex', alignItems: 'center', gap: 8,
                       padding: '7px 15px', borderRadius: 999,
                       background: 'rgba(99,102,241,.1)', border: '1px solid rgba(99,102,241,.25)',
-                      fontSize: 12, fontWeight: 700, color: '#a78bfa', letterSpacing: '.03em',
+                      fontSize: 12, fontWeight: 700, color: 'var(--vt)', letterSpacing: '.03em',
                     }}>
                       <span className="ldot" />
                       v3.0 Now Live — Highest CPM Guaranteed
                     </span>
                   </div>
 
-                  {/* Headline — uses clamp so it NEVER overflows */}
                   <h1 className="hero-h1 m1">
                     Monetize Links<br />
                     with <span className="gt">Professionalism</span>
                   </h1>
 
-                  {/* Subtext */}
                   <p className="m2" style={{
                     color: 'var(--mt)', fontSize: 'clamp(14px,3.8vw,17px)',
                     lineHeight: 1.72, marginBottom: 28, maxWidth: 440,
@@ -376,7 +353,6 @@ const Home = () => {
                     The industry's highest-paying link shortener. Fast 2-page flow, secure file hosting, and instant withdrawals.
                   </p>
 
-                  {/* CTAs — side by side, wraps on very small screens */}
                   <div className="cta-row m3">
                     <Link to="/register" className="btn-p" onClick={ripple}>
                       Start Earning <span>→</span>
@@ -386,7 +362,6 @@ const Home = () => {
                     </a>
                   </div>
 
-                  {/* Trust */}
                   <div className="trust-row m3">
                     {['10M+ Links', 'Instant Pay', '$5 Global CPM'].map(t => (
                       <span key={t} className="trust-item">
@@ -396,7 +371,6 @@ const Home = () => {
                   </div>
                 </div>
 
-                {/* Right: 3D card */}
                 <div style={{ display: 'flex', justifyContent: 'center', perspective: 1600 }}>
                   <div
                     ref={cardRef}
@@ -404,23 +378,19 @@ const Home = () => {
                     style={{
                       width: '100%', maxWidth: 400,
                       transformStyle: 'preserve-3d',
-                      transition: 'transform .32s cubic-bezier(.16,1,.3,1)',
                       position: 'relative',
                     }}
                   >
-                    {/* Badge */}
                     <div className="fbadge" style={{ top: -14, right: -8 }}>
                       <span>📈</span> High CPM
                     </div>
 
-                    {/* Mac dots */}
                     <div style={{ display: 'flex', gap: 6, marginBottom: 24 }}>
                       {['#ef4444','#eab308','#22c55e'].map(c => (
                         <div key={c} style={{ width: 10, height: 10, borderRadius: '50%', background: c }} />
                       ))}
                     </div>
 
-                    {/* Fading stat cards */}
                     <div style={{ position: 'relative', height: 90, marginBottom: 20 }}>
                       {cards.map((card, i) => (
                         <div key={i} style={{
@@ -449,7 +419,6 @@ const Home = () => {
                       ))}
                     </div>
 
-                    {/* Dot indicators — clickable */}
                     <div style={{ display: 'flex', gap: 5, marginBottom: 20 }}>
                       {cards.map((_, i) => (
                         <div key={i} onClick={() => setActiveCard(i)} style={{
@@ -460,8 +429,7 @@ const Home = () => {
                       ))}
                     </div>
 
-                    {/* Bar chart */}
-                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 5, height: 64, background: 'var(--s3)', borderRadius: 10, padding: '9px 11px' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 5, height: 64, background: 'var(--s3)', borderRadius: 10, padding: '9px 11px', transition: 'background 0.3s' }}>
                       {[
                         { h:'36%', bg:'rgba(99,102,241,.28)',  d:'.00s' },
                         { h:'60%', bg:'rgba(99,102,241,.46)',  d:'.05s' },
@@ -480,14 +448,13 @@ const Home = () => {
                     </div>
                   </div>
                 </div>
-
               </div>
             </div>
           </section>
 
           {/* ── STATS BAND ── */}
           <div className="gline" />
-          <section style={{ padding: '52px 20px', background: 'rgba(255,255,255,.01)' }}>
+          <section style={{ padding: '52px 20px', background: 'var(--band-bg)', transition: 'background 0.3s' }}>
             <div className="sec-wide">
               <div className="stats-grid reveal">
                 {[
@@ -535,7 +502,7 @@ const Home = () => {
           </section>
 
           {/* ── HOW IT WORKS ── */}
-          <section id="how-it-works" className="sec" style={{ background: 'rgba(255,255,255,.012)', borderTop: '1px solid var(--bd)' }}>
+          <section id="how-it-works" className="sec" style={{ background: 'var(--band-bg-2)', borderTop: '1px solid var(--bd)', transition: 'background 0.3s, border-color 0.3s' }}>
             <div className="sec-narrow">
               <div style={{ textAlign: 'center', marginBottom: 44 }} className="reveal">
                 <div className="slabel">Simple Process</div>
