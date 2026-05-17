@@ -144,13 +144,43 @@ const Footer = () => {
           .uk-footer-grid { grid-template-columns: 1fr; gap: 36px; }
           .uk-footer-bottom { justify-content: center; text-align: center; }
         }
+
+        /* --- LIGHT MODE OVERRIDES --- */
+        :global(.light-mode) .uk-footer,
+        .light-mode .uk-footer {
+          background: #f8fafc; /* Matches typical light mode page background */
+          border-top: 1px solid rgba(0, 0, 0, 0.08);
+        }
+        :global(.light-mode) .uk-footer-logo-text,
+        .light-mode .uk-footer-logo-text {
+          background: linear-gradient(135deg, #1e1b4b 30%, #6366f1);
+          -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        :global(.light-mode) .uk-footer-desc,
+        .light-mode .uk-footer-desc { color: rgba(0, 0, 0, 0.6); }
+        :global(.light-mode) .uk-footer-social a,
+        .light-mode .uk-footer-social a {
+          background: rgba(0, 0, 0, 0.03); border: 1px solid rgba(0, 0, 0, 0.08); color: rgba(0, 0, 0, 0.6);
+        }
+        :global(.light-mode) .uk-footer-social a:hover,
+        .light-mode .uk-footer-social a:hover {
+          background: rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.3); color: #6366f1;
+        }
+        :global(.light-mode) .uk-footer-col h4,
+        .light-mode .uk-footer-col h4 { color: rgba(0, 0, 0, 0.8); }
+        :global(.light-mode) .uk-footer-col ul a,
+        .light-mode .uk-footer-col ul a { color: rgba(0, 0, 0, 0.6); }
+        :global(.light-mode) .uk-footer-col ul a:hover,
+        .light-mode .uk-footer-col ul a:hover { color: #000; }
+        :global(.light-mode) .uk-footer-bottom,
+        .light-mode .uk-footer-bottom { border-top: 1px solid rgba(0, 0, 0, 0.08); }
+        :global(.light-mode) .uk-footer-copy,
+        .light-mode .uk-footer-copy { color: rgba(0, 0, 0, 0.5); }
       `}</style>
 
       <footer className="uk-footer">
         <div className="uk-footer-inner">
-
           <div className="uk-footer-grid">
-
             {/* Brand Column */}
             <div>
               <Link to="/" className="uk-footer-logo">
@@ -201,7 +231,6 @@ const Footer = () => {
                 ))}
               </ul>
             </div>
-
           </div>
 
           {/* Bottom Bar */}
@@ -214,7 +243,6 @@ const Footer = () => {
               All systems operational
             </div>
           </div>
-
         </div>
       </footer>
     </>
