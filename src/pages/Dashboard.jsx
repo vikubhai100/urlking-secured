@@ -14,6 +14,7 @@ import FullPageScript from '../components/dashboard/FullPageScript';
 import ProfileSettings from '../components/dashboard/ProfileSettings';
 import Help from '../components/dashboard/Help'; 
 import Changepass from '../components/dashboard/Changepass';
+import { getApiUrl } from '../security';
 
 const Dashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -52,7 +53,7 @@ const Dashboard = () => {
 
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
-  const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
+  const API = getApiUrl();
 
   useEffect(() => {
     if (!token) { 

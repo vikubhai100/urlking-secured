@@ -1,4 +1,13 @@
 FROM node:18-alpine as build
+
+# Build arguments for environment variables (passed at build time)
+ARG VITE_API_URL=https://go.urlking.site
+ARG VITE_SHORT_DOMAIN=https://urlking.in
+
+# Set env vars for Vite build
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_SHORT_DOMAIN=$VITE_SHORT_DOMAIN
+
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=production=false
@@ -9,9 +18,16 @@ FROM nginx:alpine
 
 # Production-grade Nginx configuration
 RUN cat > /etc/nginx/conf.d/default.conf << 'NGINX_EOF'
+# Redirect www to non-www (fixes 502 Bad Gateway on www subdomain)
 server {
     listen 80;
-    server_name _;
+    server_name www.urlking.in;
+    return 301 https://urlking.in$request_uri;
+}
+
+server {
+    listen 80;
+    server_name urlking.in _;
     root /usr/share/nginx/html;
     index index.html index.htm;
 

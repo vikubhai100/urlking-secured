@@ -1,9 +1,9 @@
 import React from 'react';
 import { showToast } from '../../toast'; // Premium Toast
+import { getApiUrl } from '../../security';
 
 const QuickLink = ({ user }) => {
-  // Use Env Variables if available, else fallback to hardcoded
-  const API_BASE = import.meta.env.VITE_API_URL || "https://go.urlking.site";
+  const API_BASE = getApiUrl();
   const userToken = user?.api_token || 'YOUR_TOKEN';
   // 🔒 SECURITY: Mask token for display
   const maskedToken = userToken !== 'YOUR_TOKEN' && userToken.length > 12

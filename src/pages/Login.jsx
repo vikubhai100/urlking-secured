@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Particles from '../components/Particles';
 import { showToast } from '../toast'; // Premium Toast
+import { getApiUrl } from '../security';
 
 const Login = () => {
   const [identifier, setIdentifier] = useState('');
@@ -18,7 +19,7 @@ const Login = () => {
   const RATE_LIMIT_MS = 2000; // 2 seconds between attempts
 
   const navigate = useNavigate();
-  const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
+  const API = getApiUrl();
 
   // --- 🚀 PRO-LEVEL LOGIN LOGIC (With Instant Dashboard Data Prefetch) ---
   const handleLogin = async (e) => {

@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { showToast } from '../../toast'; // Premium Toast
+import { getApiUrl } from '../../security';
 
 const Referrals = ({ token }) => {
   const [stats, setStats] = useState({ link: '', count: 0, earnings: 0, users: [] });
   const [loading, setLoading] = useState(true);
 
-  // Use Env Variables if available, else fallback to hardcoded
-  const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
+  const API = getApiUrl();
 
   const loadReferrals = useCallback(async () => {
     // FIX 1: Agar token abhi tak load nahi hua hai, toh API call mat karo (Prevent premature fetch fail)

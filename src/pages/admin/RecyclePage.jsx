@@ -1,7 +1,8 @@
+import { getApiUrl } from '../../security';
 import React, { useState, useEffect, useCallback } from 'react';
 import ConfirmModal from '../../components/admin/Modals/ConfirmModal';
 
-const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
+const API = getApiUrl();
 const PER_PAGE = 10;
 
 const Avatar = ({ name }) => (

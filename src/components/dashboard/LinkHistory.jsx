@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { showToast } from '../../toast'; // Premium Toast
+import { getApiUrl, getShortDomain } from '../../security';
 
 // 1. isActive prop add kiya gaya
 const LinkHistory = ({ token, isActive }) => {
@@ -9,8 +10,8 @@ const LinkHistory = ({ token, isActive }) => {
 
   const [editModal, setEditModal] = useState({ open: false, id: '', url: '' });
 
-  const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
-  const AD_BASE = import.meta.env.VITE_SHORT_DOMAIN ? `${import.meta.env.VITE_SHORT_DOMAIN}/` : "https://urlking.in/";
+  const API = getApiUrl();
+  const AD_BASE = (() => { const d = getShortDomain(); return d.endsWith('/') ? d : d + '/'; })();
 
   // 2. isActive check karega aur silently data update karega
   useEffect(() => {

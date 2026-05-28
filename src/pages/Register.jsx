@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Particles from '../components/Particles';
 import { showToast } from '../toast'; // ✅ Premium Toast
+import { getApiUrl } from '../security';
 
 const Register = () => {
   const [username, setUsername] = useState('');
@@ -12,7 +13,7 @@ const Register = () => {
 
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
+  const API = getApiUrl();
 
   const currentRef = searchParams.get('ref') || localStorage.getItem('saved_ref_code');
 

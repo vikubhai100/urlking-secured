@@ -1,6 +1,7 @@
+import { getApiUrl } from '../../security';
 import React, { useState } from 'react';
 
-const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
+const API = getApiUrl();
 
 export default function MailerPage() {
   const [mailer, setMailer] = useState({ subject: '', title: '', message: '', adminKey: '' });

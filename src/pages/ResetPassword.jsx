@@ -4,6 +4,7 @@ import Particles from '../components/Particles';
 import Header from '../components/Header'; // Standard Header added
 import Footer from '../components/Footer'; // Standard Footer added
 import { showToast } from '../toast';
+import { getApiUrl } from '../security';
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
@@ -17,7 +18,7 @@ const ResetPassword = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const API_BASE = "https://go.urlking.site";
+  const API_BASE = getApiUrl();
 
   // --- VERIFY TOKEN ON PAGE LOAD ---
   useEffect(() => {

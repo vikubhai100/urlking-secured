@@ -1,7 +1,8 @@
+import { getApiUrl } from '../../security';
 import React, { useState } from 'react';
 import ConfirmModal from '../../components/admin/Modals/ConfirmModal';
 
-const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
+const API = getApiUrl();
 
 export default function SettingsPage() {
   const [globalCpm, setGlobalCpm] = useState('0.50');

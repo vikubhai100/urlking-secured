@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { showToast } from '../../toast'; // Apne folder structure ke hisaab se path adjust kar lena
-import { RateLimiter } from '../../security';
+import { RateLimiter, getApiUrl } from '../../security';
 
 const passwordRateLimiter = new RateLimiter(3000, 3, 300000);
 
@@ -10,7 +10,7 @@ const Changepass = ({ token }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isChangingPwd, setIsChangingPwd] = useState(false);
 
-  const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
+  const API = getApiUrl();
 
   const handlePasswordChange = async () => {
     if (!oldPassword || !newPassword || !confirmPassword) {

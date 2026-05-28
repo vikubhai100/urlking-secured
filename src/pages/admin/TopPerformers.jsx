@@ -1,7 +1,8 @@
+import { getApiUrl } from '../../security';
 import React, { useState, useEffect, useMemo } from 'react';
 import UserModal from '../../components/admin/Modals/UserModal';
 
-const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
+const API = getApiUrl();
 const fmt$ = (n) => `$${parseFloat(n || 0).toFixed(4)}`;
 const fmtN = (n) => Number(n || 0).toLocaleString();
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { showToast } from '../../toast'; 
+import { getApiUrl, getShortDomain } from '../../security';
 
 const ManageFiles = ({ token }) => {
   const [files, setFiles] = useState([]);
@@ -10,8 +11,8 @@ const ManageFiles = ({ token }) => {
   const [renameModal, setRenameModal] = useState({ open: false, id: '', name: '' });
   const [deleteModal, setDeleteModal] = useState({ open: false, id: '' });
 
-  const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
-  const AD_BASE = import.meta.env.VITE_AD_BASE || "https://urlking.in/";
+  const API = getApiUrl();
+  const AD_BASE = (() => { const d = getShortDomain(); return d.endsWith('/') ? d : d + '/'; })();
 
   const loadFiles = useCallback(async (p) => {
     setLoading(true);

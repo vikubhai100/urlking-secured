@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { showToast } from '../../toast'; // Premium Toast
-import { RateLimiter } from '../../security';
+import { RateLimiter, getApiUrl } from '../../security';
 
 const withdrawRateLimiter = new RateLimiter(5000, 3, 300000);
 
@@ -10,8 +10,7 @@ const Withdraw = ({ token, user }) => {
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Use Env Variables if available, else fallback to hardcoded
-  const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
+  const API = getApiUrl();
 
   const loadWithdrawalInfo = useCallback(async () => {
     setLoading(true);

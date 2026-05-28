@@ -10,6 +10,7 @@ import {
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { showToast } from '../../toast'; 
+import { getApiUrl, getShortDomain } from '../../security'; 
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Filler);
 
@@ -25,7 +26,7 @@ const DashboardOverview = ({ token, user, isActive }) => {
   const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1); // 1-12
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
 
-  const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
+  const API = getApiUrl();
 
   useEffect(() => {
     if (isActive !== false) { 
@@ -78,7 +79,7 @@ const DashboardOverview = ({ token, user, isActive }) => {
       if (!res.ok) throw new Error(data.error || "Failed to create short link");
 
       // 🔧 BUG FIX: Use env-based domain instead of hardcoded urlking.in
-      const shortDomain = import.meta.env.VITE_SHORT_DOMAIN || "https://urlking.in";
+      const shortDomain = getShortDomain();
       setResultLink(`${shortDomain}/${data.id}`);
       setUrl('');
       setAlias('');

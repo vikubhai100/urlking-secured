@@ -1,7 +1,8 @@
+import { getApiUrl } from '../../security';
 import React, { useState, useEffect } from 'react';
 import Modal from '../../components/admin/Modals/Modal';
 
-const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
+const API = getApiUrl();
 
 const Badge = ({ children, color = 'slate' }) => {
   const map = { 

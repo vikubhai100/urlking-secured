@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { showToast } from '../../toast'; // Premium Toast
-import { sanitizeInput } from '../../security';
+import { sanitizeInput, getApiUrl } from '../../security';
 
 const ProfileSettings = ({ token, user, fetchUserProfile }) => {
   const [form, setForm] = useState({
@@ -10,7 +10,7 @@ const ProfileSettings = ({ token, user, fetchUserProfile }) => {
   });
   
   const [isSaving, setIsSaving] = useState(false);
-  const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
+  const API = getApiUrl();
 
   useEffect(() => {
     if (user) {

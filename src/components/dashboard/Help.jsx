@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { showToast } from '../../toast';
+import { getApiUrl } from '../../security';
 
 const Help = ({ user, isActive }) => {
   const [openFaq, setOpenFaq] = useState(0); 
@@ -17,7 +18,7 @@ const Help = ({ user, isActive }) => {
     consent: false
   });
 
-  const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
+  const API = getApiUrl();
   const token = localStorage.getItem("token");
 
   // 🟢 NAYA FUNCTION: User ke tickets server se laane ke liye

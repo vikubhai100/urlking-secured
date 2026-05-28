@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { showToast } from '../../toast'; 
+import { getApiUrl } from '../../security';
 
 const MassShrinker = ({ token, isActive }) => {
   const [urls, setUrls] = useState('');
   const [shortenedUrls, setShortenedUrls] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
+  const API = getApiUrl();
 
   const handleMassShrink = async () => {
     // Khaali lines aur spaces hata do

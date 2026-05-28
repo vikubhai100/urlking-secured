@@ -1,6 +1,7 @@
+import { getApiUrl } from '../../security';
 import React, { useState, useEffect } from 'react';
 
-const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
+const API = getApiUrl();
 
 const fmt$ = (n) => `$${parseFloat(n || 0).toFixed(2)}`;
 

@@ -87,6 +87,25 @@ export const secureLogout = () => {
   sessionStorage.clear();
 };
 
+// ─── ENV NORMALIZATION ──────────────────────────────────────────
+/**
+ * Normalize the VITE_SHORT_DOMAIN to always include https://
+ * Fixes bug where setting VITE_SHORT_DOMAIN=urlking.in (without https://)
+ * would break generated short links across the app.
+ */
+export const getShortDomain = () => {
+  const raw = import.meta.env.VITE_SHORT_DOMAIN || 'urlking.in';
+  if (raw.startsWith('https://') || raw.startsWith('http://')) return raw;
+  return `https://${raw}`;
+};
+
+/**
+ * Get the API URL with fallback
+ */
+export const getApiUrl = () => {
+  return import.meta.env.VITE_API_URL || 'https://go.urlking.site';
+};
+
 // ─── RATE LIMITING ─────────────────────────────────────────────
 /**
  * Simple client-side rate limiter.

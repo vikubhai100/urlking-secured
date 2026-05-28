@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { showToast } from '../../toast'; 
+import { getApiUrl, getShortDomain } from '../../security';
 
 const UploadFile = ({ token, user }) => {
   const [uploadMode, setUploadMode] = useState('local'); 
@@ -27,7 +28,7 @@ const UploadFile = ({ token, user }) => {
   const [newRemoteName, setNewRemoteName] = useState('');
   const [processTimer, setProcessTimer] = useState(0); 
 
-  const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
+  const API = getApiUrl();
 
   // Prevent accidental close
   useEffect(() => {
@@ -164,8 +165,7 @@ const UploadFile = ({ token, user }) => {
             body: JSON.stringify(payload)
           });
           const finalData = await finalRes.json();
-          // 🔧 BUG FIX: Use env-based domain instead of hardcoded urlking.in
-          const shortDomain = import.meta.env.VITE_SHORT_DOMAIN || "https://urlking.in";
+          const shortDomain = getShortDomain();
           setResultLink(`${shortDomain}/${finalData.short_id}`);
           showToast("File instantly cloned and uploaded!", "success");
           setIsUploading(false);
@@ -237,7 +237,7 @@ const UploadFile = ({ token, user }) => {
               body: JSON.stringify(payload)
             });
             const finalData = await finalRes.json();
-            const shortDomain = import.meta.env.VITE_SHORT_DOMAIN || "https://urlking.in";
+            const shortDomain = getShortDomain();
             setResultLink(`${shortDomain}/${finalData.short_id}`);
             showToast("File uploaded securely!", "success");
           } catch(e) { showToast("Error finalizing: " + e.message, "error"); }
@@ -313,8 +313,7 @@ const UploadFile = ({ token, user }) => {
       });
       const data = await res.json();
       if (data.ok) {
-        // 🔧 BUG FIX: Use env-based domain for short link
-        const shortDomain = import.meta.env.VITE_SHORT_DOMAIN || "https://urlking.in";
+        const shortDomain = getShortDomain();
         const correctDomainLink = data.short_link.replace('go.urlking.site', shortDomain.replace('https://', ''));
         setResultLink(correctDomainLink.startsWith('http') ? correctDomainLink : `${shortDomain}/${correctDomainLink.split('/').pop()}`);
         setRemoteStatus('done');

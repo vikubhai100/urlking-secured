@@ -1,8 +1,9 @@
+import { getApiUrl } from '../../../security';
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import { showToast } from '../../../toast'; 
 
-const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
+const API = getApiUrl();
 
 // ─────────────────────────────────────────────
 // TINY HELPERS

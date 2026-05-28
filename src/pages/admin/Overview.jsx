@@ -1,7 +1,8 @@
+import { getApiUrl } from '../../security';
 import React, { useEffect, useState } from 'react';
 import Stat from '../../components/admin/Stat';
 
-const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
+const API = getApiUrl();
 
 export default function Overview() {
   const [stats, setStats] = useState({

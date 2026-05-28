@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getApiUrl } from '../../security';
 
 const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpen, user }) => {
   const navigate = useNavigate();
@@ -9,7 +10,7 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
   const [isToolsOpen, setIsToolsOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
+  const API = getApiUrl();
   const token = localStorage.getItem("token");
 
   useEffect(() => {

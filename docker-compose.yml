@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  urlking-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=${VITE_API_URL:-https://go.urlking.site}
+        - VITE_SHORT_DOMAIN=${VITE_SHORT_DOMAIN:-https://urlking.in}
+    container_name: urlking-frontend
+    restart: unless-stopped
+    ports:
+      - "3080:80"
+    environment:
+      - NODE_ENV=production

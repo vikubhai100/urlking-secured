@@ -1,8 +1,9 @@
+import { getApiUrl } from '../../security';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { showToast } from '../../toast'; // 🔒 SECURITY: Use toast instead of alert()
 
-const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
+const API = getApiUrl();
 
 export default function AdminLogin() {
   const [pass, setPass] = useState('');
