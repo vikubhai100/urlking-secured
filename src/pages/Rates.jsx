@@ -123,6 +123,9 @@ const Rates = () => {
                           src={`https://flagcdn.com/w40/${country.code}.png`} 
                           alt={`${country.name} flag`} 
                           className="w-8 rounded shadow-sm"
+                          loading="lazy"
+                          width="32"
+                          height="22"
                         />
                         {country.name} 
                         {/* Star icon for special note countries */}

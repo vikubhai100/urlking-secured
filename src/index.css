@@ -80,9 +80,28 @@ html.light-mode .bg-\[\#1e293b\],
 html.light-mode .bg-slate-800,
 html.light-mode .bg-slate-800\/50,
 html.light-mode .bg-slate-800\/80,
-html.light-mode .bg-slate-800\/90 {
+html.light-mode .bg-slate-800\/90,
+html.light-mode .bg-slate-800\/40,
+html.light-mode .bg-slate-800\/30 {
   background-color: var(--glass-panel) !important;
   border-color: var(--glass-border) !important;
+}
+
+/* 🔧 UI FIX: Sidebar elements in light mode */
+html.light-mode .border-slate-800 {
+  border-color: var(--glass-border) !important;
+}
+
+/* 🔧 UI FIX: Code blocks stay dark in light mode */
+html.light-mode .bg-\[\#0d1117\] {
+  background-color: #0d1117 !important;
+  color: #e6edf3 !important;
+}
+
+/* 🔧 UI FIX: Select dropdowns in light mode */
+html.light-mode select option {
+  background-color: #ffffff;
+  color: #0f172a;
 }
 
 /* Convert Hardcoded Text to Black/Gray */
@@ -98,7 +117,8 @@ html.light-mode .text-slate-300 {
 html.light-mode .border-white\/10,
 html.light-mode .border-white\/5,
 html.light-mode .border-slate-800,
-html.light-mode .border-slate-700 {
+html.light-mode .border-slate-700,
+html.light-mode .border-slate-700\/50 {
   border-color: var(--glass-border) !important;
 }
 
@@ -154,3 +174,31 @@ body.light-mode .input-premium::placeholder { color: #94a3b8; }
 .toast-original.hide { transform: translateX(120%); opacity: 0; }
 .toast-original.success { border-left: 4px solid #10b981; }
 .toast-original.error { border-left: 4px solid #ef4444; }
+
+/* =========================================
+   6. 🔒 SECURITY: Hide sensitive elements from print
+   ========================================= */
+@media print {
+  .floating-theme-btn,
+  #toast-container,
+  .uk-header,
+  .uk-drawer { display: none !important; }
+}
+
+/* 🔧 UI FIX: Focus-visible for accessibility */
+*:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* 🔧 UI FIX: Smooth transitions for theme changes */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color;
+  transition-duration: 0s;
+}
+html.light-mode *,
+html.light-mode *::before,
+html.light-mode *::after {
+  transition-duration: 0.3s;
+  transition-timing-function: ease;
+}

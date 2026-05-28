@@ -50,13 +50,20 @@ const Register = () => {
 
     if (password !== confirmPass) return showToast("Passwords do not match!", "error");
     if (password.length < 6) return showToast("Password should be at least 6 characters.", "error");
+    // 🔒 SECURITY: Password strength check
+    if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+      return showToast("Password must contain both letters and numbers.", "error");
+    }
 
     setIsLoading(true);
     try {
       // API call to create user
       const res = await fetch(`${API}/api/register`, {
         method: "POST", 
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          'X-Requested-With': 'XMLHttpRequest' // 🔒 CSRF protection header
+        },
         body: JSON.stringify({ 
           username: cleanUsername, 
           email: cleanEmail, 
@@ -160,6 +167,7 @@ const Register = () => {
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
                 required 
+                autoComplete="new-password"
                 className="w-full pl-11 pr-4 py-3.5 bg-[var(--bg-body)] border border-[var(--glass-border)] rounded-xl text-sm font-medium outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all text-[var(--text-primary)]" 
               />
             </div>
@@ -174,6 +182,7 @@ const Register = () => {
                 value={confirmPass} 
                 onChange={(e) => setConfirmPass(e.target.value)} 
                 required 
+                autoComplete="new-password"
                 className="w-full pl-11 pr-4 py-3.5 bg-[var(--bg-body)] border border-[var(--glass-border)] rounded-xl text-sm font-medium outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all text-[var(--text-primary)]" 
               />
             </div>

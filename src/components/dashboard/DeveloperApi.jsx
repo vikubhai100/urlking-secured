@@ -8,6 +8,10 @@ const DeveloperApi = ({ token, user, fetchUserProfile }) => {
   // Use Env Variables if available, else fallback to hardcoded
   const API_BASE = import.meta.env.VITE_API_URL || "https://go.urlking.site";
   const userToken = user?.api_token || 'YOUR_TOKEN';
+  // 🔒 SECURITY: Mask token for display (show first 6 + last 4 chars)
+  const maskedToken = userToken !== 'YOUR_TOKEN' && userToken.length > 12
+    ? `${userToken.slice(0, 6)}${'*'.repeat(userToken.length - 10)}${userToken.slice(-4)}`
+    : userToken;
 
   const handleReset = async () => {
     setIsRegenerating(true);
@@ -84,7 +88,7 @@ if ($data['status'] === 'success') {
           <input 
             type="text" 
             readOnly 
-            value={userToken} 
+            value={maskedToken} 
             className="input-premium w-full p-4 rounded-xl text-indigo-400 font-mono tracking-wide bg-black/20" 
           />
           <button 
@@ -109,7 +113,7 @@ if ($data['status'] === 'success') {
         <div className="mb-6">
           <h4 className="text-sm font-bold uppercase text-slate-400 mb-2">Endpoint (GET)</h4>
           <div className="p-4 bg-[var(--table-header-bg)] border border-[var(--glass-border)] rounded-lg font-mono text-indigo-400 text-sm overflow-x-auto whitespace-nowrap">
-            {API_BASE}/api?api=<span className="text-white">{userToken}</span>&url=<span className="text-emerald-400">YOUR_URL</span>&alias=<span className="text-yellow-400">CUSTOM_ALIAS</span>
+            {API_BASE}/api?api=<span className="text-white">{maskedToken}</span>&url=<span className="text-emerald-400">YOUR_URL</span>&alias=<span className="text-yellow-400">CUSTOM_ALIAS</span>
           </div>
         </div>
 

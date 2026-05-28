@@ -9,8 +9,8 @@ const LinkHistory = ({ token, isActive }) => {
 
   const [editModal, setEditModal] = useState({ open: false, id: '', url: '' });
 
-  const API = "https://go.urlking.site";
-  const AD_BASE = "https://urlking.in/";
+  const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
+  const AD_BASE = import.meta.env.VITE_SHORT_DOMAIN ? `${import.meta.env.VITE_SHORT_DOMAIN}/` : "https://urlking.in/";
 
   // 2. isActive check karega aur silently data update karega
   useEffect(() => {

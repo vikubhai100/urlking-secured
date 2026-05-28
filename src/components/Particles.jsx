@@ -9,12 +9,17 @@ const Particles = () => {
     const ctx = canvas.getContext('2d');
     let particlesArray = [];
     let animationFrameId;
+    let isVisible = true; // 🚀 PERFORMANCE: Track tab visibility
 
     const initParticles = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
       particlesArray = [];
-      const numberOfParticles = (canvas.height * canvas.width) / 10000;
+      // 🚀 PERFORMANCE: Reduce particle count on mobile
+      const area = canvas.height * canvas.width;
+      const isMobile = window.innerWidth < 768;
+      const divisor = isMobile ? 18000 : 10000;
+      const numberOfParticles = Math.min(Math.floor(area / divisor), isMobile ? 40 : 120);
 
       for (let i = 0; i < numberOfParticles; i++) {
         let size = (Math.random() * 2) + 1;
@@ -27,8 +32,13 @@ const Particles = () => {
     };
 
     const animateParticles = () => {
+      // 🚀 PERFORMANCE: Skip rendering when tab is hidden
+      if (!isVisible) {
+        animationFrameId = requestAnimationFrame(animateParticles);
+        return;
+      }
       animationFrameId = requestAnimationFrame(animateParticles);
-      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       const isLight = document.documentElement.classList.contains('light-mode');
       ctx.fillStyle = isLight ? 'rgba(99, 102, 241, 0.6)' : 'rgba(129, 140, 248, 0.6)';
@@ -49,11 +59,21 @@ const Particles = () => {
     initParticles();
     animateParticles();
 
-    const handleResize = () => initParticles();
+    // 🚀 PERFORMANCE: Pause animation when tab is hidden
+    const handleVisibility = () => { isVisible = !document.hidden; };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    // 🚀 PERFORMANCE: Debounce resize handler
+    let resizeTimer;
+    const handleResize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(initParticles, 200);
+    };
     window.addEventListener('resize', handleResize);
 
     return () => {
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('visibilitychange', handleVisibility);
       cancelAnimationFrame(animationFrameId);
     };
   }, []);

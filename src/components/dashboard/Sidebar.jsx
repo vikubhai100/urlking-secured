@@ -96,7 +96,7 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
     <>
       {isMobileOpen && <div className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-[70]" onClick={() => setIsMobileOpen(false)}></div>}
 
-      <aside className={`fixed top-0 left-0 h-full w-72 bg-[#0f172a] border-r border-slate-800 flex flex-col transition-transform duration-300 z-[80] shadow-2xl ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+      <aside className={`fixed top-0 left-0 h-full w-72 bg-[var(--sidebar-bg)] border-r border-[var(--glass-border)] flex flex-col transition-transform duration-300 z-[80] shadow-2xl ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
 
         <div className="p-6 flex items-center justify-between border-b border-slate-800">
           <div className="flex items-center gap-3">

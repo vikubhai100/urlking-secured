@@ -147,10 +147,10 @@ const Footer = () => {
                 <a href="https://t.me/urlkings_bot" target="_blank" rel="noreferrer" title="Telegram">
                   <i className="fab fa-telegram-plane" />
                 </a>
-                <a href="#" title="Twitter / X">
+                <a href="https://x.com/urlking_site" target="_blank" rel="noopener noreferrer" title="Twitter / X">
                   <i className="fab fa-x-twitter" />
                 </a>
-                <a href="#" title="Discord">
+                <a href="https://discord.gg/urlking" target="_blank" rel="noopener noreferrer" title="Discord">
                   <i className="fab fa-discord" />
                 </a>
               </div>

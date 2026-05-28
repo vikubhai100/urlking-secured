@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { showToast } from '../../toast'; // 🔒 SECURITY: Use toast instead of alert()
 
 const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
 
@@ -51,7 +52,12 @@ export default function AdminLogin() {
     try {
       const ep = isSetup ? '/api/admin/setup' : '/api/admin/login';
       const res = await fetch(`${API}${ep}`, { 
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pass }) 
+        method: 'POST', 
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest' // 🔒 CSRF protection header
+        }, 
+        body: JSON.stringify({ password: pass }) 
       });
       const d = await res.json();
       
@@ -59,10 +65,11 @@ export default function AdminLogin() {
         localStorage.setItem('admin_token', d.token); 
         navigate('/admin');
       } else {
-        alert(d.error || 'Wrong password');
+        // 🔒 SECURITY FIX: Replace alert() with secure toast (prevents spoofing)
+        showToast(d.error || 'Wrong password', 'error');
       }
     } catch { 
-      alert('Connection error'); 
+      showToast('Connection error', 'error');
     }
   };
 

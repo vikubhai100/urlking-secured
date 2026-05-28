@@ -109,31 +109,9 @@ function App() {
         </Routes>
       </Suspense>
 
-      <button onClick={toggleTheme} className="floating-theme-btn" title="Toggle Theme">
+      <button onClick={toggleTheme} className="floating-theme-btn" title="Toggle Theme" aria-label="Toggle dark/light theme">
         <i className={`fas ${isLightMode ? 'fa-sun text-yellow-500' : 'fa-moon'}`}></i>
       </button>
-
-      <style>{`
-        .floating-theme-btn {
-          position: fixed;
-          bottom: 25px;
-          right: 25px;
-          width: 50px;
-          height: 50px;
-          border-radius: 50%;
-          background: #1e293b;
-          color: white;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-          border: none;
-          z-index: 40;
-          transition: transform 0.2s;
-        }
-        .light-mode .floating-theme-btn { background: white; color: #1e293b; border: 1px solid #e2e8f0; }
-      `}</style>
     </Router>
   );
 }

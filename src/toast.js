@@ -1,3 +1,10 @@
+// 🔒 SECURITY: Sanitize text to prevent XSS when using innerHTML
+const escapeHtml = (str) => {
+  const div = document.createElement('div');
+  div.appendChild(document.createTextNode(str));
+  return div.innerHTML;
+};
+
 export const showToast = (message, type = 'success') => {
   let container = document.getElementById('toast-container');
 
@@ -12,18 +19,19 @@ export const showToast = (message, type = 'success') => {
   const toast = document.createElement('div');
   
   const isSuccess = type === 'success';
-  const icon = isSuccess ? 'fa-check-circle' : 'fa-times-circle'; // More compact icons
+  const icon = isSuccess ? 'fa-check-circle' : 'fa-times-circle';
   const iconColor = isSuccess ? 'text-emerald-500' : 'text-rose-500';
   const borderGlow = isSuccess ? 'border-emerald-500/30' : 'border-rose-500/30';
   const shadowGlow = isSuccess ? 'shadow-[0_0_20px_rgba(16,185,129,0.15)]' : 'shadow-[0_0_20px_rgba(244,63,94,0.15)]';
 
-  // 🚀 Premium Compact Pill Design with Glassmorphism
+  // Premium Compact Pill Design with Glassmorphism
   toast.className = `flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-[var(--bg-body)] border ${borderGlow} ${shadowGlow} backdrop-blur-md transform -translate-y-10 scale-90 opacity-0 transition-all duration-400 ease-[cubic-bezier(0.34,1.56,0.64,1)] max-w-[90vw]`;
 
-  // Construct HTML (Smaller text, precise alignment)
+  // 🔒 SECURITY FIX: Use escapeHtml to prevent XSS injection via toast messages
+  const safeMessage = escapeHtml(message);
   toast.innerHTML = `
     <i class="fas ${icon} ${iconColor} text-base drop-shadow-md"></i>
-    <span class="text-sm font-bold text-[var(--text-primary)] tracking-wide truncate">${message}</span>
+    <span class="text-sm font-bold text-[var(--text-primary)] tracking-wide truncate">${safeMessage}</span>
   `;
 
   // Add to container
@@ -37,12 +45,12 @@ export const showToast = (message, type = 'success') => {
     });
   });
 
-  // Trigger smooth fade-out after 3 seconds
+  // Trigger smooth fade-out after 2.5 seconds
   setTimeout(() => {
     toast.classList.remove('translate-y-0', 'scale-100', 'opacity-100');
     toast.classList.add('-translate-y-10', 'scale-90', 'opacity-0');
 
     // Remove from DOM cleanly
     setTimeout(() => toast.remove(), 400); 
-  }, 2000);
+  }, 2500);
 };

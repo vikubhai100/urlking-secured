@@ -26,8 +26,17 @@ const Dashboard = () => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   
   // 🚀 PREFETCH MAGIC: Pehle cache check karo taaki initial state blank na ho
-  const cachedProfile = sessionStorage.getItem('urlking_profile_cache');
-  const [user, setUser] = useState(cachedProfile ? JSON.parse(cachedProfile) : null);
+  const cachedProfile = (() => {
+    try {
+      const cached = sessionStorage.getItem('urlking_profile_cache');
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      // 🔒 SECURITY FIX: Corrupted cache - clear it safely
+      sessionStorage.removeItem('urlking_profile_cache');
+      return null;
+    }
+  })();
+  const [user, setUser] = useState(cachedProfile);
   
   // Agar cache me data hai, toh loading screen nahi dikhegi!
   const [isLoading, setIsLoading] = useState(!cachedProfile);
@@ -49,6 +58,18 @@ const Dashboard = () => {
     if (!token) { 
       navigate('/login'); 
       return; 
+    }
+    // 🔒 SECURITY: Basic JWT expiry check (frontend-only)
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      if (payload.exp && payload.exp * 1000 < Date.now()) {
+        localStorage.removeItem('token');
+        sessionStorage.clear();
+        navigate('/login');
+        return;
+      }
+    } catch {
+      // Token not JWT format, let API validate it
     }
     // Hamesha background me fresh data mangwao
     fetchUserProfile();

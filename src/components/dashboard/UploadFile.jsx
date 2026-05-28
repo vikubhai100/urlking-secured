@@ -164,7 +164,9 @@ const UploadFile = ({ token, user }) => {
             body: JSON.stringify(payload)
           });
           const finalData = await finalRes.json();
-          setResultLink(`https://urlking.in/${finalData.short_id}`);
+          // 🔧 BUG FIX: Use env-based domain instead of hardcoded urlking.in
+          const shortDomain = import.meta.env.VITE_SHORT_DOMAIN || "https://urlking.in";
+          setResultLink(`${shortDomain}/${finalData.short_id}`);
           showToast("File instantly cloned and uploaded!", "success");
           setIsUploading(false);
           return;
@@ -310,9 +312,10 @@ const UploadFile = ({ token, user }) => {
       });
       const data = await res.json();
       if (data.ok) {
-        // Force the link to be urlking.in just in case backend sends the old domain
-        const correctDomainLink = data.short_link.replace('go.urlking.site', 'urlking.in');
-        setResultLink(correctDomainLink);
+        // 🔧 BUG FIX: Use env-based domain for short link
+        const shortDomain = import.meta.env.VITE_SHORT_DOMAIN || "https://urlking.in";
+        const correctDomainLink = data.short_link.replace('go.urlking.site', shortDomain.replace('https://', ''));
+        setResultLink(correctDomainLink.startsWith('http') ? correctDomainLink : `${shortDomain}/${correctDomainLink.split('/').pop()}`);
         setRemoteStatus('done');
         showToast("Remote URL Processed Successfully!", "success");
       } else {

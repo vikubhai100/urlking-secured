@@ -4,7 +4,6 @@ import Particles from '../components/Particles';
 import { showToast } from '../toast'; // Premium Toast
 
 const Login = () => {
-  // 🟢 UPDATE: Email ki jagah 'identifier' use kiya for Username/Email login
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -13,6 +12,10 @@ const Login = () => {
   const [forgotModalOpen, setForgotModalOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotLoading, setForgotLoading] = useState(false);
+
+  // 🔒 SECURITY: Client-side rate limiting for login attempts
+  const [lastAttempt, setLastAttempt] = useState(0);
+  const RATE_LIMIT_MS = 2000; // 2 seconds between attempts
 
   const navigate = useNavigate();
   const API = import.meta.env.VITE_API_URL || "https://go.urlking.site";
@@ -25,13 +28,23 @@ const Login = () => {
       return showToast("Please fill all fields", "error");
     }
 
+    // 🔒 SECURITY: Rate limiting check
+    const now = Date.now();
+    if (now - lastAttempt < RATE_LIMIT_MS) {
+      return showToast("Please wait before trying again", "error");
+    }
+    setLastAttempt(now);
+
     setLoading(true);
 
     try {
       // 1. Send Login Request
       const res = await fetch(`${API}/api/login`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          'X-Requested-With': 'XMLHttpRequest' // 🔒 CSRF protection header
+        },
         body: JSON.stringify({ identifier, password }), 
       });
 
@@ -80,7 +93,10 @@ const Login = () => {
     try {
       const res = await fetch(`${API}/api/auth/forgot-password`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          'X-Requested-With': 'XMLHttpRequest' // 🔒 CSRF protection header
+        },
         body: JSON.stringify({ email: forgotEmail }),
       });
 
@@ -152,14 +168,15 @@ const Login = () => {
               onChange={(e) => setPassword(e.target.value)} 
               required 
               placeholder="Password"
+              autoComplete="current-password"
               className="w-full pl-11 pr-4 py-4 bg-[var(--bg-body)] border border-[var(--glass-border)] rounded-xl text-sm font-medium outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all text-[var(--text-primary)]" 
             />
           </div>
 
           <div className="flex items-center justify-between text-xs px-1 text-[var(--text-secondary)] font-medium">
-            <label className="flex items-center gap-2 cursor-pointer hover:text-indigo-500 transition-colors">
-              <input type="checkbox" className="w-4 h-4 rounded border-slate-500 text-indigo-600 focus:ring-indigo-500 cursor-pointer" />
-              Keep me logged in
+            <label className="flex items-center gap-2 cursor-pointer hover:text-indigo-500 transition-colors select-none">
+              <input type="checkbox" className="w-4 h-4 rounded border-slate-500 text-indigo-600 focus:ring-indigo-500 cursor-pointer" defaultChecked />
+              Remember me
             </label>
             <button 
               type="button" 

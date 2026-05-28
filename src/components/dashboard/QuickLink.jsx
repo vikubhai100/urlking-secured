@@ -5,6 +5,10 @@ const QuickLink = ({ user }) => {
   // Use Env Variables if available, else fallback to hardcoded
   const API_BASE = import.meta.env.VITE_API_URL || "https://go.urlking.site";
   const userToken = user?.api_token || 'YOUR_TOKEN';
+  // 🔒 SECURITY: Mask token for display
+  const maskedToken = userToken !== 'YOUR_TOKEN' && userToken.length > 12
+    ? `${userToken.slice(0, 6)}${'*'.repeat(userToken.length - 10)}${userToken.slice(-4)}`
+    : userToken;
 
   const copyToClipboard = (text, type) => {
     if (!text) return showToast("Nothing to copy", "error");
@@ -71,7 +75,7 @@ app.listen(3000, () => console.log('Server running on port 3000'));`;
               <i className="fas fa-copy text-xs"></i>
             </button>
             <div className="p-4 bg-[#0d1117] border border-[var(--glass-border)] rounded-lg font-mono text-indigo-400 text-sm overflow-x-auto whitespace-nowrap pr-12">
-               {API_BASE}/st?api=<span className="text-white">{userToken}</span>&url=<span className="text-emerald-400">yourdestinationlink.com</span>
+               {API_BASE}/st?api=<span className="text-white">{maskedToken}</span>&url=<span className="text-emerald-400">yourdestinationlink.com</span>
             </div>
           </div>
         </div>

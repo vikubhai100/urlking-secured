@@ -54,8 +54,14 @@ const DashboardOverview = ({ token, user, isActive }) => {
 
   const handleShorten = async () => {
     if (!url) return showToast("Please enter a valid URL to shorten.", "error"); 
+    // 🔒 SECURITY: URL validation
+    try {
+      new URL(url.startsWith('http') ? url : `https://${url}`);
+    } catch {
+      return showToast("Please enter a valid URL (e.g., https://example.com)", "error");
+    }
 
-    const payload = { url, alias };
+    const payload = { url: url.startsWith('http') ? url : `https://${url}`, alias };
     if (expirationDate) {
       payload.expires_at = expirationDate;
     }
@@ -63,7 +69,7 @@ const DashboardOverview = ({ token, user, isActive }) => {
     try {
       const res = await fetch(`${API}/api/create`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, 'X-Requested-With': 'XMLHttpRequest' },
         body: JSON.stringify(payload)
       });
 
@@ -71,7 +77,9 @@ const DashboardOverview = ({ token, user, isActive }) => {
 
       if (!res.ok) throw new Error(data.error || "Failed to create short link");
 
-      setResultLink(`https://urlking.in/${data.id}`);
+      // 🔧 BUG FIX: Use env-based domain instead of hardcoded urlking.in
+      const shortDomain = import.meta.env.VITE_SHORT_DOMAIN || "https://urlking.in";
+      setResultLink(`${shortDomain}/${data.id}`);
       setUrl('');
       setAlias('');
       setExpirationDate(''); 
