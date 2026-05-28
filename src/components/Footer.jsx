@@ -21,8 +21,6 @@ const Footer = () => {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap');
-
         .uk-footer {
           background: #0a0e17;
           border-top: 1px solid rgba(255,255,255,0.06);

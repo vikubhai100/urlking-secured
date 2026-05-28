@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { showToast } from '../../toast'; // Premium Toast
+import { RateLimiter } from '../../security';
+
+const withdrawRateLimiter = new RateLimiter(5000, 3, 300000);
 
 const Withdraw = ({ token, user }) => {
   const [amount, setAmount] = useState('');
@@ -51,6 +54,11 @@ const Withdraw = ({ token, user }) => {
       showToast("Insufficient balance!", "error");
       return;
     }
+
+    if (!withdrawRateLimiter.canProceed()) {
+      return showToast("Too many requests. Please wait before trying again.", "error");
+    }
+    withdrawRateLimiter.recordAttempt();
 
     setIsSubmitting(true);
     try {

@@ -237,7 +237,8 @@ const UploadFile = ({ token, user }) => {
               body: JSON.stringify(payload)
             });
             const finalData = await finalRes.json();
-            setResultLink(`https://urlking.in/${finalData.short_id}`);
+            const shortDomain = import.meta.env.VITE_SHORT_DOMAIN || "https://urlking.in";
+            setResultLink(`${shortDomain}/${finalData.short_id}`);
             showToast("File uploaded securely!", "success");
           } catch(e) { showToast("Error finalizing: " + e.message, "error"); }
         } else { showToast("Upload failed by server.", "error"); }

@@ -28,8 +28,6 @@ const Header = () => {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&display=swap');
-
         .uk-header {
           position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
           transition: background 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;

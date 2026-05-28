@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { showToast } from '../../toast'; // Premium Toast
+import { sanitizeInput } from '../../security';
 
 const ProfileSettings = ({ token, user, fetchUserProfile }) => {
   const [form, setForm] = useState({
@@ -37,7 +38,7 @@ const ProfileSettings = ({ token, user, fetchUserProfile }) => {
       const res = await fetch(`${API}/api/profile`, {
         method: "PUT", 
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(form)
+        body: JSON.stringify({...form, name: sanitizeInput(form.name), social: sanitizeInput(form.social), telegram: sanitizeInput(form.telegram), youtube: sanitizeInput(form.youtube), withdrawal_account: sanitizeInput(form.withdrawal_account), bank_holder: sanitizeInput(form.bank_holder), bank_name: sanitizeInput(form.bank_name), bank_ifsc: sanitizeInput(form.bank_ifsc), bank_account: sanitizeInput(form.bank_account), mobile: sanitizeInput(form.mobile)})
       });
       if (res.ok) { 
         showToast("Profile updated successfully!", "success"); 

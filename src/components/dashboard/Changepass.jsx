@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { showToast } from '../../toast'; // Apne folder structure ke hisaab se path adjust kar lena
+import { RateLimiter } from '../../security';
+
+const passwordRateLimiter = new RateLimiter(3000, 3, 300000);
 
 const Changepass = ({ token }) => {
   const [oldPassword, setOldPassword] = useState('');
@@ -19,6 +22,11 @@ const Changepass = ({ token }) => {
     if (newPassword.length < 6) {
       return showToast("New password must be at least 6 characters", "error");
     }
+
+    if (!passwordRateLimiter.canProceed()) {
+      return showToast("Too many attempts. Please wait before trying again.", "error");
+    }
+    passwordRateLimiter.recordAttempt();
 
     setIsChangingPwd(true);
     try {

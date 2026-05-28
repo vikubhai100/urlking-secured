@@ -86,7 +86,7 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
       key={id} 
       onClick={() => { setActiveSection(id); setIsMobileOpen(false); }}
       onMouseEnter={() => handlePrefetch(id)} // 🟢 HOVER PREFETCH
-      className={`w-full flex items-center gap-3 px-4 py-3 mb-1 rounded-xl transition-all font-medium text-left ${activeSection === id ? 'bg-indigo-600/10 text-indigo-500' : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'}`}>
+      className={`w-full flex items-center gap-3 px-4 py-3 mb-1 rounded-xl transition-all font-medium text-left ${activeSection === id ? 'bg-indigo-600/10 text-indigo-500' : 'text-slate-400 hover:bg-[var(--nav-hover)] hover:text-[var(--text-primary)]'}`}>
       <i className={`fas ${icon} w-5 text-center ${activeSection === id ? 'text-indigo-500' : 'text-slate-500'}`}></i>
       <span>{label}</span>
     </button>
@@ -98,12 +98,12 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
 
       <aside className={`fixed top-0 left-0 h-full w-72 bg-[var(--sidebar-bg)] border-r border-[var(--glass-border)] flex flex-col transition-transform duration-300 z-[80] shadow-2xl ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
 
-        <div className="p-6 flex items-center justify-between border-b border-slate-800">
+        <div className="p-6 flex items-center justify-between border-b border-[var(--glass-border)]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white">
               <i className="fas fa-crown text-lg"></i>
             </div>
-            <span className="text-xl font-extrabold tracking-wide text-white">URLKING</span>
+            <span className="text-xl font-extrabold tracking-wide text-[var(--text-primary)]">URLKING</span>
           </div>
           <button className="md:hidden text-slate-400" onClick={() => setIsMobileOpen(false)}>
             <i className="fas fa-times text-xl"></i>
@@ -120,7 +120,7 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
           <div className="mb-1">
             <button 
               onClick={() => setIsManageOpen(!isManageOpen)}
-              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all font-medium text-left ${isManageOpen ? 'bg-slate-800/50 text-white' : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'}`}
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all font-medium text-left ${isManageOpen ? 'bg-[var(--nav-hover)] text-[var(--text-primary)]' : 'text-slate-400 hover:bg-[var(--nav-hover)] hover:text-[var(--text-primary)]'}`}
             >
               <div className="flex items-center gap-3">
                 <i className={`fas fa-folder-open w-5 text-center ${isManageOpen ? 'text-indigo-400' : 'text-slate-500'}`}></i> Files & Links
@@ -146,7 +146,7 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
           <div className="mb-1">
             <button 
               onClick={() => setIsToolsOpen(!isToolsOpen)}
-              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all font-medium text-left ${isToolsOpen ? 'bg-slate-800/50 text-white' : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'}`}
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all font-medium text-left ${isToolsOpen ? 'bg-[var(--nav-hover)] text-[var(--text-primary)]' : 'text-slate-400 hover:bg-[var(--nav-hover)] hover:text-[var(--text-primary)]'}`}
             >
               <div className="flex items-center gap-3">
                 <i className={`fas fa-wrench w-5 text-center ${isToolsOpen ? 'text-indigo-400' : 'text-slate-500'}`}></i> Tools
@@ -170,7 +170,7 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
           <div className="mb-1">
             <button 
               onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all font-medium text-left ${isSettingsOpen ? 'bg-slate-800/50 text-white' : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'}`}
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all font-medium text-left ${isSettingsOpen ? 'bg-[var(--nav-hover)] text-[var(--text-primary)]' : 'text-slate-400 hover:bg-[var(--nav-hover)] hover:text-[var(--text-primary)]'}`}
             >
               <div className="flex items-center gap-3">
                 <i className={`fas fa-cog w-5 text-center ${isSettingsOpen ? 'text-indigo-400' : 'text-slate-500'}`}></i> Settings
@@ -196,10 +196,10 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
           {renderSingleButton('support', 'fa-life-ring', 'Support Center')}
 
           {isAdmin && (
-            <div className="mt-6 border-t border-slate-800 pt-4">
+            <div className="mt-6 border-t border-[var(--glass-border)] pt-4">
               <p className="px-4 text-[10px] font-bold text-pink-500 uppercase tracking-widest mb-3">Admin Config</p>
               {/* Note: Admin section is now a separate page, redirecting there instead of opening a tab */}
-              <button onClick={() => navigate('/admin')} className="w-full flex items-center gap-3 px-4 py-3 mb-1 rounded-xl transition-all font-medium text-left text-slate-400 hover:bg-slate-800/50 hover:text-white">
+              <button onClick={() => navigate('/admin')} className="w-full flex items-center gap-3 px-4 py-3 mb-1 rounded-xl transition-all font-medium text-left text-slate-400 hover:bg-[var(--nav-hover)] hover:text-[var(--text-primary)]">
                 <i className="fas fa-shield-alt w-5 text-center text-pink-500"></i>
                 <span>Open Admin Panel</span>
               </button>
@@ -207,7 +207,7 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
           )}
         </nav>
 
-        <div className="p-4 bg-slate-800/30 border-t border-slate-800">
+        <div className="p-4 bg-[var(--nav-hover)] border-t border-[var(--glass-border)]">
           <div className="flex items-center gap-3 mb-4 px-2">
             <div className="relative">
               <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-lg">
@@ -216,7 +216,7 @@ const Sidebar = ({ activeSection, setActiveSection, isMobileOpen, setIsMobileOpe
               <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-[#0f172a] rounded-full"></div>
             </div>
             <div className="overflow-hidden flex-1">
-              <p className="font-bold text-sm text-white truncate">{user?.username || 'User'}</p>
+              <p className="font-bold text-sm text-[var(--text-primary)] truncate">{user?.username || 'User'}</p>
               <p className="text-[11px] text-emerald-400 font-medium">Online</p>
             </div>
           </div>

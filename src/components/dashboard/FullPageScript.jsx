@@ -5,7 +5,16 @@ const FullPageScript = ({ user, isActive }) => {
   if (!isActive) return null;
 
   const apiToken = user?.api_token || "YOUR_API_KEY";
-  
+  const maskedApiToken = apiToken !== 'YOUR_API_KEY' && apiToken.length > 12
+    ? `${apiToken.slice(0, 6)}${'*'.repeat(apiToken.length - 10)}${apiToken.slice(-4)}`
+    : apiToken;
+
+  const displayScriptCode = `<script type="text/javascript">
+  var urlking_api = '${maskedApiToken}';
+  var urlking_domains = ['example.com', 'test.com']; 
+</script>
+<script src="https://go.urlking.site/fullpage.js"></script>`;
+
   const scriptCode = `<script type="text/javascript">
   var urlking_api = '${apiToken}';
   var urlking_domains = ['example.com', 'test.com']; 
@@ -36,7 +45,7 @@ const FullPageScript = ({ user, isActive }) => {
             rows="5" 
             readOnly 
             className="w-full p-4 input-premium rounded-xl text-sm font-mono text-indigo-300 bg-slate-900/80 resize-none border border-slate-700/50" 
-            value={scriptCode}
+            value={displayScriptCode}
           ></textarea>
           <button 
             onClick={copyToClipboard}
